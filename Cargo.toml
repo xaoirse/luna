@@ -1,0 +1,31 @@
+[package]
+name = "luna"
+version = "0.1.0"
+edition = "2018"
+
+# https://blog.davidvassallo.me/2021/06/10/lessons-learned-building-statically-linked-rust-binaries-openssl/
+[target.x86_64-unknown-linux-musl]
+# https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes
+# rustflags = ["-C", "target-feature=+crt-static"]
+# -s, --strip-all Omit all symbol information from the output file.
+rustflags = ["-C", "link-arg=-s"]
+target = "x86_64-unknown-linux-musl"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# https://docs.rs/openssl/0.10.36/openssl/#vendored
+openssl = { version = "*", features = ["vendored"] }
+reqwest = { version = "0.11", features = [ "blocking"] }
+tokio = { version = "1", features = ["full"] }
+futures = "0.3.17"
+select = "0.5.0"
+sqlx = { version = "0.5", features = [ "runtime-tokio-rustls" ,"mysql", "sqlite","any"] }
+sqlx-core = "0.5.9"
+log = "0.4"
+env_logger = "0.8.4"
+colored = "2"
+chrono = "0.4"
+dotenv_codegen = "0.15.0"
+clap = { version = "3.0.0-beta.4", features = ["yaml","suggestions", "color","wrap_help" ] }
+similar = "2.1.0"
