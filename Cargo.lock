@@ -771,11 +771,11 @@ dependencies = [
  "futures",
  "log",
  "openssl",
+ "regex",
  "reqwest",
  "select",
  "similar",
  "sqlx",
- "sqlx-core",
  "tokio",
 ]
 

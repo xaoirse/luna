@@ -1,4 +1,4 @@
-use crate::model;
+use crate::{model, tools};
 use clap::{load_yaml, App};
 use colored::Colorize;
 use similar::{ChangeTag, TextDiff};
@@ -24,41 +24,72 @@ pub async fn start() {
     let yaml = load_yaml!("cli.yaml");
     let matches = App::from(yaml).get_matches();
 
+    // Establish connection or return None
+    let mut conn = None;
     if let Some(db) = matches.value_of("db") {
-        let mut conn = model::Model::init(db).await.unwrap();
+        conn = model::Model::init(db).await.ok();
+    }
+    let conn = &mut conn;
 
-        // Save in both File and Database
-        if let Some(n) = matches.value_of("ad") {
-            model::Model::Domain { name: n }.save(&mut conn).await;
-            model::save_file("domains.txt", n);
-        }
-        if let Some(n) = matches.value_of("as") {
-            model::Model::Subdomain { name: n, ip: "" }
-                .save(&mut conn)
-                .await;
-            model::save_file("subdomains.txt", n);
-        }
-        if let Some(n) = matches.value_of("aw") {
-            model::Model::Word {
-                name: n,
-                domain: "",
+    if let Some(ref matches) = matches.subcommand_matches("domain") {
+        if let Some(n) = matches.value_of("a") {
+            model::Model::Domain {
+                name: n.to_string(),
             }
-            .save(&mut conn)
+            .save(conn)
             .await;
-            model::save_file("wl-subdomains.txt", n);
         }
-    } else {
-        // Save in File
-        if let Some(n) = matches.value_of("ad") {
-            model::save_file("domains.txt", n);
+        if let Some(n) = matches.value_of("e") {
+            model::Model::Domain {
+                name: n.to_string(),
+            }
+            .exists(conn)
+            .await;
         }
-        if let Some(n) = matches.value_of("as") {
-            model::save_file("subdomains.txt", n);
-        }
-        if let Some(n) = matches.value_of("aw") {
-            model::save_file("wl-subdomains.txt", n);
+        if let Some(n) = matches.value_of("s") {
+            tools::assetsfinder::run(conn, n, vec!["medsab.ac.ir".to_string()]).await;
         }
     }
+
+    if let Some(ref matches) = matches.subcommand_matches("subdomain") {
+        if let Some(n) = matches.value_of("a") {
+            model::Model::Subdomain {
+                name: n.to_string(),
+                ip: "".to_string(),
+            }
+            .save(conn)
+            .await;
+        }
+        if let Some(n) = matches.value_of("e") {
+            model::Model::Subdomain {
+                name: n.to_string(),
+                ip: "".to_string(),
+            }
+            .exists(conn)
+            .await;
+        }
+    }
+
+    if let Some(ref matches) = matches.subcommand_matches("word") {
+        if let Some(n) = matches.value_of("a") {
+            model::Model::Word {
+                name: n.to_string(),
+                domain: "".to_string(),
+            }
+            .save(conn)
+            .await;
+        }
+        if let Some(n) = matches.value_of("e") {
+            model::Model::Word {
+                name: n.to_string(),
+                domain: "".to_string(),
+            }
+            .exists(conn)
+            .await;
+        }
+    }
+
+    // Chack exists
 }
 
 async fn _diff() {

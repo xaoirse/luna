@@ -21,7 +21,6 @@ tokio = { version = "1", features = ["full"] }
 futures = "0.3.17"
 select = "0.5.0"
 sqlx = { version = "0.5", features = [ "runtime-tokio-rustls" ,"mysql", "sqlite","any"] }
-sqlx-core = "0.5.9"
 log = "0.4"
 env_logger = "0.8.4"
 colored = "2"
@@ -29,3 +28,4 @@ chrono = "0.4"
 dotenv_codegen = "0.15.0"
 clap = { version = "3.0.0-beta.4", features = ["yaml","suggestions", "color","wrap_help" ] }
 similar = "2.1.0"
+regex = "1.5.4"
