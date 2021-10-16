@@ -15,7 +15,7 @@ pub async fn run(conn: &mut Option<sqlx::AnyConnection>, path: &str, domains: Ve
     for cmd in commands {
         let std = Command::new("sh").arg("-c").arg(cmd).output().unwrap();
         alert::nok(String::from_utf8(std.stderr).unwrap());
-        let subdomains = model::subdomains_from_text(String::from_utf8(std.stdout).unwrap());
+        let subdomains = model::Model::subdomains_from_text(String::from_utf8(std.stdout).unwrap());
 
         for sd in subdomains {
             sd.save_with_word(conn).await;
