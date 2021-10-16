@@ -170,14 +170,17 @@ impl Model {
 
 pub fn subdomains_from_text(text: String) -> Vec<Model> {
     let mut subdomains = vec![];
-    let regex = "((?:[a-z0-9A-Z]\\.)*[a-z0-9-]+\\.(?:[a-z0-9]{2,24})+(?:\\.co\\.(?:[a-z0-9]{2,24})|\\.(?:[a-z0-9]{2,24}))*)+.+(\\b(?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])\\.){3}(?:(?:2([0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9]))\\b)";
+    let regex =
+        r"((?:[0-9\-a-z]+\.)+[a-z]+)(?:[\D\W]|$)+((?:[0-9]{1,3}\.){3}[0-9]{1,3})?(?:[\D\W\s]|$)";
     let re = regex::Regex::new(&regex).unwrap();
 
     for v in re.captures_iter(&text) {
-        subdomains.push(Model::Subdomain {
-            name: v[1].to_string(),
-            ip: v[2].to_string(),
-        });
+        let name = v[1].to_string();
+        let ip = match &v.get(2) {
+            Some(m) => m.as_str().to_string(),
+            None => "".to_string(),
+        };
+        subdomains.push(Model::Subdomain { name: name, ip: ip });
     }
 
     subdomains

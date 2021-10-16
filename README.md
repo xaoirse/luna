@@ -1,3 +1,4 @@
 ## TODOs
--[] complete cli.yaml
+-[] Complete cli.yaml
 -[] Tests
+-[] Nuclei for fuzz
