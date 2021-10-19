@@ -1,7 +1,8 @@
-use crate::{model, tools};
+use crate::{alert, env, model, tools};
 use clap::{load_yaml, App};
 use colored::Colorize;
 use similar::{ChangeTag, TextDiff};
+use sqlx::any::AnyPoolOptions;
 
 // strings
 static BANNER: &str = r"
@@ -24,72 +25,117 @@ pub async fn start() {
     let yaml = load_yaml!("cli.yaml");
     let matches = App::from(yaml).get_matches();
 
-    // Establish connection or return None
-    let mut conn = None;
-    if let Some(db) = matches.value_of("db") {
-        conn = model::Model::init(db).await.ok();
-    }
-    let conn = &mut conn;
+    // Establish connection to url or in-memory sqlite
+    let pool;
+    if let Some(url) = matches.value_of("db") {
+        pool = AnyPoolOptions::new()
+            .max_connections(5)
+            .connect(url)
+            .await
+            .unwrap();
+    } else if let Some(url) = env::get("DATABASE") {
+        pool = AnyPoolOptions::new()
+            .max_connections(5)
+            .connect(&url)
+            .await
+            .unwrap();
+    } else {
+        pool = AnyPoolOptions::new()
+            .max_connections(5)
+            .connect("sqlite::memory:")
+            .await
+            .unwrap();
+    };
+    model::init(&pool).await;
 
+    // Subcommand Domain
     if let Some(ref matches) = matches.subcommand_matches("domain") {
         if let Some(n) = matches.value_of("a") {
-            model::Model::Domain {
+            let r = model::Domain {
                 name: n.to_string(),
+                at: chrono::Utc::now().timestamp(),
             }
-            .save(conn)
+            .save(&pool)
             .await;
+            if let Err(err) = r {
+                // Duplicated shouldn't panic
+                if err.as_database_error().unwrap().code().unwrap() == "23000"
+                    || err.as_database_error().unwrap().code().unwrap() == "2067"
+                {
+                    alert::yok(format!("{} {}", n, "Exists!"));
+                } else {
+                    panic!(
+                        "{} {}",
+                        err.as_database_error().unwrap().code().unwrap(),
+                        err
+                    );
+                }
+            };
         }
-        if let Some(n) = matches.value_of("e") {
-            model::Model::Domain {
-                name: n.to_string(),
+
+        if let Some(n) = matches.value_of("f") {
+            match model::Domain::fetch_optional(&pool, format!("name={}", n)).await {
+                Some(d) => alert::found(d.to_string()),
+                None => alert::nfound(n),
             }
-            .exists(conn)
-            .await;
         }
-        if let Some(n) = matches.value_of("s") {
-            tools::assetsfinder::run(conn, n, vec!["medsab.ac.ir".to_string()]).await;
+        if let Some(path) = matches.value_of("s") {
+            let domains = model::Domain::fetch_all(&pool, "1=1".to_string()).await;
+            tools::assetsfinder::run(&pool, path, domains).await;
         }
     }
 
+    // Subcommand Subdomain
     if let Some(ref matches) = matches.subcommand_matches("subdomain") {
         if let Some(n) = matches.value_of("a") {
-            model::Model::Subdomain {
+            let r = model::Subdomain {
                 name: n.to_string(),
                 ip: "".to_string(),
+                at: chrono::Utc::now().timestamp(),
             }
-            .save(conn)
+            .save(&pool)
             .await;
+            if let Err(err) = r {
+                if err.as_database_error().unwrap().code().unwrap() == "23000" {
+                    alert::yok(format!("{} {}", n, "Exists!"));
+                } else {
+                    panic!("{}", err);
+                }
+            };
         }
-        if let Some(n) = matches.value_of("e") {
-            model::Model::Subdomain {
-                name: n.to_string(),
-                ip: "".to_string(),
+        if let Some(n) = matches.value_of("f") {
+            match model::Subdomain::fetch_optional(&pool, format!("name={}", n)).await {
+                Some(d) => alert::found(d.to_string()),
+                None => alert::nfound(n),
             }
-            .exists(conn)
-            .await;
         }
     }
 
+    // Subcommand Domain
     if let Some(ref matches) = matches.subcommand_matches("word") {
         if let Some(n) = matches.value_of("a") {
-            model::Model::Word {
+            let r = model::Word {
                 name: n.to_string(),
                 domain: "".to_string(),
+                at: chrono::Utc::now().timestamp(),
             }
-            .save(conn)
+            .save(&pool)
             .await;
+            if let Err(err) = r {
+                if err.as_database_error().unwrap().code().unwrap() == "23000" {
+                    alert::yok(format!("{} {}", n, "Exists!"));
+                } else {
+                    panic!("{}", err);
+                }
+            };
         }
-        if let Some(n) = matches.value_of("e") {
-            model::Model::Word {
-                name: n.to_string(),
-                domain: "".to_string(),
+        if let Some(n) = matches.value_of("f") {
+            match model::Word::fetch_optional(&pool, format!("name={}", n)).await {
+                Some(d) => alert::found(d.to_string()),
+                None => alert::nfound(n),
             }
-            .exists(conn)
-            .await;
         }
     }
-
-    // Chack exists
 }
 
 async fn _diff() {

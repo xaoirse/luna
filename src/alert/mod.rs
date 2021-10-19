@@ -12,11 +12,18 @@ where
     }
 }
 
-pub fn ok<D>(text: D)
+pub fn _ok<D>(text: D)
 where
     D: Display,
 {
     println!("{} {}", "[+]".green(), text.to_string().green())
+}
+
+pub fn yok<D>(text: D)
+where
+    D: Display,
+{
+    println!("{} {}", "[!]".yellow(), text.to_string().yellow())
 }
 
 pub fn found<D>(text: D)
@@ -36,14 +43,17 @@ pub async fn push<D>(text: D)
 where
     D: Display,
 {
-    let cli = reqwest::Client::builder().build().unwrap();
-    match cli
-        .post("https://discord.com/api/webhooks/895773089936334908/78I0tKk9YgpyJuKqC7_NxjxOBgfqWF4PZp4Qksfl2KCTCQzHWvmicqF-7xM4pFjQ72e-")
-        .header("Content-Type","application/json").body(format!(r#"{{"username": "Luna", "content": "{}"}}"#,text))
-        .send()
-        .await
-    {
-        Ok(_) => (),
-        Err(err) =>crate::alert::nok(err),
+    if let Some(url) = crate::env::get("DISCORD") {
+        let cli = reqwest::Client::builder().build().unwrap();
+        match cli
+            .post(url)
+            .header("Content-Type", "application/json")
+            .body(format!(r#"{{"username": "Luna", "content": "{}"}}"#, text))
+            .send()
+            .await
+        {
+            Ok(_) => (),
+            Err(err) => crate::alert::nok(err),
+        }
     }
 }

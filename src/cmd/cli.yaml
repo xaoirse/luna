@@ -16,22 +16,25 @@ args:
                 sqlite:///data.db\n	
                 sqlite://data.db?mode=ro\n"
         takes_value: true
-    - config:
-        short: c
-        long: config
-        value_name: FILE
-        about: Sets a custom config file
-        takes_value: true
-    - s:
-        short: s
-        long: script
-        value_name: domain
-        about: Runs script against domain
-        takes_value: true
-    - url:
-        value_name: url
-        about: scan this url
-        index: 1
+    # - config:
+    #     short: c
+    #     long: config
+    #     value_name: FILE
+    #     about: Sets a custom config file
+    #     takes_value: true
+
+    # - s:
+    #     short: s
+    #     long: script
+    #     value_name: domain
+    #     about: Runs script against domain
+    #     takes_value: true
+    # TODO 
+    # - url:
+    #     value_name: url
+    #     about: scan this url
+    #     index: 1
+
     # - verbose:
     #     short: v
     #     multiple_occurrences: true
@@ -43,11 +46,11 @@ subcommands:
         version: "0.1"
         author: SA <mxsadegh@gmail.com>
         args:
-            - e:
-                short: e
-                long: exist
+            - f:
+                short: f
+                long: fetch
                 value_name: domain
-                about: Check exists
+                about: Fetch domain
                 takes_value: true
             - a:
                 short: a
@@ -59,7 +62,7 @@ subcommands:
                 short: s
                 long: script
                 value_name: domain
-                about: Runs script against domain
+                about: Runs script against domains
                 takes_value: true
             
     - subdomain:
@@ -67,11 +70,11 @@ subcommands:
         version: "0.1"
         author: SA <mxsadegh@gmail.com>
         args:
-            - e:
-                short: e
-                long: exist
+            - f:
+                short: f
+                long: fetch
                 value_name: subdomain
-                about: Check exists
+                about: Fetch subdomain
                 takes_value: true
             - a:
                 short: a
@@ -84,11 +87,11 @@ subcommands:
         version: "0.1"
         author: SA <mxsadegh@gmail.com>
         args:
-            - e:
-                short: e
-                long: exist
+            - f:
+                short: f
+                long: fetch
                 value_name: word
-                about: Check exists
+                about: Fetch word
                 takes_value: true
             - a:
                 short: a

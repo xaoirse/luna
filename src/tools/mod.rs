@@ -1,4 +1,5 @@
 pub mod assetsfinder;
+pub mod file;
 
 pub type Data = std::collections::HashMap<String, Vec<String>>;
 
@@ -27,11 +28,7 @@ pub fn replace(vec: Vec<String>, data: Data) -> Vec<String> {
     tmp
 }
 
-fn replace_recercive(
-    str: String,
-    vec: &mut Vec<String>,
-    data: &std::collections::HashMap<String, Vec<String>>,
-) {
+fn replace_recercive(str: String, vec: &mut Vec<String>, data: &Data) {
     for (n, v) in data {
         if str.contains(n) {
             for i in v {

@@ -1,8 +1,9 @@
 // Luna project is a web hunting app
-// SAoirse
+// Developed by SAoirse
 
 mod alert;
 mod cmd;
+mod env;
 mod model;
 mod tools;
 

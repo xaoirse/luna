@@ -1,188 +1,41 @@
-use crate::alert;
-use sqlx::{
-    any::{Any, AnyArguments},
-    query::Query,
-    AnyConnection, Connection, Error,
-};
-mod file;
+use orm::orm;
+use sqlx::{any::AnyQueryResult, Any, Error, Pool};
 
-pub enum Model {
-    Domain { name: String },
-    Subdomain { name: String, ip: String },
-    Word { name: String, domain: String },
+// TODO trait with async fn
+
+#[derive(orm, sqlx::FromRow)]
+pub struct Domain {
+    #[unique]
+    pub name: String,
+    pub at: i64,
 }
 
-impl Model {
-    pub async fn init(url: &str) -> Result<AnyConnection, Error> {
-        // TODO: switch for creating sqlite database if not exists
-        // let conn = sqlx::sqlite::SqliteConnectOptions::from_str(url)?.create_if_missing(true);
-        // let a = AnyConnectOptions::from(conn);
-        // match AnyConnection::connect_with(&a).await {
-        match AnyConnection::connect(url).await {
-            Ok(mut conn) => {
-                sqlx::query(
-                    "
-                    CREATE TABLE If NOT EXISTS domains (
-                        name	TEXT UNIQUE,
-	                    at	    INTEGER
-                    );
-                        ",
-                )
-                .execute(&mut conn)
-                .await?;
-                sqlx::query(
-                    "
-                    CREATE TABLE If NOT EXISTS subdomains (
-	                    name	    TEXT,
-                        ip      	TEXT,
-	                    at	        INTEGER,
-                        UNIQUE(name, ip)
-                    );
-                        ",
-                )
-                .execute(&mut conn)
-                .await?;
-                sqlx::query(
-                    "
-                    CREATE TABLE If NOT EXISTS wordlist (
-                        name	    TEXT UNIQUE,
-                        domain	    TEXT,
-                        at	        INTEGER
-                    );
-                        ",
-                )
-                .execute(&mut conn)
-                .await?;
-                Ok(conn)
-            }
-            // Handling errors
-            // err.as_database_error().unwrap().code().unwrap().eq("14")
-            Err(err) => {
-                alert::nok(format!("{} {}", "Database error: ", err));
-                Err(err)
-            }
-        }
-    }
+#[derive(orm, sqlx::FromRow, Debug)]
+pub struct Subdomain {
+    #[unique]
+    pub name: String,
+    #[unique]
+    pub ip: String,
+    pub at: i64,
+}
 
-    pub async fn save(&self, conn: &mut Option<AnyConnection>) {
-        let mut is_new = false;
-        let now = chrono::Utc::now().timestamp();
-        let query: Query<Any, AnyArguments>;
+#[derive(orm, sqlx::FromRow)]
+pub struct Word {
+    #[unique]
+    pub name: String,
+    pub domain: String,
+    pub at: i64,
+}
 
-        match self {
-            Model::Domain { name } => {
-                file::save("domains.txt", name);
-                query = sqlx::query("insert into domains (name, at) values (?, ?)")
-                    .bind(name)
-                    .bind(now);
-            }
-            Model::Subdomain { name, ip } => {
-                is_new = file::save("subdomains.txt", name);
-                query = sqlx::query("insert into subdomains (name, ip, at) values (?, ?, ?)")
-                    .bind(name)
-                    .bind(ip)
-                    .bind(now);
-            }
-            Model::Word { name, domain } => {
-                file::save("wl.txt", name);
-                query = sqlx::query("insert into wordlist (name, domain, at) values (?, ?, ?)")
-                    .bind(name)
-                    .bind(domain)
-                    .bind(now);
-            }
-        }
+// TODO some test that domain table has its fields
+pub async fn init(pool: &Pool<Any>) {
+    Domain::init(&pool).await.unwrap();
+    Subdomain::init(&pool).await.unwrap();
+    Word::init(&pool).await.unwrap();
+}
 
-        // Excute query if connection to database is estabilished
-        if let Some(conn) = conn {
-            match query.execute(conn).await {
-                Ok(_) => is_new &= true,
-                // If duplicated
-                Err(err) if err.as_database_error().unwrap().code().unwrap() == "23000" => {
-                    is_new = false
-                }
-                Err(err) => panic!("{}", err),
-            }
-        }
-
-        // Alert if there is a new item
-        if is_new {
-            match self {
-                Model::Subdomain { name, .. } => crate::alert::push(name).await,
-                _ => (),
-            }
-        }
-    }
-
-    pub async fn exists(&self, conn: &mut Option<AnyConnection>) -> bool {
-        let query: Query<Any, AnyArguments>;
-        match self {
-            Model::Domain { name } => {
-                file::exists("domains.txt", name);
-                query = sqlx::query("select * from domains where name=?").bind(name);
-            }
-            Model::Subdomain { name, .. } => {
-                file::exists("subdomains.txt", name);
-                query = sqlx::query("select * from subdomains where name=?").bind(name);
-            }
-            Model::Word { name, .. } => {
-                file::exists("wl.txt", name);
-                query = sqlx::query("select * from wordlist where name=?").bind(name);
-            }
-        }
-        if let Some(conn) = conn {
-            match query.fetch_optional(conn).await.unwrap() {
-                Some(_) => {
-                    alert::found("Database");
-                    return true;
-                }
-                None => alert::nfound("Database"),
-            }
-        }
-
-        false
-    }
-
-    pub async fn save_with_word(&self, conn: &mut Option<AnyConnection>) {
-        match self {
-            Model::Subdomain { name, .. } => {
-                self.save(conn).await;
-                for word in name.split(".") {
-                    Model::Word {
-                        name: word.to_string(),
-                        domain: name.to_string(),
-                    }
-                    .save(conn)
-                    .await;
-                }
-            }
-            _ => (),
-        }
-    }
-
-    // TODO
-    // pub async fn _all(conn: &mut AnyConnection) -> Result<Vec<Domain>, sqlx::Error> {
-    //     let hosts = sqlx::query_as::<_, Domain>("select * from domains")
-    //         .fetch_all(conn)
-    //         .await?;
-    //     Ok(hosts)
-    // }
-
-    pub fn subdomains_from_text(text: String) -> Vec<Model> {
-        let mut subdomains = vec![];
-        let regex = r"((?:[0-9\-a-z]+\.)+[a-z]+)(?:[\D\W]|$)+((?:[0-9]{1,3}\.){3}[0-9]{1,3})?(?:[\D\W\s]|$)";
-        let re = regex::Regex::new(&regex).unwrap();
-
-        for v in re.captures_iter(&text) {
-            let name = v[1].to_string();
-            let ip = match &v.get(2) {
-                Some(m) => m.as_str().to_string(),
-                None => "".to_string(),
-            };
-            subdomains.push(Model::Subdomain { name: name, ip: ip });
-        }
-
-        subdomains
-    }
+pub fn _utc_days_ago() -> String {
+    "".to_string()
 }
 
 // The code that i wrote it

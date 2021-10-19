@@ -3,3 +3,4 @@
 /subdomains.txt
 /wl.txt
 /tools
+*.db*

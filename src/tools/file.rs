@@ -1,16 +1,17 @@
 use crate::alert;
-use dotenv_codegen::*;
 use std::io::SeekFrom;
 use std::io::{Read, Seek, Write};
 
-static PATH: &str = dotenv!("DOMAINS_PATH");
-
-pub fn save(file_name: &str, text: &str) -> bool {
+pub fn save(file_name: &str, text: &str) {
+    let path = match crate::env::get("PATH") {
+        Some(path) => path,
+        None => "luna".to_string(),
+    };
     match std::fs::OpenOptions::new()
         .append(true)
         .read(true)
         .create(true)
-        .open(format!("{}/{}", PATH, file_name))
+        .open(format!("{}/{}", path, file_name))
     {
         Ok(mut file) => {
             // Check for duplicates in file
@@ -18,7 +19,7 @@ pub fn save(file_name: &str, text: &str) -> bool {
             file.read_to_string(&mut f).unwrap();
             for l in f.lines() {
                 if l == text {
-                    return false;
+                    return;
                 }
             }
 
@@ -33,30 +34,33 @@ pub fn save(file_name: &str, text: &str) -> bool {
             }
 
             file.write(text.as_bytes()).unwrap();
-            true
         }
         Err(err) => {
             alert::nok(&err.to_string());
-            false
         }
     }
 }
 
-pub fn exists(file_name: &str, text: &str) -> bool {
+pub fn _exists(file_name: &str, text: &str) -> bool {
+    let path = match crate::env::get("PATH") {
+        Some(path) => path,
+        None => "luna".to_string(),
+    };
+
     match std::fs::OpenOptions::new()
         .read(true)
-        .open(format!("{}/{}", PATH, file_name))
+        .open(format!("{}/{}", path, file_name))
     {
         Ok(mut file) => {
             let mut f = String::new();
             file.read_to_string(&mut f).unwrap();
             for l in f.lines() {
                 if l == text {
-                    alert::found(format!("{}/{}", PATH, file_name));
+                    alert::found(format!("{}/{}", path, file_name));
                     return true;
                 }
             }
-            alert::nfound(format!("{}/{}", PATH, file_name));
+            alert::nfound(format!("{}/{}", path, file_name));
             false
         }
         Err(err) => {

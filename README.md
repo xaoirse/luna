@@ -1,75 +1,108 @@
 
-Luna runs scripts  
-- luna can run scripts and parse results (for now luna can only runs assetfinders scripts and collect subdomains and ips)
+# Luna 
+Standalone Binary, Async, and Muti Database Support 
 
-## Script
+```
+   __  __  ___  _____ 
+  / / / / / / |/ / _ |  v0.1.1
+ / /_/ /_/ /    / __ |        
+/____|____/_/|_/_/ |_|  SA    
 
-script.sh file:
+```
+- Luna can run scripts and collect results (now luna can only run asset finders scripts and collect subdomains and ips) and push them to Database, File, and Discord channel (optional)
+- Luna Supports PostgreSQL, MySQL, SQLite, and MSSQL.
+- Luna creates a wordlist from the results of every Run.
+
+## Simple Using
+
+create this files:
+
+script.sh:
 ```bash
 amass enum -active  -d $domain -config config.ini -ip -o amass.results -dir amass
 subfinder -d $domain -silent
 gobuster dns -d  $domain -r ns1.$domain -w wl.txt -qi
 
 ```
-Not completed:  
-`luna domain --all `-s script.sh  
-Extracts all subdomains and inserts to Database(file, sqlit, postgres and mysql)
 
-## Installation
-- Customize `.env` file
-- Compile code with `cargo build --release`  
+luna.ini:
+```ini
+DATABASE = mysql://example.com/test
+PATH = .
+DISCORD = https://discord.com/api/webhooks/***
+```
+`luna domain -a target1.com`  
+`luna domain -a target2.com`  
+`luna domain -s script.sh`  
 
-## USAGE
+
+
+## Installation   
+
+Compile code with `cargo build --release`   
+
+### Linux portable binary:
+For building statically linked rust binary [read this link](https://blog.davidvassallo.me/2021/06/10/lessons-learned-building-statically-linked-rust-binaries-openssl/).
+
+
+
+## Usage
 
 ```
 USAGE:
     luna [OPTIONS] [url] [SUBCOMMAND]
 
-ARGS:
-    <url>    url for scan
-
 FLAGS:
-    -h, --help       Print help information
-    -V, --version    Print version information
+    -h, --help
+            Print help information
+
+    -V, --version
+            Print version
+            information
 
 OPTIONS:
-    -c, --config <FILE>
-            Sets a custom config file
-
+    
     -d, --db-url <DATABASE-URL>
-            Sets database url Example:
-             postgres://postgres@localhost/test
+            Sets database url
+            Example:
+            
+            postgres://postgres@localhost/test
              sqlite://a.sqlite
              sqlite::memory:
              sqlite:data.db
              sqlite://data.db
              sqlite:///data.db
-             sqlite://data.db?mode=ro
-
-    -s, --script <domain>
-            Runs script against domain
+            
+            sqlite://data.db?mode=ro
 
 SUBCOMMANDS:
     domain
             Controls domains
     help
-            Print this message or the help of the
-            given subcommand(s)
+            Print this message or
+            the help of the given
+            subcommand(s)
     subdomain
             Controls subdomains
     word
             Controls wordlist
-
 ```
-### Examples
-`luna -d postgres://postgres@localhost/test -a example.com `  
-`luna subdomain -a sub.example.com`  
-`luna word -a add keyword`
+   
+
+## Built With
+- **Tokio**: A powerfull runtime for writing reliable, **asynchronous**, and slim applications with the Rust programming language
+- **SQLx**: An async, pure Rust SQL crate
+- **orm**: A self made library for easy developing using macros in Rust
+- ...
 
 
-
-## TODOs
-- [ ] Complete cli.yaml
+## Roadmap
+- [ ] cli.yaml
 - [ ] Tests
-- [ ] Nuclei for fuzz
-- [ ] Complete flags
+- [ ] Further stages (Fuzz, Scan, Attack)
+- [ ] More customize
+- [ ] Setup check and show status
+- [ ] Single target mode
+- [ ] More push notifications (Telegram, ...)
+- [ ] NoSQL support
+
