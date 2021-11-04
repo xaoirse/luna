@@ -1,16 +1,16 @@
 
 # Luna 
-Standalone Binary, Async, and Muti Database Support 
+Standalone Binary, Async, and SQL and NoSql Database Support 
 
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.1.1
+  / / / / / / |/ / _ |  v0.2.0
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
 ```
 - Luna can run scripts and collect results (now luna can only run asset finders scripts and collect subdomains and ips) and push them to Database, File, and Discord channel (optional)
-- Luna Supports PostgreSQL, MySQL, SQLite, and MSSQL.
+- Luna Supports PostgreSQL, MySQL, SQLite, MSSQL and Mongodb.
 - Luna creates a wordlist from the results of every Run.
 
 ## Simple Using
@@ -104,5 +104,10 @@ SUBCOMMANDS:
 - [ ] Setup check and show status
 - [ ] Single target mode
 - [ ] More push notifications (Telegram, ...)
-- [ ] NoSQL support
+- [+] NoSQL support
 
+google dork 
+censys
+## Bugs
+- paths
+- -f

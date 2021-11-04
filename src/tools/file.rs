@@ -1,6 +1,54 @@
-use crate::alert;
+use crate::alert::Alert;
 use std::io::SeekFrom;
 use std::io::{Read, Seek, Write};
+
+type Data = std::collections::HashMap<String, Vec<String>>;
+trait Merge {
+    fn commands(self, file_name: &str) -> Vec<String>;
+}
+impl Merge for Data {
+    fn commands(self, file_name: &str) -> Vec<String> {
+        let path = match crate::env::get("PATH") {
+            Some(path) => format!("{}/{}", path, file_name),
+            None => file_name.to_string(),
+        };
+        let file = std::fs::read_to_string(path).unwrap();
+
+        // Extract command lines
+        let mut vec = vec![];
+        for line in file.lines() {
+            if !line.is_empty() && !line.trim().starts_with("#") {
+                vec.push(line.to_string());
+            }
+        }
+
+        // Replace with data
+        let commands = replace(vec, self);
+
+        commands
+    }
+}
+
+fn replace(vec: Vec<String>, data: Data) -> Vec<String> {
+    let mut tmp: Vec<String> = vec![];
+    for v in vec {
+        replace_recercive(v.to_string(), &mut tmp, &data);
+    }
+    tmp
+}
+
+fn replace_recercive(str: String, vec: &mut Vec<String>, data: &Data) {
+    for (n, v) in data {
+        if str.contains(n) {
+            for i in v {
+                let tmp = str.replace(n, i);
+                replace_recercive(tmp.clone(), vec, &data);
+            }
+            return;
+        }
+    }
+    vec.push(str);
+}
 
 pub fn save(file_name: &str, text: &str) {
     let path = match crate::env::get("PATH") {
@@ -35,9 +83,7 @@ pub fn save(file_name: &str, text: &str) {
 
             file.write(text.as_bytes()).unwrap();
         }
-        Err(err) => {
-            alert::nok(&err.to_string());
-        }
+        Err(err) => err.error(),
     }
 }
 
@@ -56,15 +102,15 @@ pub fn _exists(file_name: &str, text: &str) -> bool {
             file.read_to_string(&mut f).unwrap();
             for l in f.lines() {
                 if l == text {
-                    alert::found(format!("{}/{}", path, file_name));
+                    format!("{}/{}", path, file_name).found();
                     return true;
                 }
             }
-            alert::nfound(format!("{}/{}", path, file_name));
+            format!("{}/{}", path, file_name).not_found();
             false
         }
         Err(err) => {
-            alert::nok(&err.to_string());
+            err.error();
             false
         }
     }

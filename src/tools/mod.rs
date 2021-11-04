@@ -1,42 +1,45 @@
-pub mod assetsfinder;
+pub mod extractor;
 pub mod file;
 
-pub type Data = std::collections::HashMap<String, Vec<String>>;
+use async_trait::async_trait;
+use std::process::Command;
 
-pub fn parse_file(path: &str, data: Data) -> Vec<String> {
-    let file = std::fs::read_to_string(path).unwrap();
+use crate::alert::Alert;
+use crate::model;
+use extractor::{Extractor, Save};
 
-    // Extract command lines
-    let mut vec = vec![];
-    for line in file.lines() {
-        if !line.is_empty() && !line.trim().starts_with("#") {
-            vec.push(line.to_string());
-        }
+trait ToString {
+    fn to_string(self) -> String;
+}
+impl ToString for Vec<u8> {
+    fn to_string(self) -> String {
+        String::from_utf8(self).unwrap()
     }
-
-    // Replace with data
-    let commands = replace(vec, data);
-
-    commands
 }
 
-pub fn replace(vec: Vec<String>, data: Data) -> Vec<String> {
-    let mut tmp: Vec<String> = vec![];
-    for v in vec {
-        replace_recercive(v.to_string(), &mut tmp, &data);
-    }
-    tmp
+#[async_trait]
+pub trait UpdateAssets {
+    async fn update_assets(&self);
 }
+#[async_trait]
+impl UpdateAssets for model::mongo::Scope {
+    async fn update_assets(&self) {
+        let mut results = Vec::new();
 
-fn replace_recercive(str: String, vec: &mut Vec<String>, data: &Data) {
-    for (n, v) in data {
-        if str.contains(n) {
-            for i in v {
-                let tmp = str.replace(n, i);
-                replace_recercive(tmp.clone(), vec, &data);
-            }
-            return;
-        }
+        // Data for replace with $keywords in commands
+        let mut data = std::collections::HashMap::new();
+        data.insert("$domain".to_string(), vec![self.asset.clone()]);
+
+        data.commands().iter().for_each(|command| {
+            // Run command and print stderr if isn't empty
+            let std = Command::new("sh").arg("-c").arg(command).output().unwrap();
+            std.stderr.to_string().error();
+            // For debug
+            // std.stdout.clone().ok();
+
+            // Extract all subdomains from stdout with regex
+            results.append(&mut std.stdout.to_string().subdomains());
+        });
+        results.save(self.asset.clone()).await;
     }
-    vec.push(str);
 }

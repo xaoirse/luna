@@ -1,13 +1,25 @@
 // Luna project is a web hunting app
 // Developed by SAoirse
+// xaoirse.github.com
 
 mod alert;
-mod cmd;
 mod env;
 mod model;
+mod tests;
 mod tools;
+use colored::Colorize;
+
+static BANNER: &str = r"
+   __  __  ___  _____ 
+  / / / / / / |/ / _ |  v0.2.0
+ / /_/ /_/ /    / __ |        
+/____|____/_/|_/_/ |_|  SA    
+
+";
 
 #[tokio::main]
 async fn main() {
-    cmd::start().await;
+    println!("{}", BANNER.blue());
+
+    model::from_args().await;
 }

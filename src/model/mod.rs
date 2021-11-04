@@ -1,55 +1,40 @@
-use orm::orm;
-use sqlx::{any::AnyQueryResult, Any, Error, Pool};
+use crate::env;
+pub mod mongo;
+pub mod sql;
+pub use crate::alert::Alert;
 
-// TODO trait with async fn
+pub async fn get_db_url() -> String {
+    let path = match env::get("PATH") {
+        Some(path) => path,
+        None => ".".to_string(),
+    };
 
-#[derive(orm, sqlx::FromRow)]
-pub struct Domain {
-    #[unique]
-    pub name: String,
-    pub at: i64,
+    let url = match env::get("DATABASE") {
+        Some(db_url) => db_url,
+        None => {
+            "No database detected!\nLuna will use in-memeory sqlite luna.db".warn();
+            std::fs::OpenOptions::new()
+                .write(true)
+                .read(true)
+                .create(true)
+                .open(format!("{}/{}", path, "luna.db"))
+                .unwrap();
+            format!("sqlite://{}/{}", path, "luna.db")
+        }
+    };
+    url
 }
 
-#[derive(orm, sqlx::FromRow, Debug)]
-pub struct Subdomain {
-    #[unique]
-    pub name: String,
-    #[unique]
-    pub ip: String,
-    pub at: i64,
-}
+pub async fn from_args() {
+    let url = get_db_url().await;
 
-#[derive(orm, sqlx::FromRow)]
-pub struct Word {
-    #[unique]
-    pub name: String,
-    pub domain: String,
-    pub at: i64,
+    if url.starts_with("sql") {
+        sql::action_from_args().await;
+    } else if url.starts_with("mongodb") {
+        use structopt::StructOpt;
+        let opt = mongo::Opt::from_args();
+        mongo::action_from_args(opt).await;
+    } else {
+        panic!("invalid Database url")
+    }
 }
-
-// TODO some test that domain table has its fields
-pub async fn init(pool: &Pool<Any>) {
-    Domain::init(&pool).await.unwrap();
-    Subdomain::init(&pool).await.unwrap();
-    Word::init(&pool).await.unwrap();
-}
-
-pub fn _utc_days_ago() -> String {
-    "".to_string()
-}
-
-// The code that i wrote it
-//
-// type Conn = Result<AnyConnection, sqlx::Error>;
-// pub async fn add<'q, E, D>(conn: &mut Conn, query: E)
-// where
-//     D: sqlx::Database,
-//     E: sqlx::Execute<'q, D> + sqlx::Execute<'q, sqlx::Any> + 'q,
-// {
-//     if let Ok(conn) = conn {
-//         match conn.execute(query).await {
-//             Ok(_) => (),
-//             Err(_) => (),
-//         }
-//     }
-// }

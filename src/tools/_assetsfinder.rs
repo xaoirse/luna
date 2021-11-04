@@ -1,12 +1,72 @@
+use async_trait::async_trait;
 use std::process::Command;
 
-use crate::alert;
-use crate::model;
-use crate::tools::parse_file;
-
+use super::extractor::{Extractor, Save};
 use super::file::save;
+use crate::alert::Alert;
+use crate::model;
+use crate::tools::Merge;
+trait ToString {
+    fn to_string(self) -> String;
+}
+impl ToString for Vec<u8> {
+    fn to_string(self) -> String {
+        String::from_utf8(self).unwrap()
+    }
+}
 
-pub async fn run(conn: &sqlx::Pool<sqlx::Any>, path: &str, domains: Vec<model::Domain>) {
+#[async_trait]
+pub trait UpdateAssets {
+    async fn update_assets(&self);
+}
+#[async_trait]
+impl UpdateAssets for model::mongo::Scope {
+    async fn update_assets(&self) {
+        let mut results = Vec::new();
+
+        // Data for replace with $keywords in commands
+        let mut data: super::Data = std::collections::HashMap::new();
+        data.insert("$domain".to_string(), vec![self.asset.clone()]);
+
+        data.commands().iter().for_each(|command| {
+            // Run command and print stderr if isn't empty
+            let std = Command::new("sh").arg("-c").arg(command).output().unwrap();
+            std.stderr.to_string().error();
+            // For debug
+            // std.stdout.clone().ok();
+
+            // Extract all subdomains from stdout with regex
+            results.append(&mut std.stdout.to_string().subdomains());
+        });
+        results.save(self.asset.clone()).await;
+    }
+}
+
+/*
+pub fn subdomains_from_text(text: String) -> Vec<(String, String)> {
+    let mut subdomains = vec![];
+    let regex =
+        r"((?:[0-9\-a-z]+\.)+[a-z]+)(?:$|[\D\W]+)((?:[0-9]{1,3}\.){3}[0-9]{1,3})?(?:$|[\D\W\s])";
+    let re = regex::RegexBuilder::new(&regex)
+        .multi_line(true)
+        .build()
+        .unwrap();
+    for text in text.lines() {
+        for v in re.captures_iter(&text) {
+            let name = v[1].to_string();
+            let ip = match &v.get(2) {
+                Some(m) => m.as_str().to_string(),
+                None => "".to_string(),
+            };
+            subdomains.push((name, ip));
+        }
+    }
+
+    subdomains
+}
+
+
+pub async fn _run(conn: &sqlx::Pool<sqlx::Any>, path: &str, domains: Vec<model::sql::Domain>) {
     // Map domains to their names
     let domains = domains.into_iter().map(|f| f.name).collect::<Vec<String>>();
 
@@ -29,23 +89,23 @@ pub async fn run(conn: &sqlx::Pool<sqlx::Any>, path: &str, domains: Vec<model::D
         // Save new subdomains and update wordlist in database and file
         for sd in subdomains {
             match sd.save(conn).await {
-                Ok(_) => {
+                true => {
                     save("results.txt", &sd.to_string());
                     alert::push(sd.to_string()).await;
                 }
-                Err(_) => (),
+                false => (),
             }
             for word in sd.name.split(".") {
-                let w = model::Word {
+                let w = model::sql::Word {
                     name: word.to_string(),
                     domain: sd.name.to_string(),
                     at: chrono::Utc::now().timestamp(),
                 };
                 match w.save(conn).await {
-                    Ok(_) => {
+                    true => {
                         save("wl.txt", &w.name.to_string());
                     }
-                    Err(_) => (),
+                    false => (),
                 };
             }
         }
@@ -96,7 +156,8 @@ pub async fn run(conn: &sqlx::Pool<sqlx::Any>, path: &str, domains: Vec<model::D
     }
 }
 
-pub fn subdomains_from_text(text: String) -> Vec<model::Subdomain> {
+
+pub fn _subdomains_from_text(text: String) -> Vec<model::sql::Subdomain> {
     let mut subdomains = vec![];
     let regex =
         r"((?:[0-9\-a-z]+\.)+[a-z]+)(?:$|[\D\W]+)((?:[0-9]{1,3}\.){3}[0-9]{1,3})?(?:$|[\D\W\s])";
@@ -111,7 +172,7 @@ pub fn subdomains_from_text(text: String) -> Vec<model::Subdomain> {
                 Some(m) => m.as_str().to_string(),
                 None => "".to_string(),
             };
-            subdomains.push(model::Subdomain {
+            subdomains.push(model::sql::Subdomain {
                 name,
                 ip,
                 at: chrono::Utc::now().timestamp(),
@@ -143,3 +204,4 @@ pub async fn _scan() {
     }
     let _ = futures::future::join_all(handles).await;
 }
+*/
