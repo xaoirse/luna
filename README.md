@@ -13,7 +13,7 @@ Automatic script runner
 - Luna Supports PostgreSQL, MySQL, SQLite, MSSQL and Mongodb (For now mongodb is preferred).
 - (Not now) Luna creates a wordlist from the results of every Run.
 
-- لونا در حال حاظر میتونه برای مجموعه ای از دامنه هایی که تو دیتابیسش هست یه سری اسکریپت رو اجرا کنه و مهمتر از اون نتایجش رو با ریجکس استخراج کنه و توی دیتابیس ذخیره کنه (البته هنوز خیلی چیزای دیگه قراره بهش اضافه بشه. اگه ایده ای تو پیاده سازیش داشتید خوشحال میشم در میون بزارید
+- لونا در حال حاظر میتونه برای مجموعه ای از دامنه هایی که تو دیتابیسش هست یه سری اسکریپت رو اجرا کنه و مهمتر از اون نتایجش رو با ریجکس استخراج کنه و توی دیتابیس ذخیره کنه (البته هنوز خیلی چیزای دیگه قراره بهش اضافه بشه. اگه ایده ای تو پیاده سازیش داشتید خوشحال میشم در میون بذارید
 
 
 ## Simple Using
@@ -34,7 +34,7 @@ PATH = .
 DISCORD = https://discord.com/api/webhooks/***
 ```
 2. insert scopes:  
-`luna insert scope domain -a target1.com`  
+`luna insert scope -a target1.com`  
 3. run script:  
 `luna script -s script.sh --all-scopes `
 

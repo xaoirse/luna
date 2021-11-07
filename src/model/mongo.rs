@@ -418,7 +418,7 @@ pub async fn action_from_args(opt: Opt) {
                 )
                 .await
                 .into_iter()
-                .filter_map(|h| h)
+                .flatten()
                 .map(|h| h.sub.push()),
             )
             .await;

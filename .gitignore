@@ -1,8 +1,5 @@
 /target
-/domains.txt
-/subdomains.txt
-/wl.txt
+wl.txt
 /tools
 *.db*
-/luna
-luna.ini
+luna*
