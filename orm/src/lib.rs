@@ -251,7 +251,7 @@ pub fn mongorm(input: TokenStream) -> TokenStream {
                         _ => false,
                     })
                     .map(|f| {
-                        let ty = match &f.ty {
+                        let _ty = match &f.ty {
                             Type::Path(type_path) => {
                                 match type_path.path.segments.first().unwrap().arguments.clone() {
                                     syn::PathArguments::AngleBracketed(t) => {
@@ -317,7 +317,7 @@ pub fn mongorm(input: TokenStream) -> TokenStream {
                             if name.contains("update") {
                                 update = quote! {self.update = Some(DateTime::now());};
                             } else if name.contains("start") {
-                                start = quote! {else {self.started_at = Some(DateTime::now());}}
+                                start = quote! {self.started_at = Some(DateTime::now());}
                             }
                             let field_ident = &f.ident;
                             fields = quote! {#fields #field_ident: Some(DateTime::now()),};
@@ -400,7 +400,9 @@ pub fn mongorm(input: TokenStream) -> TokenStream {
     let output = quote! {
 
         impl #ident {
-            pub async fn update(mut self) {
+            pub async fn update(mut self) -> Option<Self> {
+
+                let mut new = None ;
 
                 // Set options for update query
                 let options = mongodb::options::UpdateOptions::builder()
@@ -419,6 +421,7 @@ pub fn mongorm(input: TokenStream) -> TokenStream {
                 // Edit existed fields
                 if let Some(mut doc) = cursor {
 
+
                     // appends
                     #append
 
@@ -433,7 +436,11 @@ pub fn mongorm(input: TokenStream) -> TokenStream {
                     // self.icon = self.icon.or(doc.icon);
                     // self.bounty = self.bounty.or(doc.bounty);
                     // self.state = self.state.or(doc.state);
-                }  #start
+
+                }else {
+                    new = Some(self.clone());
+                    #start
+                }
 
                 // Update document
                 // update
@@ -462,6 +469,7 @@ pub fn mongorm(input: TokenStream) -> TokenStream {
                 //     .update(options.clone())
                 //     .await;
                 // }
+                new
             }
 
             pub async fn insert(#arg_type){

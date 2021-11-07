@@ -1,12 +1,11 @@
-pub mod extractor;
-pub mod file;
+mod extractor;
+mod file;
 
-use async_trait::async_trait;
-use std::process::Command;
+use std::{collections::HashMap, process::Command};
 
 use crate::alert::Alert;
-use crate::model;
-use extractor::{Extractor, Save};
+use extractor::Extractor;
+use file::Commands;
 
 trait ToString {
     fn to_string(self) -> String;
@@ -17,29 +16,43 @@ impl ToString for Vec<u8> {
     }
 }
 
-#[async_trait]
-pub trait UpdateAssets {
-    async fn update_assets(&self);
-}
-#[async_trait]
-impl UpdateAssets for model::mongo::Scope {
-    async fn update_assets(&self) {
-        let mut results = Vec::new();
-
-        // Data for replace with $keywords in commands
-        let mut data = std::collections::HashMap::new();
-        data.insert("$domain".to_string(), vec![self.asset.clone()]);
-
-        data.commands().iter().for_each(|command| {
-            // Run command and print stderr if isn't empty
+pub fn run<T>(key_vals: HashMap<String, Vec<String>>, script_name: &str, pattern: &str) -> Vec<T>
+where
+    T: for<'a> From<regex::Captures<'a>>,
+{
+    key_vals
+        .commands(script_name)
+        .iter()
+        .map(|command| {
             let std = Command::new("sh").arg("-c").arg(command).output().unwrap();
             std.stderr.to_string().error();
-            // For debug
-            // std.stdout.clone().ok();
 
-            // Extract all subdomains from stdout with regex
-            results.append(&mut std.stdout.to_string().subdomains());
-        });
-        results.save(self.asset.clone()).await;
-    }
+            // std.stdout.clone().to_string().simple(); // For debug
+
+            std.stdout.to_string()
+        })
+        .collect::<String>()
+        .extract::<T>(pattern)
 }
+
+// pub async fn _scan() {
+//     let urls = std::fs::read_to_string("urls.txt").unwrap();
+//     let mut handles = Vec::new();
+//     for url in urls.lines() {
+//         let url = url.to_string();
+//         let handle = tokio::spawn(async move {
+//             let client = reqwest::Client::builder().build().unwrap();
+//             match client.get(format!("http://{}", url)).send().await {
+//                 Ok(resp) => alert::_ok(format!(
+//                     "{} {} {}",
+//                     resp.status(),
+//                     resp.content_length().unwrap_or(0),
+//                     resp.url().to_string()
+//                 )),
+//                 Err(_) => alert::nok(url.to_string()),
+//             }
+//         });
+//         handles.push(handle)
+//     }
+//     let _ = futures::future::join_all(handles).await;
+// }

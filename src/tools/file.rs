@@ -3,10 +3,10 @@ use std::io::SeekFrom;
 use std::io::{Read, Seek, Write};
 
 type Data = std::collections::HashMap<String, Vec<String>>;
-trait Merge {
+pub trait Commands {
     fn commands(self, file_name: &str) -> Vec<String>;
 }
-impl Merge for Data {
+impl Commands for Data {
     fn commands(self, file_name: &str) -> Vec<String> {
         let path = match crate::env::get("PATH") {
             Some(path) => format!("{}/{}", path, file_name),
@@ -15,17 +15,14 @@ impl Merge for Data {
         let file = std::fs::read_to_string(path).unwrap();
 
         // Extract command lines
-        let mut vec = vec![];
-        for line in file.lines() {
-            if !line.is_empty() && !line.trim().starts_with("#") {
-                vec.push(line.to_string());
-            }
-        }
+        let vec = file
+            .lines()
+            .filter(|line| !line.is_empty() && !line.trim().starts_with("#"))
+            .map(|line| line.to_string())
+            .collect();
 
         // Replace with data
-        let commands = replace(vec, self);
-
-        commands
+        replace(vec, self)
     }
 }
 
@@ -50,7 +47,7 @@ fn replace_recercive(str: String, vec: &mut Vec<String>, data: &Data) {
     vec.push(str);
 }
 
-pub fn save(file_name: &str, text: &str) {
+pub fn _save(file_name: &str, text: &str) {
     let path = match crate::env::get("PATH") {
         Some(path) => path,
         None => "luna".to_string(),

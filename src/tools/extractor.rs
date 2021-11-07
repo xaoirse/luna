@@ -1,43 +1,37 @@
-use async_trait::async_trait;
+use crate::model::mongo::Host;
+use std::convert::From;
 
-type DomainIps = Vec<(String, String)>;
-
-#[async_trait]
-pub trait Save {
-    async fn save(self, scope: String);
-}
-#[async_trait]
-impl Save for DomainIps {
-    async fn save(mut self, scope: String) {
-        self.sort();
-        self.dedup();
-        // TODO
+impl<'t> From<regex::Captures<'t>> for Host {
+    fn from(cap: regex::Captures<'t>) -> Self {
+        Host {
+            sub: cap
+                .get(1)
+                .map_or("".to_string(), |m| m.as_str().to_string()),
+            ip: cap
+                .get(2)
+                .map_or("".to_string(), |m| m.as_str().to_string()),
+            services: vec![],
+            update: None,
+        }
     }
 }
 
+// https://doc.rust-lang.org/nomicon/hrtb.html
 pub trait Extractor {
-    fn subdomains(self) -> DomainIps;
+    fn extract<T>(self, pattern: &str) -> Vec<T>
+    where
+        T: for<'a> From<regex::Captures<'a>>;
 }
 impl Extractor for String {
-    fn subdomains(self) -> DomainIps {
-        let text = self.to_string();
-        let mut subdomains = vec![];
-        let regex = r"((?:[0-9\-a-z]+\.)+[a-z]+)(?:$|[\D\W]+)((?:[0-9]{1,3}\.){3}[0-9]{1,3})?(?:$|[\D\W\s])";
-        let re = regex::RegexBuilder::new(&regex)
+    fn extract<T>(self, pattern: &str) -> Vec<T>
+    where
+        T: for<'a> From<regex::Captures<'a>>,
+    {
+        let re = regex::RegexBuilder::new(pattern)
             .multi_line(true)
             .build()
             .unwrap();
-        for text in text.lines() {
-            for v in re.captures_iter(&text) {
-                let name = v[1].to_string();
-                let ip = match &v.get(2) {
-                    Some(m) => m.as_str().to_string(),
-                    None => "".to_string(),
-                };
-                subdomains.push((name, ip));
-            }
-        }
 
-        subdomains
+        re.captures_iter(&self).map(|c| c.into()).collect()
     }
 }

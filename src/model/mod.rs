@@ -1,3 +1,5 @@
+use structopt::StructOpt;
+
 use crate::env;
 pub mod mongo;
 pub mod sql;
@@ -31,7 +33,6 @@ pub async fn from_args() {
     if url.starts_with("sql") {
         sql::action_from_args().await;
     } else if url.starts_with("mongodb") {
-        use structopt::StructOpt;
         let opt = mongo::Opt::from_args();
         mongo::action_from_args(opt).await;
     } else {

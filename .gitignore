@@ -4,3 +4,5 @@
 /wl.txt
 /tools
 *.db*
+/luna
+luna.ini

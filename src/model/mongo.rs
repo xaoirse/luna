@@ -5,12 +5,16 @@ use mongodb::{
 };
 
 // This trait is required to use `try_next()` on the cursor
+use clap::arg_enum;
 use futures::stream::TryStreamExt;
 use mongodb::options::FindOptions;
 use serde::{Deserialize, Serialize};
-
-use clap::arg_enum;
 use structopt::StructOpt;
+
+use crate::{
+    model::Alert,
+    tools::{self},
+};
 
 arg_enum! {
     #[derive(Debug, Serialize, Deserialize, StructOpt,Clone,PartialEq, Eq)]
@@ -159,7 +163,9 @@ pub struct Service {
     #[structopt(short, long)]
     pub banner: Option<String>,
 }
-#[derive(Debug, Serialize, Deserialize, StructOpt, orm::mongorm, Clone, PartialEq, Eq)]
+#[derive(
+    Debug, Serialize, Deserialize, StructOpt, orm::mongorm, Clone, PartialEq, Eq, PartialOrd, Ord,
+)]
 pub struct Host {
     #[structopt(short, long)]
     pub ip: String,
@@ -208,7 +214,7 @@ pub struct URL {
 }
 
 arg_enum! {
-    #[derive(Debug, Serialize, Deserialize, StructOpt)]
+    #[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
     pub enum JobState {
         New,
         DataGathering,
@@ -219,10 +225,10 @@ arg_enum! {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, StructOpt, orm::mongorm)]
+#[derive(Debug, Serialize, Deserialize, StructOpt, orm::mongorm, Clone)]
 pub struct Job {
     // TODO write help for all fields
-    #[structopt(short, long, help = "Task's name")]
+    #[structopt(short, long, help = "Task's name\nNot implemented yet!")]
     task: String,
 
     #[structopt(short, long)]
@@ -257,6 +263,18 @@ pub struct Job {
 }
 
 #[derive(Debug, StructOpt)]
+pub enum Insert {
+    Program(Program),
+    Scope(Scope),
+    Sub(Sub),
+    Host(Host),
+    URL(URL),
+    Service(Service),
+    Tech(Tech),
+    Job(Job),
+}
+
+#[derive(Debug, StructOpt)]
 #[structopt(about = "The Moon Rider has arrived.\nmongodb")]
 pub struct Opt {
     // #[structopt(short, long, help = "mysql://example.com/test")]
@@ -273,18 +291,14 @@ pub enum Subcommand {
         limit: Option<String>,
         sort: Option<String>,
     },
-}
-
-#[derive(Debug, StructOpt)]
-pub enum Insert {
-    Program(Program),
-    Scope(Scope),
-    Sub(Sub),
-    Host(Host),
-    URL(URL),
-    Service(Service),
-    Tech(Tech),
-    Job(Job),
+    Script {
+        #[structopt(short, long)]
+        script: String,
+        #[structopt(short, long)]
+        domains: Vec<String>,
+        #[structopt(short, long)]
+        all_scopes: bool,
+    },
 }
 
 pub async fn get_db() -> Database {
@@ -345,46 +359,69 @@ pub async fn action_from_args(opt: Opt) {
             filter,
             limit,
             sort,
-        } => {
-            // let filter = filter.unwrap_or("{}".to_string()).replace("'", "\"");
-            // let limit = limit.unwrap_or("-1".to_string()).parse::<i64>().unwrap();
-            // let sort = sort.unwrap_or("{}".to_string());
-
-            match ty.as_str() {
-                "program" => {
-                    println!("{:#?}", Program::find(filter, limit, sort).await);
-                }
-                "scope" => {
-                    println!("{:#?}", Scope::find(filter, limit, sort).await);
-                }
-                _ => (),
+        } => match ty.as_str() {
+            "program" => {
+                println!("{:#?}", Program::find(filter, limit, sort).await);
             }
+            "scope" => {
+                println!("{:#?}", Scope::find(filter, limit, sort).await);
+            }
+            "sub" => {
+                println!("{:#?}", Sub::find(filter, limit, sort).await);
+            }
+            "host" => {
+                println!("{:#?}", Host::find(filter, limit, sort).await);
+            }
+            "url" => {
+                println!("{:#?}", URL::find(filter, limit, sort).await);
+            }
+            "service" => {
+                println!("{:#?}", Service::find(filter, limit, sort).await);
+            }
+            "tech" => {
+                println!("{:#?}", Tech::find(filter, limit, sort).await);
+            }
+            "job" => {
+                format!("I'm not sure about implementing this for now").warn();
+            }
+            typ => format!("Strut '{}' not found!", typ).error(),
+        },
+
+        Subcommand::Script {
+            script,
+            domains,
+            all_scopes,
+        } => {
+            let host_pattern = r"((?:[0-9\-a-z]+\.)+[a-z]+)(?:$|[\D\W]+)((?:[0-9]{1,3}\.){3}[0-9]{1,3})?(?:$|[\D\W\s])";
+
+            // key_vals for replace with $keywords in commands
+            let mut key_vals = std::collections::HashMap::new();
+
+            if all_scopes {
+                key_vals.insert(
+                    "$domain".to_string(),
+                    Scope::find(None, None, None)
+                        .await
+                        .into_iter()
+                        .map(|s| s.asset)
+                        .collect(),
+                );
+            } else {
+                key_vals.insert("$domain".to_string(), domains);
+            }
+
+            futures::future::join_all(
+                futures::future::join_all(
+                    tools::run::<Host>(key_vals, script.as_str(), host_pattern)
+                        .into_iter()
+                        .map(|h| h.update()),
+                )
+                .await
+                .into_iter()
+                .filter_map(|h| h)
+                .map(|h| h.sub.push()),
+            )
+            .await;
         }
     }
-
-    // let query = doc! {"title":"mia"};
-    // let doc = doc! {"$set":{"year":3333}};
-    // typed_collection.update_one(query, b, opt).await.unwrap();
-
-    // Insert the books into "mydb.books" collection, no manual conversion to BSON necessary.
-    // typed_collection.update_many(query, doc, opt).await.unwrap();
-
-    // // let str = "author.name";
-    // let doc: Document = serde_json::from_str(r#"{"author.name": "mia","title":"vlog"}"#).unwrap();
-    // // let bs = mongodb::bson::to_document(b"'author.name':'mia'").unwrap();
-    // // Query the books in the collection with a filter and an option.
-    // let _filter = doc! { "author.name": "mia","title":"vlog" };
-    // let find_options = FindOptions::builder().sort(doc! { "title": 1 }).build();
-    // let mut cursor = db
-    //     .collection::<Document>("books")
-    //     .find(doc, find_options)
-    //     .await
-    //     .unwrap();
-
-    // // Iterate over the results of the cursor.
-    // while let Some(book) = cursor.try_next().await.unwrap() {
-    //     let id = book.get_object_id("_id");
-    //     println!("{}", id.unwrap());
-    //     println!("year: {}", book.get_str("title").unwrap_or("666"));
-    // }
 }

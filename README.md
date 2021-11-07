@@ -1,6 +1,6 @@
 
 # Luna 
-Standalone Binary, Async, and SQL and NoSql Database Support 
+Automatic script runner
 
 ```
    __  __  ___  _____ 
@@ -9,32 +9,34 @@ Standalone Binary, Async, and SQL and NoSql Database Support
 /____|____/_/|_/_/ |_|  SA    
 
 ```
-- Luna can run scripts and collect results (now luna can only run asset finders scripts and collect subdomains and ips) and push them to Database, File, and Discord channel (optional)
-- Luna Supports PostgreSQL, MySQL, SQLite, MSSQL and Mongodb.
-- Luna creates a wordlist from the results of every Run.
+- Luna can run any bunch of bash scripts and collect results and save them to Database and send the new one's to a Discord channel (optional) [in this version Luna only captures domain-IP and saves them to Database, You can look at data structures in source code ]
+- Luna Supports PostgreSQL, MySQL, SQLite, MSSQL and Mongodb (For now mongodb is preferred).
+- (Not now) Luna creates a wordlist from the results of every Run.
+
+- لونا در حال حاظر میتونه برای مجموعه ای از دامنه هایی که تو دیتابیسش هست یه سری اسکریپت رو اجرا کنه و مهمتر از اون نتایجش رو با ریجکس استخراج کنه و توی دیتابیس ذخیره کنه (البته هنوز خیلی چیزای دیگه قراره بهش اضافه بشه. اگه ایده ای تو پیاده سازیش داشتید خوشحال میشم در میون بزارید
+
 
 ## Simple Using
 
-create this files:
+1. create this files:  
 
 script.sh:
 ```bash
 amass enum -active  -d $domain -config config.ini -ip -o amass.results -dir amass
 subfinder -d $domain -silent
 gobuster dns -d  $domain -r ns1.$domain -w wl.txt -qi
-
+...
 ```
-
 luna.ini:
 ```ini
-DATABASE = mysql://example.com/test
+DATABASE = mongodb://example.com/test
 PATH = .
 DISCORD = https://discord.com/api/webhooks/***
 ```
-`luna domain -a target1.com`  
-`luna domain -a target2.com`  
-`luna domain -s script.sh`  
-
+2. insert scopes:  
+`luna insert scope domain -a target1.com`  
+3. run script:  
+`luna script -s script.sh --all-scopes `
 
 
 ## Installation   
@@ -49,65 +51,42 @@ For building statically linked rust binary [read this link](https://blog.davidva
 ## Usage
 
 ```
+luna 0.2.0
+The Moon Rider has arrived.
+mongodb
+
 USAGE:
-    luna [OPTIONS] [url] [SUBCOMMAND]
+    luna <SUBCOMMAND>
 
 FLAGS:
-    -h, --help
-            Print help information
-
+    -h, --help       Prints help information
     -V, --version
-            Print version
-            information
+            Prints version information
 
-OPTIONS:
-    
-    -d, --db-url <DATABASE-URL>
-            Sets database url
-            Example:
-            
-            postgres://postgres@localhost/test
-             sqlite://a.sqlite
-             sqlite::memory:
-             sqlite:data.db
-             sqlite://data.db
-             sqlite:///data.db
-            
-            sqlite://data.db?mode=ro
 
 SUBCOMMANDS:
-    domain
-            Controls domains
-    help
-            Print this message or
-            the help of the given
-            subcommand(s)
-    subdomain
-            Controls subdomains
-    word
-            Controls wordlist
+    find      
+    help      Prints this message or the
+              help of the given
+              subcommand(s)
+    insert    
+    script    
 ```
    
 
 ## Built With
 - **Tokio**: A powerfull runtime for writing reliable, **asynchronous**, and slim applications with the Rust programming language
-- **SQLx**: An async, pure Rust SQL crate
 - **orm**: A self made library for easy developing using macros in Rust
 - ...
 
 
-## Roadmap
-- [ ] cli.yaml
-- [ ] Tests
-- [ ] Further stages (Fuzz, Scan, Attack)
-- [ ] More customize
-- [ ] Setup check and show status
-- [ ] Single target mode
+## TODO
+- [ ] Custome regexes for captures all structs
+- [ ] More Custome keywords in scripts
 - [ ] More push notifications (Telegram, ...)
 - [+] NoSQL support
-
-google dork 
-censys
-## Bugs
-- paths
-- -f
+- [ ] cli.yaml
+- [ ] Tests
+- [ ] More customize
+- [ ] Setup check and show status
+- [ ] Documents

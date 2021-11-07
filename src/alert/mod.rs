@@ -1,30 +1,44 @@
+use async_trait::async_trait;
 use colored::Colorize;
 use std::fmt::Display;
+
+#[async_trait]
 pub trait Alert {
+    fn simple(&self);
     fn ok(&self);
     fn error(&self);
     fn warn(&self);
     fn found(&self);
     fn not_found(&self);
-    fn push(&self);
+    async fn push(self);
 }
 
+#[async_trait]
 impl<T> Alert for T
 where
-    T: Display,
+    T: Display + Send,
 {
-    fn error(&self) {
+    fn simple(&self) {
         let text = self.to_string();
         let text = text.trim();
         if !text.is_empty() {
-            println!("{} {}", "[-]".red(), text.red())
+            println!("{}", text)
         }
     }
+
     fn ok(&self) {
         let text = self.to_string();
         let text = text.trim();
         if !text.is_empty() {
             println!("{} {}", "[+]".green(), text.to_string().green())
+        }
+    }
+
+    fn error(&self) {
+        let text = self.to_string();
+        let text = text.trim();
+        if !text.is_empty() {
+            println!("{} {}", "[-]".red(), text.red())
         }
     }
 
@@ -50,25 +64,23 @@ where
         }
     }
 
-    fn push(&self) {
+    async fn push(self) {
         let text = self.to_string();
         let text = text.trim();
         if !text.is_empty() {
-            tokio::runtime::Runtime::new().unwrap().block_on(async {
-                if let Some(url) = crate::env::get("DISCORD") {
-                    let cli = reqwest::Client::builder().build().unwrap();
-                    match cli
-                        .post(url)
-                        .header("Content-Type", "application/json")
-                        .body(format!(r#"{{"username": "Luna", "content": "{}"}}"#, text))
-                        .send()
-                        .await
-                    {
-                        Ok(_) => (),
-                        Err(err) => err.error(),
-                    };
-                }
-            });
+            if let Some(url) = crate::env::get("DISCORD") {
+                let cli = reqwest::Client::builder().build().unwrap();
+                match cli
+                    .post(url)
+                    .header("Content-Type", "application/json")
+                    .body(format!(r#"{{"username": "Luna", "content": "{}"}}"#, text))
+                    .send()
+                    .await
+                {
+                    Ok(_) => (),
+                    Err(err) => err.error(),
+                };
+            }
         }
     }
 }

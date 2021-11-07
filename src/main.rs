@@ -1,4 +1,4 @@
-// Luna project is a web hunting app
+// Luna
 // Developed by SAoirse
 // xaoirse.github.com
 
