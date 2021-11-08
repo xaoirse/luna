@@ -84,7 +84,7 @@ SUBCOMMANDS:
 - [ ] Custome regexes for captures all structs
 - [ ] More Custome keywords in scripts
 - [ ] More push notifications (Telegram, ...)
-- [*] NoSQL support
+- [x] NoSQL support
 - [ ] cli.yaml
 - [ ] Tests
 - [ ] More customize
