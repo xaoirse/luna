@@ -1,10 +1,9 @@
-mod extractor;
+pub mod extractor;
 mod file;
 
 use std::{collections::HashMap, process::Command};
 
 use crate::alert::Alert;
-use extractor::Extractor;
 use file::Commands;
 
 trait ToString {
@@ -16,10 +15,7 @@ impl ToString for Vec<u8> {
     }
 }
 
-pub fn run<T>(key_vals: HashMap<String, Vec<String>>, script_name: &str, pattern: &str) -> Vec<T>
-where
-    T: for<'a> From<regex::Captures<'a>>,
-{
+pub fn run_script(key_vals: HashMap<String, Vec<String>>, script_name: &str) -> String {
     key_vals
         .commands(script_name)
         .iter()
@@ -32,7 +28,6 @@ where
             std.stdout.to_string()
         })
         .collect::<String>()
-        .extract::<T>(pattern)
 }
 
 // pub async fn _scan() {

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use mongodb::{
     bson::{doc, DateTime, Document},
     options::ClientOptions,
@@ -13,7 +15,7 @@ use structopt::StructOpt;
 
 use crate::{
     model::Alert,
-    tools::{self},
+    tools::{self, extractor::Extractor},
 };
 
 arg_enum! {
@@ -392,11 +394,9 @@ pub async fn action_from_args(opt: Opt) {
             domains,
             all_scopes,
         } => {
-            let host_pattern = r"((?:[0-9\-a-z]+\.)+[a-z]+)(?:$|[\D\W]+)((?:[0-9]{1,3}\.){3}[0-9]{1,3})?(?:$|[\D\W\s])";
-
-            // key_vals for replace with $keywords in commands
-            let mut key_vals = std::collections::HashMap::new();
-
+            // Replace All $keywords in script file
+            // with data in key_vals HashMap
+            let mut key_vals = HashMap::new();
             if all_scopes {
                 key_vals.insert(
                     "$domain".to_string(),
@@ -410,18 +410,31 @@ pub async fn action_from_args(opt: Opt) {
                 key_vals.insert("$domain".to_string(), domains);
             }
 
-            futures::future::join_all(
-                futures::future::join_all(
-                    tools::run::<Host>(key_vals, script.as_str(), host_pattern)
-                        .into_iter()
-                        .map(|h| h.update()),
-                )
-                .await
-                .into_iter()
-                .flatten()
-                .map(|h| h.sub.push()),
-            )
-            .await;
+            // Run commands and run closure for each extracted struct
+            tools::run_script(key_vals, script.as_str())
+                .extract_for_each(|t: Host| async {
+                    t.update().await;
+                })
+                .await;
         }
     }
 }
+
+// async fn run<T>(key_vals: HashMap<String, Vec<String>>, script_name: &str, pattern: &str) {
+//     tools::run(key_vals, script_name, pattern).extract_for_each::<Host, _>(|t| {});
+// }
+
+// async fn run<T>(key_vals: HashMap<String, Vec<String>>, script_name: &str, pattern: &str) {
+//     futures::future::join_all(
+//         futures::future::join_all(
+//             tools::run::<Host>(key_vals, script_name, pattern)
+//                 .into_iter()
+//                 .map(|h| h.update()),
+//         )
+//         .await
+//         .into_iter()
+//         .flatten()
+//         .map(|h| h.sub.push()),
+//     )
+//     .await;
+// }
