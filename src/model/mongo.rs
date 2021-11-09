@@ -463,7 +463,6 @@ pub async fn action_from_args(opt: Opt) {
                         t.update().await;
                     })
                     .await;
-                // BUG its may collects for example all index.html as subdomain
             }
         }
     }

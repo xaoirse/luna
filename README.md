@@ -33,13 +33,13 @@ DATABASE = mongodb://example.com/test
 PATH = .
 DISCORD = https://discord.com/api/webhooks/***
 ```
-2. Insert scopes:  
-`luna insert scope -a target1.com -p myProgram`  
-`luna insert scope -a target2.com -p myProgram` 
-3. Run script:
-`luna script -s script.sh --all-scopes `
-4. Find them:
-`luna find sub "{'scope':'target1.com'}"`
+2. Insert scopes:   
+`luna insert scope -a target1.com -p myProgram`    
+`luna insert scope -a target2.com -p myProgram`   
+3. Run script:  
+`luna script -s script.sh --all-scopes `  
+4. Find them:  
+`luna find sub "{'scope':'target1.com'}"`  
 `luna find host "{'sub':'subdomain.target1.com'}"`
 
 ## Installation   
