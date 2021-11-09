@@ -18,7 +18,7 @@ Automatic script runner
 
 ## Simple Using
 
-1. create this files:  
+1. Create this files:  
 
 script.sh:
 ```bash
@@ -33,11 +33,14 @@ DATABASE = mongodb://example.com/test
 PATH = .
 DISCORD = https://discord.com/api/webhooks/***
 ```
-2. insert scopes:  
-`luna insert scope -a target1.com`  
-3. run script:  
+2. Insert scopes:  
+`luna insert scope -a target1.com -p myProgram`  
+`luna insert scope -a target2.com -p myProgram` 
+3. Run script:
 `luna script -s script.sh --all-scopes `
-
+4. Find them:
+`luna find sub "{'scope':'target1.com'}"`
+`luna find host "{'sub':'subdomain.target1.com'}"`
 
 ## Installation   
 
@@ -79,9 +82,8 @@ SUBCOMMANDS:
 - **orm**: A self made library for easy developing using macros in Rust
 - ...
 
-
 ## TODO
-- [ ] Custome regexes for captures all structs
+- [ ] Better regexes for captures all structs
 - [ ] More Custome keywords in scripts
 - [ ] More push notifications (Telegram, ...)
 - [x] NoSQL support
@@ -90,3 +92,10 @@ SUBCOMMANDS:
 - [ ] More customize
 - [ ] Setup check and show status
 - [ ] Documents
+
+## Need Idea
+- How get more Keyowrds? from config file, commandline, or hardcode?
+- Better Names for structs
+- Better Database structure
+- Regexes are very heavy and take a long time
+

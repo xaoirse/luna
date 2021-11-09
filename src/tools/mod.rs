@@ -1,10 +1,11 @@
-pub mod extractor;
-mod file;
-
+use rayon::prelude::*;
 use std::{collections::HashMap, process::Command};
 
 use crate::alert::Alert;
 use file::Commands;
+
+pub mod extractor;
+mod file;
 
 trait ToString {
     fn to_string(self) -> String;
@@ -15,10 +16,10 @@ impl ToString for Vec<u8> {
     }
 }
 
-pub fn run_script(key_vals: HashMap<String, Vec<String>>, script_name: &str) -> String {
+pub fn run_script(key_vals: &HashMap<&str, Vec<String>>, script_name: &str) -> String {
     key_vals
         .commands(script_name)
-        .iter()
+        .par_iter()
         .map(|command| {
             let std = Command::new("sh").arg("-c").arg(command).output().unwrap();
             std.stderr.to_string().error();

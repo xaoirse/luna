@@ -1,16 +1,17 @@
-use crate::alert::Alert;
-use std::io::SeekFrom;
-use std::io::{Read, Seek, Write};
+use rayon::prelude::*;
+use std::io::{Read, Write};
 
-type Data = std::collections::HashMap<String, Vec<String>>;
+use crate::alert::Alert;
+use crate::env;
+type Data<'a> = std::collections::HashMap<&'a str, Vec<String>>;
 pub trait Commands {
-    fn commands(self, file_name: &str) -> Vec<String>;
+    fn commands(&self, script_name: &str) -> Vec<String>;
 }
-impl Commands for Data {
-    fn commands(self, file_name: &str) -> Vec<String> {
+impl<'a> Commands for Data<'a> {
+    fn commands(&self, script_name: &str) -> Vec<String> {
         let path = match crate::env::get("PATH") {
-            Some(path) => format!("{}/{}", path, file_name),
-            None => file_name.to_string(),
+            Some(path) => format!("{}/{}", path, script_name),
+            None => script_name.to_string(),
         };
         let file = std::fs::read_to_string(path).unwrap();
 
@@ -26,7 +27,7 @@ impl Commands for Data {
     }
 }
 
-fn replace(vec: Vec<String>, data: Data) -> Vec<String> {
+fn replace(vec: Vec<String>, data: &Data) -> Vec<String> {
     let mut tmp: Vec<String> = vec![];
     for v in vec {
         replace_recercive(v.to_string(), &mut tmp, &data);
@@ -48,37 +49,28 @@ fn replace_recercive(str: String, vec: &mut Vec<String>, data: &Data) {
 }
 
 pub fn _save(file_name: &str, text: &str) {
-    let path = match crate::env::get("PATH") {
+    let path = match env::get("PATH") {
         Some(path) => path,
         None => "luna".to_string(),
     };
     match std::fs::OpenOptions::new()
-        .append(true)
+        .write(true)
         .read(true)
         .create(true)
         .open(format!("{}/{}", path, file_name))
     {
         Ok(mut file) => {
-            // Check for duplicates in file
-            let mut f = String::new();
-            file.read_to_string(&mut f).unwrap();
-            for l in f.lines() {
-                if l == text {
-                    return;
-                }
-            }
-
-            // Insert newline if needed
-            let mut buf: [u8; 1] = [0];
-            if let Ok(_) = file.seek(SeekFrom::End(-1)) {
-                if let Ok(_) = file.read(&mut buf) {
-                    if buf[0] != b'\n' {
-                        file.write(b"\n").unwrap();
-                    }
-                }
-            }
-
-            file.write(text.as_bytes()).unwrap();
+            let mut buf = String::new();
+            file.read_to_string(&mut buf).unwrap();
+            let mut lines = buf
+                .lines()
+                .par_bridge()
+                .filter(|l| !l.trim().is_empty())
+                .collect::<Vec<&str>>();
+            lines.push(text);
+            lines.par_sort();
+            lines.dedup();
+            file.write(lines.join("\n").as_bytes()).unwrap();
         }
         Err(err) => err.error(),
     }

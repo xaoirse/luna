@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-
 use mongodb::{
     bson::{doc, DateTime, Document},
     options::ClientOptions,
     Client, Database,
 };
+use rayon::prelude::*;
+use std::collections::HashMap;
 
 // This trait is required to use `try_next()` on the cursor
 use clap::arg_enum;
@@ -295,11 +295,21 @@ pub enum Subcommand {
     },
     Script {
         #[structopt(short, long)]
-        script: String,
-        #[structopt(short, long)]
-        domains: Vec<String>,
-        #[structopt(short, long)]
+        script_name: String,
+
+        #[structopt(long)]
         all_scopes: bool,
+
+        #[structopt(long)]
+        all_subs: bool,
+
+        #[structopt(long)]
+        all_hosts: bool,
+
+        #[structopt(long)]
+        all_urls: bool,
+
+        entries: Vec<String>,
     },
 }
 
@@ -307,7 +317,7 @@ pub async fn get_db() -> Database {
     // Get db_url
     let url = super::get_db_url().await;
 
-    // Parse a connection String, into an options }
+    // Parse a connection String, into an options
     let mut client_options = ClientOptions::parse(url).await.unwrap();
 
     // Manually set an option.
@@ -325,9 +335,6 @@ pub async fn get_db() -> Database {
 }
 
 pub async fn action_from_args(opt: Opt) {
-    // Get a handle to a database.
-    // let db = get_db().await;
-
     // Match subcommands: insert, find
     match opt.sub {
         Subcommand::Insert(insert) => match insert {
@@ -390,51 +397,74 @@ pub async fn action_from_args(opt: Opt) {
         },
 
         Subcommand::Script {
-            script,
-            domains,
+            script_name,
             all_scopes,
+            all_subs,
+            all_hosts,
+            all_urls,
+            mut entries,
         } => {
-            // Replace All $keywords in script file
-            // with data in key_vals HashMap
-            let mut key_vals = HashMap::new();
             if all_scopes {
-                key_vals.insert(
-                    "$domain".to_string(),
-                    Scope::find(None, None, None)
+                // In here we just want asset name of scopes
+                entries.append(
+                    &mut Scope::find(None, None, None)
                         .await
-                        .into_iter()
-                        .map(|s| s.asset)
+                        .into_par_iter()
+                        .map(|t| t.asset)
                         .collect(),
                 );
-            } else {
-                key_vals.insert("$domain".to_string(), domains);
             }
+            if all_subs {
+                entries.append(
+                    &mut Sub::find(None, None, None)
+                        .await
+                        .into_par_iter()
+                        .map(|t| t.asset)
+                        .collect(),
+                )
+            };
+            if all_hosts {
+                entries.append(
+                    &mut Host::find(None, None, None)
+                        .await
+                        .into_par_iter()
+                        .map(|t| t.ip)
+                        .collect(),
+                )
+            };
+            if all_urls {
+                entries.append(
+                    &mut URL::find(None, None, None)
+                        .await
+                        .into_par_iter()
+                        .map(|t| t.url)
+                        .collect(),
+                )
+            };
 
-            // Run commands and run closure for each extracted struct
-            tools::run_script(key_vals, script.as_str())
-                .extract_for_each(|t: Host| async {
-                    t.update().await;
-                })
-                .await;
+            let mut key_vals = HashMap::new();
+            // key_vals.insert("$domain".to_string(), domains);
+
+            for entry in entries {
+                key_vals.entry("$$").or_insert(vec![entry.clone()]);
+                // Run commands and run closure for each extracted struct
+                tools::run_script(&key_vals, &script_name)
+                    .extract_for_each(|t: Host| async {
+                        t.update().await;
+                    })
+                    .await
+                    .extract_for_each(|mut t: Sub| async {
+                        t.scope = entry.clone();
+                        t.update().await;
+                    })
+                    .await
+                    .extract_for_each(|mut t: URL| async {
+                        t.sub = entry.clone();
+                        t.update().await;
+                    })
+                    .await;
+                // BUG its may collects for example all index.html as subdomain
+            }
         }
     }
 }
-
-// async fn run<T>(key_vals: HashMap<String, Vec<String>>, script_name: &str, pattern: &str) {
-//     tools::run(key_vals, script_name, pattern).extract_for_each::<Host, _>(|t| {});
-// }
-
-// async fn run<T>(key_vals: HashMap<String, Vec<String>>, script_name: &str, pattern: &str) {
-//     futures::future::join_all(
-//         futures::future::join_all(
-//             tools::run::<Host>(key_vals, script_name, pattern)
-//                 .into_iter()
-//                 .map(|h| h.update()),
-//         )
-//         .await
-//         .into_iter()
-//         .flatten()
-//         .map(|h| h.sub.push()),
-//     )
-//     .await;
-// }
