@@ -69,7 +69,7 @@ pub struct Program {
 
     #[rel("Scope")]
     #[structopt(short, long)]
-    pub scopes: Vec<String>, //ListField(ReferenceField('Scope'))
+    pub scopes: Vec<String>,
 
     // #[structopt(skip)]
     // started_at: Option<DateTime>,
@@ -113,10 +113,8 @@ pub struct Scope {
     #[structopt(long,possible_values = &ScopeSeverity::variants(),case_insensitive = true)]
     pub severity: Option<ScopeSeverity>,
 
-    // #[structopt(skip)]
-    // updated_at: Option<DateTime>,
     #[structopt(short, long)]
-    pub program: String, // Program
+    pub program: String,
 
     #[rel("Sub")]
     #[structopt(short, long)]
@@ -196,8 +194,7 @@ pub struct URL {
     pub url: String,
 
     #[structopt(short, long)]
-    pub sub: String, //ReferenceField('Sub', reverse_delete_rule:CASCADE)
-
+    pub sub: String,
     #[structopt(long)]
     pub title: Option<String>,
 
@@ -237,25 +234,24 @@ pub struct Job {
     extra_param: Option<String>,
 
     #[structopt(short, long)]
-    input_files: Vec<String>, //ListField(String,Field(max_length:512))
+    input_files: Vec<String>,
+    #[structopt(short, long)]
+    output_files: Vec<String>,
 
     #[structopt(short, long)]
-    output_files: Vec<String>, //ListField(String,Field(max_length:512))
+    program: Option<String>,
 
     #[structopt(short, long)]
-    program: Option<String>, //ReferenceField('Program')
-
-    #[structopt(short, long)]
-    scope: String, //ReferenceField('Scope')
+    scope: String,
 
     #[structopt(long)]
-    host: String, //ReferenceField('Host')
+    host: String,
 
     #[structopt(short, long)]
-    url: String, //ReferenceField('URL')
+    url: String,
 
     #[structopt(long)]
-    tech: Vec<String>, //ListField(String,Field(max_length:512))
+    tech: Vec<String>,
 
     #[structopt(long,possible_values = &JobState::variants(),case_insensitive = true)]
     state: Option<JobState>,

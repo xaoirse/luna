@@ -1,30 +1,30 @@
 
 # Luna 
-Automatic script runner
-
+Automatic script runner  
+لونا فقط یه ابزار اوتومیت سازی برای اجرای اسکریپت ها و ذخیره ی نتایج اوناست
+  
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.2.0
+  / / / / / / |/ / _ |  v0.2.1
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
 ```
-- Luna can run any bunch of bash scripts and collect results and save them to Database and send the new one's to a Discord channel (optional) [in this version Luna only captures domain-IP and saves them to Database, You can look at data structures in source code ]
-- Luna Supports PostgreSQL, MySQL, SQLite, MSSQL and Mongodb (For now mongodb is preferred).
-- (Not now) Luna creates a wordlist from the results of every Run.
+- Luna can run any bunch of bash scripts and collect results and save them to Database and send the new one's to a Discord channel (optional) *[in this version Luna can extract Hosts and Domains and URLs out of tools like **Subfinder**, **Amass**, etc and saves them to Database, You can look at data structures in source code]*
+- Luna Supports PostgreSQL, MySQL, SQLite, MSSQL and mongodb (For now **mongodb** is preferred).
+- (Not now) Luna creates a wordlist out of the results.
 
-- لونا در حال حاظر میتونه برای مجموعه ای از دامنه هایی که تو دیتابیسش هست یه سری اسکریپت رو اجرا کنه و مهمتر از اون نتایجش رو با ریجکس استخراج کنه و توی دیتابیس ذخیره کنه (البته هنوز خیلی چیزای دیگه قراره بهش اضافه بشه. اگه ایده ای تو پیاده سازیش داشتید خوشحال میشم در میون بذارید
 
 
 ## Simple Using
 
 1. Create this files:  
 
-script.sh:
+script.bash:
 ```bash
-amass enum -active  -d $domain -config config.ini -ip -o amass.results -dir amass
-subfinder -d $domain -silent
-gobuster dns -d  $domain -r ns1.$domain -w wl.txt -qi
+amass enum -active  -d $$ -config config.ini -ip -o amass.results -dir amass
+subfinder -d $$ -silent
+gobuster dns -d  $$ -r ns1.$$ -w wl.txt -qi
 ...
 ```
 luna.ini:
@@ -34,11 +34,11 @@ PATH = .
 DISCORD = https://discord.com/api/webhooks/***
 ```
 2. Insert scopes:   
-`luna insert scope -a target1.com -p myProgram`    
-`luna insert scope -a target2.com -p myProgram`   
-3. Run script:  
-`luna script -s script.sh --all-scopes `  
-4. Find them:  
+`luna insert scope -a target1.com -p TestProgram`    
+`luna insert scope -a target2.com -p WorkProgram`   
+3. Run script for all scopes:  
+`luna script -s script.bash --all-scopes `  
+4. Find them with mongo query:  
 `luna find sub "{'scope':'target1.com'}"`  
 `luna find host "{'sub':'subdomain.target1.com'}"`
 
@@ -99,3 +99,6 @@ SUBCOMMANDS:
 - Better Database structure
 - Regexes are very heavy and take a long time
 
+## For Tomorrow
+- Complete regexes for all types for tools such as FFUF,HTTPX,etc
+- Make a MVP and deploy it
