@@ -480,9 +480,9 @@ pub fn mongorm(input: TokenStream) -> TokenStream {
 
             pub async fn find(filter: Option<String>,limit: Option<String>,sort: Option<String>) -> Vec<Self> {
 
-                let filter: Document = serde_json::from_str(&filter.unwrap_or("{}".to_string()).replace("'", "\"")).expect("filter");
-                let limit= limit.unwrap_or("0".to_string()).parse::<i64>().expect("limit");
-                let sort: Document = serde_json::from_str(&sort.unwrap_or("{}".to_string())).expect("sort");
+                let filter: Document = serde_json::from_str(&filter.unwrap_or("{}".to_string()).replace("'", "\"")).expect("filter in macro");
+                let limit= limit.unwrap_or("0".to_string()).parse::<i64>().expect("Error in limit parse in macro");
+                let sort: Document = serde_json::from_str(&sort.unwrap_or("{}".to_string())).expect("sort in macro");
 
                 let find_options = FindOptions::builder().limit(limit).sort(sort).build();
 
@@ -494,6 +494,51 @@ pub fn mongorm(input: TokenStream) -> TokenStream {
                     .unwrap();
 
                 cursor.try_collect::<Vec<Self>>().await.unwrap()
+            }
+
+            pub async fn find_fields(filter: Option<String>,limit: Option<String>,sort: Option<String>, field: Option<String>) -> Vec<String>{
+
+                let filter: Document = serde_json::from_str(&filter.unwrap_or("{}".to_string()).replace("'", "\"")).expect("filter in macro");
+                let limit= limit.unwrap_or("0".to_string()).parse::<i64>().expect("Error in limit parse in macro");
+                let sort: Document = serde_json::from_str(&sort.unwrap_or("{}".to_string())).expect("sort in macro");
+
+                let find_options = FindOptions::builder().limit(limit).sort(sort).build();
+
+                if let Some(field) = field {
+                    let cursor = get_db()
+                        .await
+                        .collection::<Document>(#ident_str)
+                        .find(filter, find_options)
+                        .await
+                        .unwrap();
+
+                    cursor.map_ok(|d| d.get_str(&field).unwrap().to_string())
+                            .try_collect::<Vec<String>>()
+                            .await
+                            .unwrap()
+                }else{
+                    let cursor = get_db()
+                        .await
+                        .collection::<Self>(#ident_str)
+                        .find(filter, find_options)
+                        .await
+                        .unwrap();
+
+                    cursor.try_collect::<Vec<Self>>().await.unwrap()
+                            .iter()
+                            .map(|d| format!("{:#?}",d))
+                            .collect::<Vec<String>>()
+                }
+                // match field{
+                //     Some(field) => cursor.map_ok(|d| d.get_str(&field).unwrap().to_string())
+                //                     .try_collect::<Vec<String>>()
+                //                     .await
+                //                     .unwrap(),
+                //     None => cursor.map_ok(|d| d.get_str(&field).unwrap().to_string())
+                //                 .try_collect::<Vec<String>>()
+                //                 .await
+                //                 .unwrap(),
+                // }
             }
         }
 

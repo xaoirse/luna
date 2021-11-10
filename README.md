@@ -5,7 +5,7 @@ Automatic script runner
   
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.2.1
+  / / / / / / |/ / _ |  v0.2.2
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
@@ -40,7 +40,7 @@ DISCORD = https://discord.com/api/webhooks/***
 `luna script -s script.bash --all-scopes `  
 4. Find them with mongo query:  
 `luna find sub "{'scope':'target1.com'}"`  
-`luna find host "{'sub':'subdomain.target1.com'}"`
+`luna find host "{'sub':'subdomain.target1.com'}" -n 10 --sort '{"update":1}' -f ip`
 
 ## Installation   
 
@@ -54,7 +54,7 @@ For building statically linked rust binary [read this link](https://blog.davidva
 ## Usage
 
 ```
-luna 0.2.0
+luna 0.2.2
 The Moon Rider has arrived.
 mongodb
 

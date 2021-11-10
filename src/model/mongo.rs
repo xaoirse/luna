@@ -6,8 +6,8 @@ use mongodb::{
 use rayon::prelude::*;
 use std::collections::HashMap;
 
-// This trait is required to use `try_next()` on the cursor
 use clap::arg_enum;
+// This trait is required to use `try_next()` on the cursor
 use futures::stream::TryStreamExt;
 use mongodb::options::FindOptions;
 use serde::{Deserialize, Serialize};
@@ -285,9 +285,20 @@ pub enum Subcommand {
     Insert(Insert),
     Find {
         ty: String,
+
+        #[structopt(
+            help = "mongo query for filter objects\nYou can see Data structues in source."
+        )]
         filter: Option<String>,
-        limit: Option<String>,
+
+        #[structopt(short, help = "The number of results")]
+        n: Option<String>,
+
+        #[structopt(short, long, help = "Query for sort")]
         sort: Option<String>,
+
+        #[structopt(short, long, help = "Field to show")]
+        field: Option<String>,
     },
     Script {
         #[structopt(short, long)]
@@ -362,29 +373,51 @@ pub async fn action_from_args(opt: Opt) {
         Subcommand::Find {
             ty,
             filter,
-            limit,
+            n,
             sort,
+            field,
         } => match ty.as_str() {
             "program" => {
-                println!("{:#?}", Program::find(filter, limit, sort).await);
+                Program::find_fields(filter, n, sort, field)
+                    .await
+                    .iter()
+                    .for_each(|f| println!("{}", f));
             }
             "scope" => {
-                println!("{:#?}", Scope::find(filter, limit, sort).await);
+                Scope::find_fields(filter, n, sort, field)
+                    .await
+                    .iter()
+                    .for_each(|f| println!("{}", f));
             }
             "sub" => {
-                println!("{:#?}", Sub::find(filter, limit, sort).await);
+                Sub::find_fields(filter, n, sort, field)
+                    .await
+                    .iter()
+                    .for_each(|f| println!("{}", f));
             }
             "host" => {
-                println!("{:#?}", Host::find(filter, limit, sort).await);
+                Host::find_fields(filter, n, sort, field)
+                    .await
+                    .iter()
+                    .for_each(|f| println!("{}", f));
             }
             "url" => {
-                println!("{:#?}", URL::find(filter, limit, sort).await);
+                URL::find_fields(filter, n, sort, field)
+                    .await
+                    .iter()
+                    .for_each(|f| println!("{}", f));
             }
             "service" => {
-                println!("{:#?}", Service::find(filter, limit, sort).await);
+                Service::find_fields(filter, n, sort, field)
+                    .await
+                    .iter()
+                    .for_each(|f| println!("{}", f));
             }
             "tech" => {
-                println!("{:#?}", Tech::find(filter, limit, sort).await);
+                Tech::find_fields(filter, n, sort, field)
+                    .await
+                    .iter()
+                    .for_each(|f| println!("{}", f));
             }
             "job" => {
                 format!("I'm not sure about implementing this for now").warn();
@@ -401,7 +434,6 @@ pub async fn action_from_args(opt: Opt) {
             mut entries,
         } => {
             if all_scopes {
-                // In here we just want asset name of scopes
                 entries.append(
                     &mut Scope::find(None, None, None)
                         .await
@@ -414,7 +446,7 @@ pub async fn action_from_args(opt: Opt) {
                 entries.append(
                     &mut Sub::find(None, None, None)
                         .await
-                        .into_par_iter()
+                        .into_iter()
                         .map(|t| t.asset)
                         .collect(),
                 )
@@ -429,6 +461,7 @@ pub async fn action_from_args(opt: Opt) {
                 )
             };
             if all_urls {
+                // TODO use url = "2.2.2";
                 entries.append(
                     &mut URL::find(None, None, None)
                         .await
@@ -442,7 +475,7 @@ pub async fn action_from_args(opt: Opt) {
             // key_vals.insert("$domain".to_string(), domains);
 
             for entry in entries {
-                key_vals.entry("$$").or_insert(vec![entry.clone()]);
+                key_vals.insert("$$", vec![entry.clone()]);
                 // Run commands and run closure for each extracted struct
                 tools::run_script(&key_vals, &script_name)
                     .extract_for_each(|t: Host| async {
