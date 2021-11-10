@@ -12,7 +12,7 @@ Automatic script runner
 ```
 - Luna can run any bunch of bash scripts and collect results and save them to Database and send the new one's to a Discord channel (optional) *[in this version Luna can extract Hosts and Domains and URLs out of tools like **Subfinder**, **Amass**, etc and saves them to Database, You can look at data structures in source code]*
 - Luna Supports PostgreSQL, MySQL, SQLite, MSSQL and mongodb (For now **mongodb** is preferred).
-- (Not now) Luna creates a wordlist out of the results.
+- Luna creates a **wordlist** out of the results(for now just out of subdomains).
 
 
 
@@ -92,6 +92,7 @@ SUBCOMMANDS:
 - [ ] More customize
 - [ ] Setup check and show status
 - [ ] Documents
+- [x] Wordlist maker (in progress) [Mutex or channels? needs to implement setup]
 
 ## Need Idea
 - How get more Keyowrds? from config file, commandline, or hardcode?

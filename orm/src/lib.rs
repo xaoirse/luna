@@ -498,9 +498,9 @@ pub fn mongorm(input: TokenStream) -> TokenStream {
 
             pub async fn find_fields(filter: Option<String>,limit: Option<String>,sort: Option<String>, field: Option<String>) -> Vec<String>{
 
-                let filter: Document = serde_json::from_str(&filter.unwrap_or("{}".to_string()).replace("'", "\"")).expect("filter in macro");
+                let filter: Document = serde_json::from_str(&filter.unwrap_or("{}".to_string()).replace("'", "\"")).expect("Error in filter in macro");
                 let limit= limit.unwrap_or("0".to_string()).parse::<i64>().expect("Error in limit parse in macro");
-                let sort: Document = serde_json::from_str(&sort.unwrap_or("{}".to_string())).expect("sort in macro");
+                let sort: Document = serde_json::from_str(&sort.unwrap_or("{}".to_string()).replace("'", "\"")).expect("Error in sort in macro");
 
                 let find_options = FindOptions::builder().limit(limit).sort(sort).build();
 

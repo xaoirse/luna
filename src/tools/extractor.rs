@@ -6,11 +6,12 @@ use std::future::Future;
 
 use crate::model::mongo::{Host, Sub, SubType, URL};
 
-pub trait Regexer {
+pub trait Model {
     fn regex() -> Regex;
+    fn wordlister(&self) -> Vec<String>;
 }
 lazy_static! {}
-impl Regexer for Host {
+impl Model for Host {
     fn regex() -> Regex {
         // r"((?:[0-9\-a-z]+\.)+[a-z]+)(?:$|[\D\W]+)((?:[0-9]{1,3}\.){3}[0-9]{1,3})?(?:$|[\D\W\s])"
         // static PAT: &str = r"((?:[a-z0-9A-Z]\.)*[a-z0-9-]+\.(?:[a-z0-9]{2,24})+(?:\.co\.(?:[a-z0-9]{2,24})|\.(?:[a-z0-9]{2,24}))*)[\W]*((?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])\.){3}(?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])))";
@@ -22,6 +23,9 @@ impl Regexer for Host {
                 .unwrap();
         }
         RE.clone()
+    }
+    fn wordlister(&self) -> Vec<String> {
+        vec![]
     }
 }
 impl<'t> From<regex::Captures<'t>> for Host {
@@ -39,7 +43,7 @@ impl<'t> From<regex::Captures<'t>> for Host {
     }
 }
 
-impl Regexer for Sub {
+impl Model for Sub {
     fn regex() -> Regex {
         // r"((?:[a-z0-9A-Z]\.)*[a-z0-9-]+\.(?:[a-z0-9]{2,24})+(?:\.co\.(?:[a-z0-9]{2,24})|\.(?:[a-z0-9]{2,24}))*)(?:[\W])*((?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])\.){3}(?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])))(?:$|[\D\W])"
         // static PAT: &str = r"((?:[a-z0-9A-Z]\.)*[a-z0-9-]+\.(?:[a-z0-9]{2,24})+(?:\.co\.(?:[a-z0-9]{2,24})|\.(?:[a-z0-9]{2,24}))*)[\W]*((?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])\.){3}(?:(?:2(?:[0-4][0-9]|5[0-5])|[0-1]?[0-9]?[0-9])))?";
@@ -52,6 +56,9 @@ impl Regexer for Sub {
                 .unwrap();
         }
         RE.clone()
+    }
+    fn wordlister(&self) -> Vec<String> {
+        self.asset.split('.').map(|w| w.to_string()).collect()
     }
 }
 impl<'t> From<regex::Captures<'t>> for Sub {
@@ -70,7 +77,7 @@ impl<'t> From<regex::Captures<'t>> for Sub {
 }
 
 //
-impl Regexer for URL {
+impl Model for URL {
     fn regex() -> Regex {
         static PAT: &str = r"(\w+)://[-a-zA-Z0-9:@;?&=/%\+\.\*!'\(\),\$_\{\}\^~\[\]`#|]+";
         // TODO scheme is in match 1
@@ -81,6 +88,9 @@ impl Regexer for URL {
                 .unwrap();
         }
         RE.clone()
+    }
+    fn wordlister(&self) -> Vec<String> {
+        vec![]
     }
 }
 impl<'t> From<regex::Captures<'t>> for URL {
@@ -111,7 +121,7 @@ pub trait Extractor {
         f: impl FnOnce(T) -> Fut + Send + Copy + 'async_trait,
     ) -> &Self
     where
-        T: for<'a> From<regex::Captures<'a>> + Regexer + Send,
+        T: for<'a> From<regex::Captures<'a>> + Model + Send,
         Fut: Future<Output = ()> + Send;
 }
 
@@ -134,7 +144,7 @@ impl Extractor for String {
         f: impl FnOnce(T) -> Fut + Send + Copy + 'async_trait,
     ) -> &Self
     where
-        T: for<'a> From<regex::Captures<'a>> + Regexer + Send,
+        T: for<'a> From<regex::Captures<'a>> + Model + Send,
         Fut: Future<Output = ()> + Send,
     {
         for t in T::regex().captures_iter(self).map(|c| c.into()) {

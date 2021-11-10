@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use std::io::{Read, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 use crate::alert::Alert;
 use crate::env;
@@ -48,7 +48,7 @@ fn replace_recercive(str: String, vec: &mut Vec<String>, data: &Data) {
     vec.push(str);
 }
 
-pub fn _save(file_name: &str, text: &str) {
+pub fn save(file_name: &str, mut text: Vec<String>) {
     let path = match env::get("PATH") {
         Some(path) => path,
         None => "luna".to_string(),
@@ -62,14 +62,19 @@ pub fn _save(file_name: &str, text: &str) {
         Ok(mut file) => {
             let mut buf = String::new();
             file.read_to_string(&mut buf).unwrap();
+
             let mut lines = buf
-                .lines()
-                .par_bridge()
+                .par_lines()
                 .filter(|l| !l.trim().is_empty())
-                .collect::<Vec<&str>>();
-            lines.push(text);
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>();
+            lines.append(&mut text);
             lines.par_sort();
             lines.dedup();
+            file.seek(SeekFrom::Start(0)).unwrap_or_else(|err| {
+                err.error();
+                0
+            });
             file.write(lines.join("\n").as_bytes()).unwrap();
         }
         Err(err) => err.error(),

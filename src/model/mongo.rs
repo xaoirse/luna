@@ -5,6 +5,7 @@ use mongodb::{
 };
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use clap::arg_enum;
 // This trait is required to use `try_next()` on the cursor
@@ -15,7 +16,10 @@ use structopt::StructOpt;
 
 use crate::{
     model::Alert,
-    tools::{self, extractor::Extractor},
+    tools::{
+        self,
+        extractor::{Extractor, Model},
+    },
 };
 
 arg_enum! {
@@ -446,7 +450,7 @@ pub async fn action_from_args(opt: Opt) {
                 entries.append(
                     &mut Sub::find(None, None, None)
                         .await
-                        .into_iter()
+                        .into_par_iter()
                         .map(|t| t.asset)
                         .collect(),
                 )
@@ -471,6 +475,7 @@ pub async fn action_from_args(opt: Opt) {
                 )
             };
 
+            let wl = Arc::new(Mutex::new(Vec::new()));
             let mut key_vals = HashMap::new();
             // key_vals.insert("$domain".to_string(), domains);
 
@@ -483,6 +488,7 @@ pub async fn action_from_args(opt: Opt) {
                     })
                     .await
                     .extract_for_each(|mut t: Sub| async {
+                        wl.lock().unwrap().append(&mut t.wordlister());
                         t.scope = entry.clone();
                         t.update().await;
                     })
@@ -493,6 +499,8 @@ pub async fn action_from_args(opt: Opt) {
                     })
                     .await;
             }
+
+            crate::tools::file::save("wl.txt", wl.lock().unwrap().to_vec());
         }
     }
 }

@@ -5,7 +5,7 @@ use crate::alert::Alert;
 use file::Commands;
 
 pub mod extractor;
-mod file;
+pub mod file;
 
 trait ToString {
     fn to_string(self) -> String;
