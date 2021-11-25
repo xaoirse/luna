@@ -1,6 +1,6 @@
 
 # Luna 
-Automatic script runner  
+Automatic and **full parallel** script runner  
 لونا فقط یه ابزار اوتومیت سازی برای اجرای اسکریپت ها و ذخیره ی نتایج اوناست
   
 ```
