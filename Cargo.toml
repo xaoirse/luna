@@ -1,6 +1,6 @@
 [package]
 name = "luna"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2018"
 
 # RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-s' cargo build --target x86_64-unknown-linux-musl --release

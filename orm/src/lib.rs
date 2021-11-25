@@ -400,6 +400,7 @@ pub fn mongorm(input: TokenStream) -> TokenStream {
     let output = quote! {
 
         impl #ident {
+            // Return None if exists and Some() if is new
             pub async fn update(mut self) -> Option<Self> {
 
                 let mut new = None ;

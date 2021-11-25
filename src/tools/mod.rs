@@ -1,4 +1,5 @@
 use rayon::prelude::*;
+use std::sync::Arc;
 use std::{collections::HashMap, process::Command};
 
 use crate::alert::Alert;
@@ -16,9 +17,9 @@ impl ToString for Vec<u8> {
     }
 }
 
-pub fn run_script(key_vals: &HashMap<&str, Vec<String>>, script_name: &str) -> String {
+pub fn run_script(key_vals: HashMap<&str, Vec<String>>, script_name: Arc<String>) -> String {
     key_vals
-        .commands(script_name)
+        .commands(&script_name)
         .par_iter()
         .map(|command| {
             let std = Command::new("sh").arg("-c").arg(command).output().unwrap();

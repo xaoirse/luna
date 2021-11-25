@@ -1,41 +1,148 @@
-use structopt::StructOpt;
+use async_trait::async_trait;
+use futures::TryStreamExt;
+use mongodb::bson::doc;
+use mongodb::bson::Document;
+use mongodb::options::FindOptions;
+use mongodb::Cursor;
+use regex::Regex;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
-use crate::env;
-pub mod mongo;
-pub mod sql;
+pub mod host;
+pub mod job;
+pub mod program;
+pub mod scope;
+pub mod service;
+pub mod sub;
+pub mod tech;
+pub mod url;
 pub use crate::alert::Alert;
+use crate::database;
 
-pub async fn get_db_url() -> String {
-    let path = match env::get("PATH") {
-        Some(path) => path,
-        None => ".".to_string(),
-    };
+pub use host::Host;
+pub use program::Program;
+pub use scope::Scope;
+pub use service::Service;
+pub use sub::Sub;
+pub use tech::Tech;
+pub use url::URL;
 
-    let url = match env::get("DATABASE") {
-        Some(db_url) => db_url,
-        None => {
-            "No database detected!\nLuna will use in-memeory sqlite luna.db".warn();
-            std::fs::OpenOptions::new()
-                .write(true)
-                .read(true)
-                .create(true)
-                .open(format!("{}/{}", path, "luna.db"))
-                .unwrap();
-            format!("sqlite://{}/{}", path, "luna.db")
-        }
-    };
-    url
+#[async_trait]
+pub trait Model {
+    fn id_query(&self) -> Document;
+    fn wordlister(&self) -> Vec<String>;
+    async fn merge(self, doc: Self) -> Self;
+    fn new(id: String, parent: String) -> Self;
+    fn ident() -> String;
+    fn regex() -> Regex;
 }
 
-pub async fn from_args() {
-    let url = get_db_url().await;
+pub async fn insert<M>(id: String, parent: String)
+where
+    M: Unpin + Send + Sync + DeserializeOwned + Serialize + Model + Clone,
+{
+    update(M::new(id, parent)).await;
+}
 
-    if url.starts_with("sql") {
-        sql::action_from_args().await;
-    } else if url.starts_with("mongodb") {
-        let opt = mongo::Opt::from_args();
-        mongo::action_from_args(opt).await;
+pub async fn update<M>(mut model: M) -> Option<M>
+where
+    M: Unpin + Send + Sync + DeserializeOwned + Serialize + Model + Clone,
+{
+    let mut new = None;
+
+    // Set options for update query
+    let options = mongodb::options::UpdateOptions::builder()
+        .upsert(true)
+        .build();
+
+    // Define collections
+    let collection = database::get_db().await.collection::<M>(&M::ident());
+
+    // Find document
+    let cursor = collection.find_one(model.id_query(), None).await.unwrap();
+
+    // Edit existed fields
+    if let Some(doc) = cursor {
+        model = model.merge(doc).await;
     } else {
-        panic!("invalid Database url")
+        new = Some(model.clone());
+    }
+
+    let doc = mongodb::bson::to_document(&model).unwrap();
+    let doc = doc! {"$set":doc};
+    collection
+        .update_one(model.id_query(), doc, options.clone())
+        .await
+        .unwrap();
+
+    new
+}
+
+fn normalaize(
+    filter: Option<String>,
+    limit: Option<String>,
+    sort: Option<String>,
+) -> (Document, i64, Document) {
+    let filter: Document =
+        serde_json::from_str(&filter.unwrap_or("{}".to_string()).replace("'", "\"")).unwrap();
+    let limit = limit.unwrap_or("0".to_string()).parse::<i64>().unwrap();
+    let sort: Document =
+        serde_json::from_str(&sort.unwrap_or("{}".to_string()).replace("'", "\"")).unwrap();
+    (filter, limit, sort)
+}
+
+pub async fn find<M, D>(
+    filter: Option<String>,
+    limit: Option<String>,
+    sort: Option<String>,
+) -> Cursor<D>
+where
+    M: Unpin + Send + Sync + DeserializeOwned + Model,
+    D: Unpin + Send + Sync + DeserializeOwned,
+{
+    let (filter, limit, sort) = normalaize(filter, limit, sort);
+    let find_options = FindOptions::builder().limit(limit).sort(sort).build();
+    let db = database::get_db().await;
+
+    db.collection::<D>(&M::ident())
+        .find(filter, find_options)
+        .await
+        .unwrap()
+}
+pub async fn find_as_vec<M>(
+    filter: Option<String>,
+    limit: Option<String>,
+    sort: Option<String>,
+) -> Vec<M>
+where
+    M: Unpin + Send + Sync + DeserializeOwned + Model,
+{
+    let cursor = find::<M, M>(filter, limit, sort).await;
+    cursor.try_collect::<Vec<M>>().await.unwrap()
+}
+
+pub async fn find_as_string<M>(
+    filter: Option<String>,
+    limit: Option<String>,
+    sort: Option<String>,
+    field: Option<String>,
+) -> Vec<String>
+where
+    M: Unpin + Send + Sync + DeserializeOwned + Model,
+{
+    let cursor = find::<M, Document>(filter, limit, sort).await;
+
+    if let Some(field) = field {
+        cursor
+            .map_ok(|d| d.get_str(&field).unwrap().to_string())
+            .try_collect::<Vec<String>>()
+            .await
+            .unwrap()
+    } else {
+        cursor
+            .map_ok(|d| format!("{:#?}", d))
+            .try_collect::<Vec<String>>()
+            .await
+            .unwrap()
     }
 }

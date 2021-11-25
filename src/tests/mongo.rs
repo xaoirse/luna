@@ -5,15 +5,16 @@
 
 #[cfg(test)]
 mod test {
-    use crate::model::mongo;
+    use crate::database::*;
+    use crate::model::*;
 
     #[tokio::test]
     async fn program() {
         // Drop test database if existed
-        mongo::get_db().await.drop(None).await.unwrap();
+        get_db().await.drop(None).await.unwrap();
 
         //  Minimum fields
-        let mut min = mongo::Program {
+        let mut min = Program {
             bounty: None,
             handle: None,
             icon: None,
@@ -29,19 +30,19 @@ mod test {
         program_check(min.clone(), min.clone()).await;
 
         // Full fields
-        let mut full = mongo::Program {
+        let mut full = Program {
             bounty: Some("Test_b".to_string()),
             handle: Some("Test_h".to_string()),
             icon: Some("Test_i".to_string()),
             name: "Test".to_string(),
-            platform: Some(mongo::ProgramPlatform::Anonymous),
+            platform: Some(crate::model::program::ProgramPlatform::Anonymous),
             scopes: vec![
                 "test.s1".to_string(),
                 "test.s2".to_string(),
                 "test.s3".to_string(),
             ],
-            state: Some(mongo::ProgramState::Open),
-            ty: Some(mongo::ProgramType::Public),
+            state: Some(crate::model::program::ProgramState::Open),
+            ty: Some(crate::model::program::ProgramType::Public),
             update: None,
             url: Some("url.com".to_string()),
         };
@@ -53,22 +54,22 @@ mod test {
         program_check(min.clone(), full.clone()).await;
 
         // Appended
-        let scopes = mongo::Scope::find(None, None, None).await;
+        let scopes = find_as_vec::<Scope>(None, None, None).await;
         assert_eq!(
             scopes.into_iter().map(|s| s.asset).collect::<Vec<String>>(),
             vec!["test.s1", "test.s2", "test.s3"]
         );
     }
 
-    async fn program_check(doc: mongo::Program, expected_doc: mongo::Program) {
+    async fn program_check(doc: Program, expected_doc: Program) {
         let filter = Some(r#"{"name":"Test"}"#.to_string());
         let limit = None;
         let sort = None;
 
-        doc.clone().update().await;
+        update(doc).await;
 
         // Find and assert
-        let mut docs = mongo::Program::find(filter.clone(), limit.clone(), sort.clone()).await;
+        let mut docs = find_as_vec::<Program>(filter.clone(), limit.clone(), sort.clone()).await;
         docs[0].update = None;
         assert_eq!(docs.len(), 1);
         assert_eq!(docs[0], expected_doc);
@@ -76,10 +77,10 @@ mod test {
 
     #[tokio::test]
     async fn scope() {
-        mongo::get_db().await.drop(None).await.unwrap();
+        get_db().await.drop(None).await.unwrap();
 
         // Min
-        let mut min = mongo::Scope {
+        let mut min = Scope {
             asset: "Test".to_string(),
             subs: vec!["test.s1".to_string(), "test.s2".to_string()],
             eligible_bounty: None,
@@ -91,7 +92,7 @@ mod test {
         scope_check(min.clone(), min.clone()).await;
 
         // Full
-        let mut full = mongo::Scope {
+        let mut full = Scope {
             asset: "Test".to_string(),
             subs: vec![
                 "test.s1".to_string(),
@@ -99,37 +100,37 @@ mod test {
                 "test.s3".to_string(),
             ],
             eligible_bounty: Some(true),
-            severity: Some(mongo::ScopeSeverity::High),
+            severity: Some(crate::model::scope::ScopeSeverity::High),
             program: "Test Program".to_string(),
-            ty: Some(mongo::ScopeType::WildcardDomain),
+            ty: Some(crate::model::scope::ScopeType::WildcardDomain),
             update: None,
         };
         scope_check(full.clone(), full.clone()).await;
 
         // Some
-        min.severity = Some(mongo::ScopeSeverity::Medium);
-        full.severity = Some(mongo::ScopeSeverity::Medium);
+        min.severity = Some(crate::model::scope::ScopeSeverity::Medium);
+        full.severity = Some(crate::model::scope::ScopeSeverity::Medium);
 
         scope_check(min.clone(), full.clone()).await;
 
         // Appended
-        let subs = mongo::Sub::find(None, None, None).await;
+        let subs = find_as_vec::<Sub>(None, None, None).await;
         assert_eq!(
             subs.into_iter().map(|s| s.asset).collect::<Vec<String>>(),
             vec!["test.s1", "test.s2", "test.s3"]
         );
-        // mongo::get_db().await.drop(None).await.unwrap();
+        // get_db().await.drop(None).await.unwrap();
     }
 
-    async fn scope_check(doc: mongo::Scope, expected_doc: mongo::Scope) {
+    async fn scope_check(doc: Scope, expected_doc: Scope) {
         let filter = Some(r#"{"asset":"Test"}"#.to_string());
         let limit = None;
         let sort = None;
 
-        doc.clone().update().await;
+        update(doc).await;
 
         // Find and assert
-        let mut docs = mongo::Scope::find(filter.clone(), limit.clone(), sort.clone()).await;
+        let mut docs = find_as_vec::<Scope>(filter.clone(), limit.clone(), sort.clone()).await;
         docs[0].update = None;
         assert_eq!(docs.len(), 1);
         assert_eq!(docs[0], expected_doc);
@@ -137,10 +138,10 @@ mod test {
 
     #[tokio::test]
     async fn sub() {
-        mongo::get_db().await.drop(None).await.unwrap();
+        get_db().await.drop(None).await.unwrap();
 
         // Min
-        let mut min = mongo::Sub {
+        let mut min = Sub {
             asset: "Test".to_string(),
             scope: "Test Scope".to_string(),
             urls: vec!["test.s1".to_string(), "test.s2".to_string()],
@@ -151,7 +152,7 @@ mod test {
         sub_check(min.clone(), min.clone()).await;
 
         // Full
-        let mut full = mongo::Sub {
+        let mut full = Sub {
             asset: "Test".to_string(),
             scope: "Test Scope".to_string(),
             urls: vec![
@@ -160,7 +161,7 @@ mod test {
                 "test.s3".to_string(),
             ],
             host: Some("host".to_string()),
-            ty: Some(mongo::SubType::IP),
+            ty: Some(crate::model::sub::SubType::IP),
             update: None,
         };
         sub_check(full.clone(), full.clone()).await;
@@ -172,23 +173,23 @@ mod test {
         sub_check(min.clone(), full.clone()).await;
 
         // Appended
-        let urls = mongo::URL::find(None, None, None).await;
+        let urls = find_as_vec::<URL>(None, None, None).await;
         assert_eq!(
             urls.into_iter().map(|s| s.url).collect::<Vec<String>>(),
             vec!["test.s1", "test.s2", "test.s3"]
         );
-        // mongo::get_db().await.drop(None).await.unwrap();
+        // get_db().await.drop(None).await.unwrap();
     }
 
-    async fn sub_check(doc: mongo::Sub, expected_doc: mongo::Sub) {
+    async fn sub_check(doc: Sub, expected_doc: Sub) {
         let filter = Some(r#"{"asset":"Test"}"#.to_string());
         let limit = None;
         let sort = None;
 
-        doc.clone().update().await;
+        update(doc).await;
 
         // Find and assert
-        let mut docs = mongo::Sub::find(filter.clone(), limit.clone(), sort.clone()).await;
+        let mut docs = find_as_vec::<Sub>(filter.clone(), limit.clone(), sort.clone()).await;
         docs[0].update = None;
         assert_eq!(docs.len(), 1);
         assert_eq!(docs[0], expected_doc);
@@ -196,10 +197,10 @@ mod test {
 
     #[tokio::test]
     async fn host() {
-        mongo::get_db().await.drop(None).await.unwrap();
+        get_db().await.drop(None).await.unwrap();
 
         // Min
-        let min = mongo::Host {
+        let min = Host {
             ip: "Test".to_string(),
             sub: "Test Sub".to_string(),
             services: vec!["test.s1".to_string(), "test.s2".to_string()],
@@ -208,7 +209,7 @@ mod test {
         host_check(min.clone(), min.clone()).await;
 
         // Full
-        let full = mongo::Host {
+        let full = Host {
             ip: "Test".to_string(),
             sub: "Test Sub".to_string(),
             services: vec![
@@ -221,7 +222,7 @@ mod test {
         host_check(full.clone(), full.clone()).await;
 
         // Appended
-        let services = mongo::Service::find(None, None, None).await;
+        let services = find_as_vec::<Service>(None, None, None).await;
         assert_eq!(
             services
                 .into_iter()
@@ -229,18 +230,18 @@ mod test {
                 .collect::<Vec<String>>(),
             vec!["test.s1", "test.s2", "test.s3"]
         );
-        // mongo::get_db().await.drop(None).await.unwrap();
+        // get_db().await.drop(None).await.unwrap();
     }
 
-    async fn host_check(doc: mongo::Host, expected_doc: mongo::Host) {
+    async fn host_check(doc: Host, expected_doc: Host) {
         let filter = Some(r#"{"ip":"Test"}"#.to_string());
         let limit = None;
         let sort = None;
 
-        doc.clone().update().await;
+        update(doc).await;
 
         // Find and assert
-        let mut docs = mongo::Host::find(filter.clone(), limit.clone(), sort.clone()).await;
+        let mut docs = find_as_vec::<Host>(filter.clone(), limit.clone(), sort.clone()).await;
         docs[0].update = None;
         assert_eq!(docs.len(), 1);
         assert_eq!(docs[0], expected_doc);
@@ -248,10 +249,10 @@ mod test {
 
     #[tokio::test]
     async fn url() {
-        mongo::get_db().await.drop(None).await.unwrap();
+        get_db().await.drop(None).await.unwrap();
 
         // Min
-        let mut min = mongo::URL {
+        let mut min = URL {
             url: "Test".to_string(),
             sub: "Test Scope".to_string(),
             techs: vec!["test.s1".to_string(), "test.s2".to_string()],
@@ -264,7 +265,7 @@ mod test {
 
         // Full
 
-        let mut full = mongo::URL {
+        let mut full = URL {
             url: "Test".to_string(),
             sub: "Test Scope".to_string(),
             techs: vec![
@@ -287,23 +288,23 @@ mod test {
         url_check(min.clone(), full.clone()).await;
 
         // Appended
-        let techs = mongo::Tech::find(None, None, None).await;
+        let techs = find_as_vec::<Tech>(None, None, None).await;
         assert_eq!(
             techs.into_iter().map(|s| s.name).collect::<Vec<String>>(),
             vec!["test.s1", "test.s2", "test.s3"]
         );
-        // mongo::get_db().await.drop(None).await.unwrap();
+        // get_db().await.drop(None).await.unwrap();
     }
 
-    async fn url_check(doc: mongo::URL, expected_doc: mongo::URL) {
+    async fn url_check(doc: URL, expected_doc: URL) {
         let filter = Some(r#"{"url":"Test"}"#.to_string());
         let limit = None;
         let sort = None;
 
-        doc.clone().update().await;
+        update(doc).await;
 
         // Find and assert
-        let mut docs = mongo::URL::find(filter.clone(), limit.clone(), sort.clone()).await;
+        let mut docs = find_as_vec::<URL>(filter.clone(), limit.clone(), sort.clone()).await;
         docs[0].update = None;
         assert_eq!(docs.len(), 1);
         assert_eq!(docs[0], expected_doc);
@@ -311,10 +312,10 @@ mod test {
 
     #[tokio::test]
     async fn service() {
-        mongo::get_db().await.drop(None).await.unwrap();
+        get_db().await.drop(None).await.unwrap();
 
         // Min
-        let mut min = mongo::Service {
+        let mut min = Service {
             port: "Test".to_string(),
             protocol: None,
             banner: None,
@@ -323,7 +324,7 @@ mod test {
 
         // Full
 
-        let mut full = mongo::Service {
+        let mut full = Service {
             port: "Test".to_string(),
             protocol: Some("Test".to_string()),
             banner: Some("Test".to_string()),
@@ -337,54 +338,45 @@ mod test {
 
         service_check(min.clone(), full.clone()).await;
 
-        // mongo::get_db().await.drop(None).await.unwrap();
+        // get_db().await.drop(None).await.unwrap();
     }
 
-    async fn service_check(doc: mongo::Service, expected_doc: mongo::Service) {
+    async fn service_check(doc: Service, expected_doc: Service) {
         let filter = Some(r#"{"port":"Test"}"#.to_string());
         let limit = None;
         let sort = None;
 
-        doc.clone().update().await;
+        update(doc).await;
 
         // Find and assert
-        let docs = mongo::Service::find(filter.clone(), limit.clone(), sort.clone()).await;
+        let docs = find_as_vec::<Service>(filter.clone(), limit.clone(), sort.clone()).await;
         assert_eq!(docs.len(), 1);
         assert_eq!(docs[0], expected_doc);
     }
 
     #[tokio::test]
     async fn tech() {
-        mongo::get_db().await.drop(None).await.unwrap();
+        get_db().await.drop(None).await.unwrap();
 
         // Min
-        let min = mongo::Tech {
+        let min = Tech {
             name: "Test".to_string(),
-            version: None,
+            version: "".to_string(),
         };
         tech_check(min.clone(), min.clone()).await;
 
-        // Full
-
-        let full = mongo::Tech {
-            name: "Test".to_string(),
-            version: Some("Version".to_string()),
-        };
-
-        tech_check(full.clone(), full.clone()).await;
-
-        // mongo::get_db().await.drop(None).await.unwrap();
+        // get_db().await.drop(None).await.unwrap();
     }
 
-    async fn tech_check(doc: mongo::Tech, expected_doc: mongo::Tech) {
+    async fn tech_check(doc: Tech, expected_doc: Tech) {
         let filter = Some(r#"{"name":"Test"}"#.to_string());
         let limit = None;
         let sort = None;
 
-        doc.clone().update().await;
+        update(doc).await;
 
         // Find and assert
-        let docs = mongo::Tech::find(filter.clone(), limit.clone(), sort.clone()).await;
+        let docs = find_as_vec::<Tech>(filter.clone(), limit.clone(), sort.clone()).await;
         assert_eq!(docs.len(), 1);
         assert_eq!(docs[0], expected_doc);
     }

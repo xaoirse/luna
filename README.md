@@ -5,13 +5,13 @@ Automatic script runner
   
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.2.2
+  / / / / / / |/ / _ |  v0.3.0
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
 ```
 - Luna can run any bunch of bash scripts and collect results and save them to Database and send the new one's to a Discord channel (optional) *[in this version Luna can extract Hosts and Domains and URLs out of tools like **Subfinder**, **Amass**, etc and saves them to Database, You can look at data structures in source code]*
-- Luna Supports PostgreSQL, MySQL, SQLite, MSSQL and mongodb (For now **mongodb** is preferred).
+- Luna Supports PostgreSQL, MySQL, SQLite, MSSQL and mongodb (For now **mongodb** is preferred and supported).
 - Luna creates a **wordlist** out of the results(for now just out of subdomains).
 
 
@@ -54,7 +54,7 @@ For building statically linked rust binary [read this link](https://blog.davidva
 ## Usage
 
 ```
-luna 0.2.2
+luna 0.3.0
 The Moon Rider has arrived.
 mongodb
 
@@ -79,27 +79,42 @@ SUBCOMMANDS:
 
 ## Built With
 - **Tokio**: A powerfull runtime for writing reliable, **asynchronous**, and slim applications with the Rust programming language
-- **orm**: A self made library for easy developing using macros in Rust
+- **StructOpt**: Parse **command line arguments** by defining a struct. It combines clap with custom derive.
 - ...
 
-## TODO
-- [ ] Better regexes for captures all structs
-- [ ] More Custome keywords in scripts
-- [ ] More push notifications (Telegram, ...)
-- [x] NoSQL support
-- [ ] cli.yaml
-- [ ] Tests
-- [ ] More customize
-- [ ] Setup check and show status
-- [ ] Documents
-- [x] Wordlist maker (in progress) [Mutex or channels? needs to implement setup]
 
 ## Need Idea
 - How get more Keyowrds? from config file, commandline, or hardcode?
 - Better Names for structs
 - Better Database structure
-- Regexes are very heavy and take a long time
+- Regexes are very heavy and take a long time (maybe not, should test)
+- Mutex or channels for wordlist maker? needs to implement setup
+- Merge sql models and mongo models with orm macros
+- Reduce release size
 
-## For Tomorrow
+## To Do
+- [ ] Improve regexes due to captures all segments
+- [ ] More push notifications (Telegram, ...)
+- [ ] StructOpt helps and cli.yaml
+- [ ] Tests
+- [ ] Startup check envs
+- [ ] Report system for app and database
+- [ ] Report generator for bugs
+- [ ] Documents
+- [ ] Webserver api and then telegram or any other bots access
+- [ ] rename push to notif
+- [ ] Implement update query
+- [ ] SQL functions in trait  
+- [ ] Remove orm  
+- [ ] Remove unused files  
+- [x] Wordlist maker
+- [x] Mongodb support
+- [x] Run All scripts in Parallel
+- [x] Model trait
+- [x] Parallel regex captures  
+
+## Doing
+- Find scopes and insert them to database
+- Find good tools and Write good scripts
 - Complete regexes for all types for tools such as FFUF,HTTPX,etc
 - Make a MVP and deploy it
