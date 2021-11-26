@@ -10,7 +10,7 @@ pub trait Alert {
     fn warn(&self);
     fn found(&self);
     fn not_found(&self);
-    async fn push(self);
+    async fn notif(self);
 }
 
 #[async_trait]
@@ -64,7 +64,7 @@ where
         }
     }
 
-    async fn push(self) {
+    async fn notif(self) {
         let text = self.to_string();
         let text = text.trim();
         if !text.is_empty() {

@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
 use super::Scope;
+use crate::database::mongo;
 
 arg_enum! {
     #[derive(Debug, Serialize, Deserialize, StructOpt,Clone,PartialEq, Eq)]
@@ -93,7 +94,7 @@ impl super::Model for Program {
 
     async fn merge(mut self, mut doc: Self) -> Self {
         for s in &self.scopes {
-            super::insert::<Scope>(s.clone(), self.name.clone()).await;
+            mongo::insert::<Scope>(s.clone(), self.name.clone()).await;
         }
         self.scopes.append(&mut doc.scopes);
         self.scopes.par_sort();

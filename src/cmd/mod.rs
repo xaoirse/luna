@@ -1,13 +1,14 @@
-use crate::model::{self, *};
+use crate::model::*;
 use crate::tools;
 use crate::tools::extractor::Extractor;
 use futures::future::join_all;
 use futures::join;
-use rayon::prelude::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 use structopt::StructOpt;
+
+use crate::database::mongo;
 
 #[derive(Debug, StructOpt)]
 pub enum Insert {
@@ -73,25 +74,25 @@ pub async fn from_args() {
     match opt.sub {
         Subcommand::Insert(insert) => match insert {
             Insert::Program(doc) => {
-                model::update(doc).await;
+                mongo::update(doc).await;
             }
             Insert::Scope(doc) => {
-                model::update(doc).await;
+                mongo::update(doc).await;
             }
             Insert::Sub(doc) => {
-                model::update(doc).await;
+                mongo::update(doc).await;
             }
             Insert::Host(doc) => {
-                model::update(doc).await;
+                mongo::update(doc).await;
             }
             Insert::URL(doc) => {
-                model::update(doc).await;
+                mongo::update(doc).await;
             }
             Insert::Service(doc) => {
-                model::update(doc).await;
+                mongo::update(doc).await;
             }
             Insert::Tech(doc) => {
-                model::update(doc).await;
+                mongo::update(doc).await;
             }
         },
         Subcommand::Find {
@@ -102,43 +103,43 @@ pub async fn from_args() {
             field,
         } => match ty.as_str() {
             "program" => {
-                model::find_as_string::<Program>(filter, n, sort, field)
+                mongo::find_as_string::<Program>(filter, n, sort, field)
                     .await
                     .iter()
                     .for_each(|f| println!("{}", f));
             }
             "scope" => {
-                model::find_as_string::<Scope>(filter, n, sort, field)
+                mongo::find_as_string::<Scope>(filter, n, sort, field)
                     .await
                     .iter()
                     .for_each(|f| println!("{}", f));
             }
             "sub" => {
-                model::find_as_string::<Sub>(filter, n, sort, field)
+                mongo::find_as_string::<Sub>(filter, n, sort, field)
                     .await
                     .iter()
                     .for_each(|f| println!("{}", f));
             }
             "host" => {
-                model::find_as_string::<Host>(filter, n, sort, field)
+                mongo::find_as_string::<Host>(filter, n, sort, field)
                     .await
                     .iter()
                     .for_each(|f| println!("{}", f));
             }
             "url" => {
-                model::find_as_string::<URL>(filter, n, sort, field)
+                mongo::find_as_string::<URL>(filter, n, sort, field)
                     .await
                     .iter()
                     .for_each(|f| println!("{}", f));
             }
             "service" => {
-                model::find_as_string::<Service>(filter, n, sort, field)
+                mongo::find_as_string::<Service>(filter, n, sort, field)
                     .await
                     .iter()
                     .for_each(|f| println!("{}", f));
             }
             "tech" => {
-                model::find_as_string::<Tech>(filter, n, sort, field)
+                mongo::find_as_string::<Tech>(filter, n, sort, field)
                     .await
                     .iter()
                     .for_each(|f| println!("{}", f));
@@ -159,27 +160,27 @@ pub async fn from_args() {
         } => {
             if all_scopes {
                 entries.append(
-                    &mut model::find_as_vec::<Scope>(None, None, None)
+                    &mut mongo::find_as_vec::<Scope>(None, None, None)
                         .await
-                        .into_par_iter()
+                        .into_iter()
                         .map(|t| t.asset)
                         .collect(),
                 );
             }
             if all_subs {
                 entries.append(
-                    &mut model::find_as_vec::<Sub>(None, None, None)
+                    &mut mongo::find_as_vec::<Sub>(None, None, None)
                         .await
-                        .into_par_iter()
+                        .into_iter()
                         .map(|t| t.asset)
                         .collect(),
                 )
             };
             if all_hosts {
                 entries.append(
-                    &mut model::find_as_vec::<Host>(None, None, None)
+                    &mut mongo::find_as_vec::<Host>(None, None, None)
                         .await
-                        .into_par_iter()
+                        .into_iter()
                         .map(|t| t.ip)
                         .collect(),
                 )
@@ -187,9 +188,9 @@ pub async fn from_args() {
             if all_urls {
                 // TODO use url = "2.2.2";
                 entries.append(
-                    &mut model::find_as_vec::<URL>(None, None, None)
+                    &mut mongo::find_as_vec::<URL>(None, None, None)
                         .await
-                        .into_par_iter()
+                        .into_iter()
                         .map(|t| t.url)
                         .collect(),
                 )
@@ -199,6 +200,8 @@ pub async fn from_args() {
             let wl = Arc::new(Mutex::new(Vec::new()));
             // let now = std::time::Instant::now();
 
+            // I used iter instead of par_iter but because map is lazy
+            // at the end with join_all these run parallel (Hope)
             let e = entries.iter().map(|entry| {
                 let mut key_vals = HashMap::new();
                 key_vals.insert("$$", vec![entry.clone()]);
@@ -213,7 +216,7 @@ pub async fn from_args() {
                             wl.lock().unwrap().append(&mut t.wordlister());
                         }
                         t.scope = entry.clone();
-                        crate::model::update(t)
+                        mongo::update(t)
                     })));
 
                 let hosts =
@@ -222,7 +225,7 @@ pub async fn from_args() {
                             wl.lock().unwrap().append(&mut t.wordlister());
                         }
                         t.sub = entry.clone();
-                        crate::model::update(t)
+                        mongo::update(t)
                     })));
 
                 let urls = tokio::task::spawn(join_all(output.extract_fut(|mut t: URL| {
@@ -230,11 +233,24 @@ pub async fn from_args() {
                         wl.lock().unwrap().append(&mut t.wordlister());
                     }
                     t.sub = entry.clone();
-                    crate::model::update(t)
+                    mongo::update(t)
                 })));
 
                 // Gather all futures for Run all extractors in parallel
-                tokio::spawn(async { join!(subs, hosts, urls) })
+                tokio::spawn(async {
+                    let (subs, _, _) = join!(subs, hosts, urls);
+
+                    // Notif for new subs
+                    if let Ok(subs) = subs {
+                        join_all(subs.into_iter().map(|s| async move {
+                            match s {
+                                Some(s) => s.asset.notif().await,
+                                None => (),
+                            }
+                        }))
+                        .await;
+                    };
+                })
             });
 
             // Run all extractors for all entries in parallel

@@ -1,3 +1,5 @@
+pub mod mongo;
+
 use crate::env;
 use crate::model::*;
 use mongodb::{options::ClientOptions, Client, Database};

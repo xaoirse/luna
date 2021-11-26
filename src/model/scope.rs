@@ -9,6 +9,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
+use crate::database::mongo;
+
 arg_enum! {
     #[derive(Debug, Serialize, Deserialize, StructOpt,Clone,PartialEq, Eq)]
     pub enum ScopeType {
@@ -80,7 +82,7 @@ impl Model for Scope {
 
     async fn merge(mut self, mut doc: Self) -> Self {
         for s in &self.subs {
-            super::insert::<Sub>(s.clone(), self.asset.clone()).await;
+            mongo::insert::<Sub>(s.clone(), self.asset.clone()).await;
         }
         self.subs.append(&mut doc.subs);
         self.subs.par_sort();

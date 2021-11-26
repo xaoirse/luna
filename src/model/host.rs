@@ -7,6 +7,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
+use crate::database::mongo;
+
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Host {
     #[structopt(short, long)]
@@ -43,7 +45,7 @@ impl Model for Host {
 
     async fn merge(mut self, mut doc: Self) -> Self {
         for s in &self.services {
-            super::insert::<Service>(s.clone(), "".to_string()).await;
+            mongo::insert::<Service>(s.clone(), "".to_string()).await;
         }
         self.services.append(&mut doc.services);
         self.services.par_sort();

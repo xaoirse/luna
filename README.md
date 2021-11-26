@@ -1,18 +1,18 @@
 
 # Luna 
-Automatic and **full parallel** script runner  
+Automatic and **Full Parallel** Script Runner  
 لونا فقط یه ابزار اوتومیت سازی برای اجرای اسکریپت ها و ذخیره ی نتایج اوناست
   
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.3.0
+  / / / / / / |/ / _ |  v0.3.1
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
 ```
-- Luna can run any bunch of bash scripts and collect results and save them to Database and send the new one's to a Discord channel (optional) *[in this version Luna can extract Hosts and Domains and URLs out of tools like **Subfinder**, **Amass**, etc and saves them to Database, You can look at data structures in source code]*
+- Luna can run any bunch of bash scripts in **Parallel** and collect results and save them to Database and send the new one's to a Discord channel (optional) *[in this version Luna can extract Hosts and Domains and URLs out of tools like **Subfinder**, **Amass**, etc and saves them to Database, You can look at data structures in source code]*
 - Luna Supports PostgreSQL, MySQL, SQLite, MSSQL and mongodb (For now **mongodb** is preferred and supported).
-- Luna creates a **wordlist** out of the results(for now just out of subdomains).
+- Luna creates a **wordlist** out of the results.
 
 
 
@@ -38,7 +38,8 @@ DISCORD = https://discord.com/api/webhooks/***
 `luna insert scope -a target2.com -p WorkProgram`   
 3. Run script for all scopes:  
 `luna script -s script.bash --all-scopes `  
-4. Find them with mongo query:  
+4. Find them with mongo query:   
+`luna find url`  
 `luna find sub "{'scope':'target1.com'}"`  
 `luna find host "{'sub':'subdomain.target1.com'}" -n 10 --sort '{"update":1}' -f ip`
 
@@ -54,7 +55,7 @@ For building statically linked rust binary [read this link](https://blog.davidva
 ## Usage
 
 ```
-luna 0.3.0
+luna 0.3.1
 The Moon Rider has arrived.
 mongodb
 
@@ -91,6 +92,7 @@ SUBCOMMANDS:
 - Mutex or channels for wordlist maker? needs to implement setup
 - Merge sql models and mongo models with orm macros
 - Reduce release size
+- Limit for parallel requests to prevent rate limit
 
 ## To Do
 - [ ] Improve regexes due to captures all segments
@@ -102,16 +104,18 @@ SUBCOMMANDS:
 - [ ] Report generator for bugs
 - [ ] Documents
 - [ ] Webserver api and then telegram or any other bots access
-- [ ] rename push to notif
+- [x] Rename push to notif
 - [ ] Implement update query
 - [ ] SQL functions in trait  
-- [ ] Remove orm  
+- [x] Remove orm  
 - [ ] Remove unused files  
 - [x] Wordlist maker
 - [x] Mongodb support
 - [x] Run All scripts in Parallel
 - [x] Model trait
 - [x] Parallel regex captures  
+- [x] Discord Notif 
+- [ ] Database chart in readme or help  
 
 ## Doing
 - Find scopes and insert them to database

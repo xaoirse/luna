@@ -8,6 +8,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
+use crate::database::mongo;
+
 arg_enum! {
     #[derive(Clone,Debug, Serialize, Deserialize, StructOpt,PartialEq, Eq)]
     pub enum SubType {
@@ -58,14 +60,14 @@ impl Model for Sub {
 
     async fn merge(mut self, mut doc: Self) -> Self {
         for s in &self.urls {
-            super::insert::<URL>(s.clone(), self.asset.clone()).await;
+            mongo::insert::<URL>(s.clone(), self.asset.clone()).await;
         }
         self.urls.append(&mut doc.urls);
         self.urls.par_sort();
         self.urls.dedup();
 
         if let Some(host) = self.host.clone() {
-            super::insert::<Host>(host, self.asset.clone()).await;
+            mongo::insert::<Host>(host, self.asset.clone()).await;
         }
 
         Self {

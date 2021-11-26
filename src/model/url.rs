@@ -7,6 +7,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
+use crate::database::mongo;
+
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq)]
 pub struct URL {
     #[structopt(short, long)]
@@ -54,7 +56,7 @@ impl Model for URL {
 
     async fn merge(mut self, mut doc: Self) -> Self {
         for s in &self.techs {
-            super::insert::<Tech>(s.clone(), self.url.clone()).await;
+            mongo::insert::<Tech>(s.clone(), self.url.clone()).await;
         }
         self.techs.append(&mut doc.techs);
         self.techs.par_sort();
@@ -84,7 +86,8 @@ impl Model for URL {
     }
 
     fn wordlister(&self) -> Vec<String> {
-        self.sub.split('.').map(|w| w.to_string()).collect()
+        // TODO from param and args in url
+        self.url.split('.').map(|w| w.to_string()).collect()
     }
 }
 

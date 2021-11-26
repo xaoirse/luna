@@ -5,6 +5,7 @@
 
 #[cfg(test)]
 mod test {
+    use crate::database::mongo::*;
     use crate::database::*;
     use crate::model::*;
 
