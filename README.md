@@ -64,19 +64,19 @@ USAGE:
 
 FLAGS:
     -h, --help       Prints help information
-    -V, --version
-            Prints version information
+    -V, --version    Prints version information
 
 
 SUBCOMMANDS:
     find      
-    help      Prints this message or the
-              help of the given
-              subcommand(s)
+    help      Prints this message or the help of the given subcommand(s)
     insert    
     script    
 ```
-   
+## Test
+`cargo test -- --test-threads=1`  
+check configs with:  
+`luna check`
 
 ## Built With
 - **Tokio**: A powerfull runtime for writing reliable, **asynchronous**, and slim applications with the Rust programming language
@@ -93,17 +93,20 @@ SUBCOMMANDS:
 - Merge sql models and mongo models with orm macros
 - Reduce release size
 - Limit for parallel requests to prevent rate limit
+- Progress bar ?  
+- How regexes should be for any new tools? (Maybe like nuclei?) 
+- Better Message logging (color and message)
 
-## To Do
+## Road to Version 1
 - [ ] Improve regexes due to captures all segments
 - [ ] More push notifications (Telegram, ...)
 - [ ] StructOpt helps and cli.yaml
 - [ ] Tests
-- [ ] Startup check envs
+- [x] Startup check envs
 - [ ] Report system for app and database
 - [ ] Report generator for bugs
 - [ ] Documents
-- [ ] Webserver api and then telegram or any other bots access
+- [ ] **Webserver** api and then telegram or any other bots access
 - [x] Rename push to notif
 - [ ] Implement update query
 - [ ] SQL functions in trait  
@@ -122,3 +125,4 @@ SUBCOMMANDS:
 - Find good tools and Write good scripts
 - Complete regexes for all types for tools such as FFUF,HTTPX,etc
 - Make a MVP and deploy it
+

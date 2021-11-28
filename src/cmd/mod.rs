@@ -8,6 +8,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use structopt::StructOpt;
 
+use crate::alert::Alert;
 use crate::database::mongo;
 
 #[derive(Debug, StructOpt)]
@@ -30,8 +31,10 @@ pub struct Opt {
     #[structopt(subcommand)]
     pub sub: Subcommand,
 }
+
 #[derive(Debug, StructOpt)]
 pub enum Subcommand {
+    Check,
     Insert(Insert),
     Find {
         ty: String,
@@ -72,6 +75,9 @@ pub async fn from_args() {
     let opt = Opt::from_args();
     // Match subcommands: insert, find
     match opt.sub {
+        Subcommand::Check => {
+            check().await;
+        }
         Subcommand::Insert(insert) => match insert {
             Insert::Program(doc) => {
                 mongo::update(doc).await;
@@ -198,7 +204,6 @@ pub async fn from_args() {
 
             let script_name = Arc::new(script_name);
             let wl = Arc::new(Mutex::new(Vec::new()));
-            // let now = std::time::Instant::now();
 
             // I used iter instead of par_iter but because map is lazy
             // at the end with join_all these run parallel (Hope)
@@ -245,7 +250,7 @@ pub async fn from_args() {
                         join_all(subs.into_iter().map(|s| async move {
                             match s {
                                 Some(s) => s.asset.notif().await,
-                                None => (),
+                                None => false,
                             }
                         }))
                         .await;
@@ -256,9 +261,35 @@ pub async fn from_args() {
             // Run all extractors for all entries in parallel
             join_all(e).await;
 
-            // println!("{}", now.elapsed().as_millis());
-
             crate::tools::file::save("wl.txt", wl.lock().unwrap().to_vec());
         }
+    }
+}
+
+async fn check() {
+    // Check luna.ini exists
+    match std::fs::read("luna.ini") {
+        Ok(_) => "luna.ini".ok(),
+        Err(err) => {
+            "luna.ini".error();
+            err.error();
+        }
+    }
+
+    // Check database
+    let db = crate::database::get_db().await;
+    match db.list_collection_names(None).await {
+        Ok(_) => {
+            format!("Database is up!").ok();
+        }
+        Err(err) => err.error(),
+    }
+
+    // Check Discord
+    let now = chrono::Local::now().to_string();
+    if now.clone().notif().await {
+        format!("Discord checked at: {}", &now).ok();
+    } else {
+        format!("Discord failed!").error();
     }
 }

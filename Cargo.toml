@@ -41,5 +41,7 @@ serde_json = "1.0.68"
 async-trait = "0.1.51"
 rayon = "1.5"
 lazy_static = "1.4.0"
+# loading = "*"
+
 
 # orm = { path = "orm" }

@@ -10,7 +10,7 @@ pub trait Alert {
     fn warn(&self);
     fn found(&self);
     fn not_found(&self);
-    async fn notif(self);
+    async fn notif(self) -> bool;
 }
 
 #[async_trait]
@@ -30,7 +30,7 @@ where
         let text = self.to_string();
         let text = text.trim();
         if !text.is_empty() {
-            println!("{} {}", "[+]".green(), text.to_string().green())
+            println!("{}", format!("{} {}", "[+]", text).green())
         }
     }
 
@@ -38,7 +38,7 @@ where
         let text = self.to_string();
         let text = text.trim();
         if !text.is_empty() {
-            println!("{} {}", "[-]".red(), text.red())
+            println!("{}", format!("{} {}", "[-]", text).red())
         }
     }
 
@@ -46,25 +46,25 @@ where
         let text = self.to_string();
         let text = text.trim();
         if !text.is_empty() {
-            println!("{} {}", "[!]".yellow(), text.to_string().yellow())
+            println!("{}", format!("{} {}", "[!]", text).yellow())
         }
     }
     fn found(&self) {
         let text = self.to_string();
         let text = text.trim();
         if !text.is_empty() {
-            println!("{} {}: Found.", "[+]".green(), text.to_string().green())
+            println!("{}", format!("{} '{}': Found.", "[+]", text).green());
         }
     }
     fn not_found(&self) {
         let text = self.to_string();
         let text = text.trim();
         if !text.is_empty() {
-            println!("{} {}: Not Found", "[+]".red(), text.to_string().red())
+            println!("{}", format!("{} '{}': Not Found.", "[-]", text).red());
         }
     }
 
-    async fn notif(self) {
+    async fn notif(self) -> bool {
         let text = self.to_string();
         let text = text.trim();
         if !text.is_empty() {
@@ -77,10 +77,15 @@ where
                     .send()
                     .await
                 {
-                    Ok(_) => (),
+                    Ok(resp) => {
+                        if resp.status() == 204 {
+                            return true;
+                        }
+                    }
                     Err(err) => err.error(),
                 };
             }
         }
+        false
     }
 }
