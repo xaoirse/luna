@@ -103,13 +103,9 @@ check configs with:
 - [ ] StructOpt helps and cli.yaml
 - [ ] Tests
 - [x] Startup check envs
-- [ ] Report system for app and database
-- [ ] Report generator for bugs
 - [ ] Documents
-- [ ] **Webserver** api and then telegram or any other bots access
 - [x] Rename push to notif
-- [ ] Implement update query
-- [ ] SQL functions in trait  
+- [ ] Implement update and delete query
 - [x] Remove orm  
 - [ ] Remove unused files  
 - [x] Wordlist maker
@@ -119,6 +115,14 @@ check configs with:
 - [x] Parallel regex captures  
 - [x] Discord Notif 
 - [ ] Database chart in readme or help  
+
+## Version 2
+- [ ] **Webserver** api and then telegram or any other bots access
+- [ ] SQL functions in trait  
+- [ ] Report system for app and database
+- [ ] Report generator for bugs
+- [ ] Change Update field only if update occure s
+- [ ] Daily cache  
 
 ## Doing
 - Find scopes and insert them to database
