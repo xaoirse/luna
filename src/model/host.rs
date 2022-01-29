@@ -1,13 +1,9 @@
-use super::{Model, Service};
-use async_trait::async_trait;
+use super::*;
+use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
-use mongodb::bson::{doc, DateTime, Document};
-use rayon::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
-
-use crate::database::mongo;
 
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Host {
@@ -15,48 +11,41 @@ pub struct Host {
     pub ip: String,
 
     #[structopt(long)]
-    pub services: Vec<String>,
-
-    #[structopt(short, long)]
-    pub sub: String,
+    pub services: Vec<Service>,
 
     #[structopt(skip)]
-    pub update: Option<DateTime>,
+    #[serde(with = "utc_rfc2822")]
+    pub update: Option<DateTime<Utc>>,
 }
 
-#[async_trait]
-impl Model for Host {
-    fn ident() -> String {
-        String::from("Host")
-    }
-
-    fn new(id: String, parent: String) -> Self {
+impl Host {
+    fn new() -> Self {
         Self {
-            ip: id,
-            sub: parent,
+            ip: "".to_string(),
             services: vec![],
-            update: Some(DateTime::now()),
+            update: None,
         }
     }
 
-    fn id_query(&self) -> Document {
-        doc! {"ip":self.ip.clone()}
+    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
+        if a.ip == b.ip {
+            a.update = a.update.max(b.update);
+
+            a.services.append(&mut b.services);
+            a.services.dedup_by(Service::same_bucket);
+            true
+        } else {
+            false
+        }
     }
 
-    async fn merge(mut self, mut doc: Self) -> Self {
-        for s in &self.services {
-            mongo::insert::<Service>(s.clone(), "".to_string()).await;
-        }
-        self.services.append(&mut doc.services);
-        self.services.par_sort();
-        self.services.dedup();
-
-        Self {
-            ip: self.ip,
-            sub: self.sub,
-            services: self.services,
-            update: Some(DateTime::now()),
-        }
+    pub fn matches(&self, filter: &Filter) -> bool {
+        filter
+            .ip
+            .as_ref()
+            .map_or(true, |pat| self.ip.to_lowercase().contains(pat))
+            && (filter.port.is_none() && filter.service_name.is_none()
+                || self.services.iter().any(|s| s.matches(filter)))
     }
 
     fn regex() -> Regex {
@@ -69,23 +58,27 @@ impl Model for Host {
         }
         RE.clone()
     }
+}
 
-    fn wordlister(&self) -> Vec<String> {
-        vec![self.ip.clone()]
+impl std::str::FromStr for Host {
+    type Err = std::str::Utf8Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut host = Self::new();
+        host.ip = s.to_string();
+        host.update = Some(Utc::now());
+        Ok(host)
     }
 }
 
 impl<'t> From<regex::Captures<'t>> for Host {
     fn from(cap: regex::Captures<'t>) -> Self {
         Host {
-            sub: cap
-                .get(1)
-                .map_or("".to_string(), |m| m.as_str().to_string()),
             ip: cap
                 .get(2)
                 .map_or("".to_string(), |m| m.as_str().to_string()),
             services: vec![],
-            update: None,
+            update: Some(Utc::now()),
         }
     }
 }

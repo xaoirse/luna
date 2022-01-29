@@ -1,122 +1,99 @@
-use super::Model;
-use super::Sub;
-use async_trait::async_trait;
-use clap::arg_enum;
-use lazy_static::lazy_static;
-use mongodb::bson::{doc, DateTime, Document};
-use rayon::prelude::*;
-use regex::Regex;
+use super::*;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
-use crate::database::mongo;
-
-arg_enum! {
-    #[derive(Debug, Serialize, Deserialize, StructOpt,Clone,PartialEq, Eq)]
-    pub enum ScopeType {
-        SingleDomain,
-        WildcardDomain,
-        IOS,
-        Android,
-        Windows,
-        Mac,
-        Linux,
-        SourceCode,
-        CIDR,
-    }
-}
-arg_enum! {
-    #[derive(Debug, Serialize, Deserialize, StructOpt,Clone,PartialEq, Eq)]
-    pub enum ScopeSeverity {
-        Critical,
-        High,
-        Medium,
-        Low,
-    }
-}
-#[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq)]
+#[derive(
+    Default, Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord,
+)]
 pub struct Scope {
     #[structopt(short, long)]
-    pub asset: String, // id
+    pub asset: String,
 
-    #[structopt(short, long,possible_values = &ScopeType::variants(),case_insensitive = true)]
-    pub ty: Option<ScopeType>,
-
-    #[structopt(short, long)]
-    pub eligible_bounty: Option<bool>,
-
-    #[structopt(long,possible_values = &ScopeSeverity::variants(),case_insensitive = true)]
-    pub severity: Option<ScopeSeverity>,
+    #[structopt(short, long,possible_values = &["SingleDomain","WildcardDomain","Mobile","IOS","Android","PC","Windows","Mac","Linux","SourceCode","CIDR"],case_insensitive = true)]
+    pub typ: Option<String>,
 
     #[structopt(short, long)]
-    pub program: String,
+    pub bounty: Option<String>,
+
+    #[structopt(long,possible_values = &["Critical","High","Medium","Low","None"],case_insensitive = true)]
+    pub severity: Option<String>,
 
     #[structopt(short, long)]
-    pub subs: Vec<String>,
+    pub subs: Vec<Sub>,
 
     #[structopt(skip)]
-    pub update: Option<DateTime>,
+    #[serde(with = "utc_rfc2822")]
+    pub update: Option<DateTime<Utc>>,
 }
 
-#[async_trait]
-impl Model for Scope {
-    fn ident() -> String {
-        String::from("Scope")
+impl Scope {
+    pub fn new() -> Self {
+        Default::default()
     }
 
-    fn new(id: String, parent: String) -> Self {
-        Self {
-            asset: id,
-            program: parent,
-            eligible_bounty: None,
-            severity: None,
-            ty: None,
-            subs: vec![],
-            update: Some(DateTime::now()),
+    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
+        if !a.asset.is_empty() && a.asset == b.asset {
+            let new = a.update < b.update;
+
+            merge(&mut a.typ, &mut b.typ, new);
+            merge(&mut a.bounty, &mut b.bounty, new);
+            merge(&mut a.severity, &mut b.severity, new);
+
+            a.update = a.update.max(b.update);
+
+            a.subs.append(&mut b.subs);
+            a.subs.sort();
+            a.subs.dedup_by(Sub::same_bucket);
+            true
+        } else {
+            false
         }
     }
 
-    fn id_query(&self) -> Document {
-        doc! {"asset":self.asset.clone(),"program":self.program.clone()}
+    pub fn matches(&self, filter: &Filter) -> bool {
+        filter
+            .scope
+            .as_ref()
+            .map_or(true, |pat| self.asset.to_lowercase().contains(pat))
+            && has(&self.typ, &filter.scope_type)
+            && (filter.scope_bounty.is_none() || filter.scope_bounty == self.bounty)
+            && (filter.sub.is_none()
+                && filter.ip.is_none()
+                && filter.port.is_none()
+                && filter.service_name.is_none()
+                && filter.url.is_none()
+                && filter.title.is_none()
+                && filter.status_code.is_none()
+                && filter.content_type.is_none()
+                && filter.content_length.is_none()
+                && filter.tech.is_none()
+                && filter.tech_version.is_none()
+                || self.subs.iter().any(|s| s.matches(filter)))
     }
 
-    async fn merge(mut self, mut doc: Self) -> Self {
-        for s in &self.subs {
-            mongo::insert::<Sub>(s.clone(), self.asset.clone()).await;
+    pub fn set_name(&mut self, luna: &Luna) {
+        for i in 0..self.subs.len() {
+            if self.subs[i].asset.is_empty() {
+                self.subs[i].set_name(luna);
+            }
         }
-        self.subs.append(&mut doc.subs);
-        self.subs.par_sort();
-        self.subs.dedup();
-
-        Self {
-            asset: self.asset,
-            program: self.program,
-            eligible_bounty: self.eligible_bounty.or(doc.eligible_bounty),
-            severity: self.severity.or(doc.severity),
-            ty: self.ty.or(doc.ty),
-            subs: self.subs,
-            update: Some(DateTime::now()),
+        for i in 0..self.subs.len() {
+            if let Some(scope) = luna.scope(&self.subs[i].asset) {
+                self.asset = scope.asset.clone();
+                break;
+            }
         }
-    }
-
-    fn regex() -> Regex {
-        static PAT: &str = r"";
-        lazy_static! {
-            static ref RE: Regex = regex::RegexBuilder::new(PAT)
-                .multi_line(true)
-                .build()
-                .unwrap();
-        }
-        RE.clone()
-    }
-
-    fn wordlister(&self) -> Vec<String> {
-        vec![self.asset.clone()]
     }
 }
 
-impl<'t> From<regex::Captures<'t>> for Scope {
-    fn from(_cap: regex::Captures<'t>) -> Self {
-        todo!()
+impl std::str::FromStr for Scope {
+    type Err = std::str::Utf8Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut scope = Self::new();
+        scope.asset = s.to_string();
+        scope.update = Some(Utc::now());
+        Ok(scope)
     }
 }

@@ -1,63 +1,46 @@
-use super::Model;
-use async_trait::async_trait;
-use lazy_static::lazy_static;
-use mongodb::bson::{doc, Document};
-use regex::Regex;
+use super::*;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
-#[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq)]
+#[derive(
+    Default, Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord,
+)]
 pub struct Tech {
     #[structopt(short, long)]
     pub name: String,
 
     #[structopt(short, long)]
-    pub version: String,
+    pub version: Option<String>,
 }
-
-#[async_trait]
-impl Model for Tech {
-    fn ident() -> String {
-        String::from("Tech")
+impl Tech {
+    fn new() -> Self {
+        Default::default()
     }
 
-    fn new(id: String, parent: String) -> Self {
-        Self {
-            name: id,
-            version: parent,
+    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
+        if a.name == b.name {
+            a.version = a.version.take().max(b.version.take());
+            true
+        } else {
+            false
         }
     }
 
-    fn id_query(&self) -> Document {
-        doc! {"name":self.name.clone(),"version":self.version.clone()}
-    }
-
-    // TODO implement update query for changing version
-    async fn merge(mut self, _doc: Self) -> Self {
-        Self {
-            name: self.name,
-            version: self.version,
-        }
-    }
-
-    fn regex() -> Regex {
-        static PAT: &str = r"";
-        lazy_static! {
-            static ref RE: Regex = regex::RegexBuilder::new(PAT)
-                .multi_line(true)
-                .build()
-                .unwrap();
-        }
-        RE.clone()
-    }
-
-    fn wordlister(&self) -> Vec<String> {
-        vec![self.name.clone()]
+    pub fn matches(&self, filter: &Filter) -> bool {
+        filter
+            .tech
+            .as_ref()
+            .map_or(true, |pat| self.name.to_lowercase().contains(pat))
+            && (filter.tech_version.is_none() || filter.tech_version == self.version)
     }
 }
 
-impl<'t> From<regex::Captures<'t>> for Tech {
-    fn from(_cap: regex::Captures<'t>) -> Self {
-        todo!()
+impl std::str::FromStr for Tech {
+    type Err = std::str::Utf8Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut tech = Self::new();
+        tech.name = s.to_string();
+        Ok(tech)
     }
 }

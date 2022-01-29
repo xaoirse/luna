@@ -1,11 +1,12 @@
 
+# New version is Under heavy development
 # Luna 
 Automatic and **Full Parallel** Script Runner  
 لونا فقط یه ابزار اوتومیت سازی برای اجرای اسکریپت ها و ذخیره ی نتایج اوناست
   
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.3.1
+  / / / / / / |/ / _ |  v0.4.0
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
@@ -130,3 +131,4 @@ check configs with:
 - Complete regexes for all types for tools such as FFUF,HTTPX,etc
 - Make a MVP and deploy it
 
+struct and costructor -> impl new() 

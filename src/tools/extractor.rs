@@ -8,14 +8,14 @@ use crate::model::Model;
 #[async_trait]
 pub trait Extractor {
     // TODO Should be deleted
-    fn extract<T>(self: Arc<Self>) -> Vec<T>
+    async fn extract<T>(self: Arc<Self>) -> Vec<T>
     where
         T: for<'a> From<regex::Captures<'a>> + Model;
 
     async fn extract_and<T, Fut>(
-        &self,
+        self: Arc<Self>,
         f: impl FnOnce(T) -> Fut + Send + Copy + 'async_trait,
-    ) -> &Self
+    ) -> Arc<Self>
     where
         T: for<'a> From<regex::Captures<'a>> + Model + Send,
         Fut: Future<Output = ()> + Send;
@@ -35,7 +35,7 @@ pub trait Extractor {
 
 #[async_trait]
 impl Extractor for String {
-    fn extract<T>(self: Arc<Self>) -> Vec<T>
+    async fn extract<T>(self: Arc<Self>) -> Vec<T>
     where
         T: for<'a> From<regex::Captures<'a>> + Model,
     {
@@ -43,14 +43,14 @@ impl Extractor for String {
     }
 
     async fn extract_and<T, Fut>(
-        &self,
+        self: Arc<Self>,
         f: impl FnOnce(T) -> Fut + Send + Copy + 'async_trait,
-    ) -> &Self
+    ) -> Arc<Self>
     where
         T: for<'a> From<regex::Captures<'a>> + Model + Send,
         Fut: Future<Output = ()> + Send,
     {
-        for t in T::regex().captures_iter(self).map(|c| c.into()) {
+        for t in T::regex().captures_iter(&self).map(|c| c.into()) {
             f(t).await;
         }
         self

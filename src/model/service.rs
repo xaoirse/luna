@@ -1,67 +1,54 @@
-use super::Model;
-use async_trait::async_trait;
-use lazy_static::lazy_static;
-use mongodb::bson::{doc, Document};
-use regex::Regex;
+use super::*;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
-#[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq)]
+#[derive(
+    Default, Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord,
+)]
 pub struct Service {
-    #[structopt(long)]
+    #[structopt(short, long)]
     pub port: String,
 
-    #[structopt(short, long)]
+    #[structopt(long)]
+    pub name: Option<String>,
+
+    #[structopt(long)]
     pub protocol: Option<String>,
 
     #[structopt(short, long)]
     pub banner: Option<String>,
 }
 
-#[async_trait]
-impl Model for Service {
-    fn ident() -> String {
-        String::from("Service")
+impl Service {
+    fn new() -> Self {
+        Default::default()
     }
 
-    fn new(id: String, _parent: String) -> Self {
-        Self {
-            port: id,
-            protocol: None,
-            banner: None,
+    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
+        if a.name == b.name && a.port == b.port {
+            merge(&mut a.protocol, &mut b.protocol, true);
+            merge(&mut a.banner, &mut b.banner, true);
+
+            true
+        } else {
+            false
         }
     }
-
-    fn id_query(&self) -> Document {
-        doc! {"port":self.port.clone()}
-    }
-
-    async fn merge(mut self, doc: Self) -> Self {
-        Self {
-            port: self.port,
-            protocol: self.protocol.or(doc.protocol),
-            banner: self.banner.or(doc.banner),
-        }
-    }
-
-    fn regex() -> Regex {
-        static PAT: &str = r"";
-        lazy_static! {
-            static ref RE: Regex = regex::RegexBuilder::new(PAT)
-                .multi_line(true)
-                .build()
-                .unwrap();
-        }
-        RE.clone()
-    }
-
-    fn wordlister(&self) -> Vec<String> {
-        vec![self.port.clone()]
+    pub fn matches(&self, filter: &Filter) -> bool {
+        filter
+            .port
+            .as_ref()
+            .map_or(true, |pat| self.port.to_lowercase().contains(pat))
+            && has(&self.name, &filter.service_name)
     }
 }
 
-impl<'t> From<regex::Captures<'t>> for Service {
-    fn from(_cap: regex::Captures<'t>) -> Self {
-        todo!()
+impl std::str::FromStr for Service {
+    type Err = std::str::Utf8Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut service = Self::new();
+        service.port = s.to_string();
+        Ok(service)
     }
 }

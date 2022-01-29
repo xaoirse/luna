@@ -1,5 +1,7 @@
 /target
 wl.txt
 /tools
-*.db*
-luna*
+test.json
+luna.json
+report.md
+luna.ini
