@@ -1,5 +1,6 @@
 use super::*;
 use chrono::{DateTime, Utc};
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
@@ -48,10 +49,6 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
         if !a.name.is_empty() && a.name.to_lowercase() == b.name.to_lowercase() {
             let new = a.update < b.update;
@@ -68,7 +65,7 @@ impl Program {
             a.started_at = a.started_at.min(b.started_at);
 
             a.scopes.append(&mut b.scopes);
-            a.scopes.sort();
+            a.scopes.par_sort();
             a.scopes.dedup_by(Scope::same_bucket);
 
             true
@@ -100,20 +97,28 @@ impl Program {
                 && filter.content_length.is_none()
                 && filter.tech.is_none()
                 && filter.tech_version.is_none())
-                || self.scopes.iter().any(|s| s.matches(filter)))
+                || self.scopes.par_iter().any(|s| s.matches(filter)))
     }
 
     pub fn set_name(&mut self, luna: &Luna) {
-        for i in 0..self.scopes.len() {
-            if self.scopes[i].asset.is_empty() {
-                self.scopes[i].set_name(luna);
+        self.scopes.par_iter_mut().for_each(|s| s.set_name(luna));
+
+        if self.name.is_empty() {
+            if let Some(program) = self
+                .scopes
+                .par_iter_mut()
+                .find_map_any(|s| luna.program(&s.asset))
+            {
+                self.name = program.name.clone();
             }
         }
-        for i in 0..self.scopes.len() {
-            if let Some(program) = luna.program(&self.scopes[i].asset) {
-                self.name = program.name.clone();
-                break;
-            }
+    }
+
+    pub fn stringify(&self, v: u8) -> String {
+        match v {
+            0 => self.name.to_string(),
+            1 => String::new(),
+            _ => "".to_string(),
         }
     }
 }
@@ -122,9 +127,24 @@ impl std::str::FromStr for Program {
     type Err = std::str::Utf8Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut program = Self::new();
-        program.name = s.to_string();
-        program.update = Some(Utc::now());
-        Ok(program)
+        Ok(Program {
+            name: s.to_string(),
+            update: Some(Utc::now()),
+            ..Default::default()
+        })
     }
 }
+
+/*
+
+    google - google.com
+    icon: url
+    platform: hackerone,
+    type: Private,
+    bounty: 500$,
+    state: open,
+    scopes: 51,
+    started at: Sat 6 19 2019
+    updated at: Sat 6 19 2019
+
+*/

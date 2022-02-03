@@ -6,7 +6,7 @@ use structopt::StructOpt;
     Default, Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord,
 )]
 pub struct Service {
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub port: String,
 
     #[structopt(long)]
@@ -20,10 +20,6 @@ pub struct Service {
 }
 
 impl Service {
-    fn new() -> Self {
-        Default::default()
-    }
-
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
         if a.name == b.name && a.port == b.port {
             merge(&mut a.protocol, &mut b.protocol, true);
@@ -47,8 +43,9 @@ impl std::str::FromStr for Service {
     type Err = std::str::Utf8Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut service = Self::new();
-        service.port = s.to_string();
-        Ok(service)
+        Ok(Service {
+            port: s.to_string(),
+            ..Default::default()
+        })
     }
 }

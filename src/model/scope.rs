@@ -1,5 +1,6 @@
 use super::*;
 use chrono::{DateTime, Utc};
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
@@ -28,10 +29,6 @@ pub struct Scope {
 }
 
 impl Scope {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
         if !a.asset.is_empty() && a.asset == b.asset {
             let new = a.update < b.update;
@@ -43,7 +40,7 @@ impl Scope {
             a.update = a.update.max(b.update);
 
             a.subs.append(&mut b.subs);
-            a.subs.sort();
+            a.subs.par_sort();
             a.subs.dedup_by(Sub::same_bucket);
             true
         } else {
@@ -69,19 +66,22 @@ impl Scope {
                 && filter.content_length.is_none()
                 && filter.tech.is_none()
                 && filter.tech_version.is_none()
-                || self.subs.iter().any(|s| s.matches(filter)))
+                || self.subs.par_iter().any(|s| s.matches(filter)))
     }
 
     pub fn set_name(&mut self, luna: &Luna) {
-        for i in 0..self.subs.len() {
-            if self.subs[i].asset.is_empty() {
-                self.subs[i].set_name(luna);
-            }
-        }
-        for i in 0..self.subs.len() {
-            if let Some(scope) = luna.scope(&self.subs[i].asset) {
+        self.subs
+            .par_iter_mut()
+            .filter(|s| s.asset.is_empty())
+            .for_each(|s| s.set_name(luna));
+
+        if self.asset.is_empty() {
+            if let Some(scope) = self
+                .subs
+                .par_iter_mut()
+                .find_map_any(|s| luna.scope(&s.asset))
+            {
                 self.asset = scope.asset.clone();
-                break;
             }
         }
     }
@@ -91,9 +91,10 @@ impl std::str::FromStr for Scope {
     type Err = std::str::Utf8Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut scope = Self::new();
-        scope.asset = s.to_string();
-        scope.update = Some(Utc::now());
-        Ok(scope)
+        Ok(Scope {
+            asset: s.to_string(),
+            update: Some(Utc::now()),
+            ..Default::default()
+        })
     }
 }

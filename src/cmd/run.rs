@@ -1,10 +1,17 @@
 use clap::arg_enum;
+use colored::Colorize;
+use log::{debug, error, info, warn};
 use structopt::StructOpt;
 
+use super::script;
 use crate::model::*;
 
 #[derive(Debug, StructOpt)]
 pub struct Opt {
+    #[structopt(short, long, global = true)]
+    pub quiet: bool,
+    #[structopt(short, long, default_value = "luna.json", global = true)]
+    pub json: String,
     #[structopt(subcommand)]
     pub cli: Cli,
 }
@@ -119,8 +126,10 @@ pub struct InsertHosts {
 
 #[derive(Debug, StructOpt, Default)]
 pub struct Filter {
-    #[structopt(possible_values = &Fields::variants(), case_insensitive = true)]
+    #[structopt(possible_values = &Fields::variants(), case_insensitive = true, help="Case Insensitive")]
     pub field: Fields,
+    #[structopt(short, long, parse(from_occurrences))]
+    pub verbose: u8,
 
     #[structopt(long, short)]
     pub program: Option<String>,
@@ -173,17 +182,46 @@ pub struct Filter {
 }
 
 arg_enum! {
-    #[derive(Debug)]
+    #[derive(Debug, Clone, Copy)]
     pub enum Fields {
-        URL,
+        None,
+        Keyword,
+        Tech,
+        Service,
+        IP,
+        Url,
         Sub,
         Scope,
         Program,
     }
 }
+
 impl Default for Fields {
     fn default() -> Self {
         Self::Scope
+    }
+}
+
+impl From<&Fields> for &str {
+    fn from(f: &Fields) -> Self {
+        match f {
+            Fields::Program => "program",
+            Fields::Scope => "scope",
+            Fields::Sub => "sub",
+            Fields::Url => "url",
+            Fields::IP => "ip",
+            Fields::Keyword => "keyword",
+            Fields::Service => "port",
+            Fields::None => "",
+            Fields::Tech => todo!(),
+        }
+    }
+}
+
+impl Fields {
+    pub fn substitution(&self) -> String {
+        let f: &str = self.into();
+        format!("${{{}}}", f)
     }
 }
 
@@ -198,38 +236,83 @@ pub enum Server {
     Check,
     Report,
     Status,
-    //TODO
 }
 
-pub async fn run() {
+static BANNER: &str = r"
+   __  __  ___  _____ 
+  / / / / / / |/ / _ |  v0.4.0
+ / /_/ /_/ /    / __ |        
+/____|____/_/|_/_/ |_|  SA    
+";
+
+pub fn run() {
+    debug!("Running...");
+
     let opt = Opt::from_args();
-    let path = "luna.json";
+
+    let json = &opt.json;
+    if !opt.quiet {
+        println!("{}", BANNER.blue());
+    }
+
+    let mut luna = match Luna::from_file(json) {
+        Ok(luna) => {
+            info!("Luna loaded successfully.");
+            luna
+        }
+        Err(err) => {
+            warn!("Can't load Luna from file!: {}", err);
+            warn!("Empty Luna will be used!");
+            Luna::default()
+        }
+    };
 
     match opt.cli {
         Cli::Insert(insert) => {
-            let insert: Luna = match *insert {
-                Insert::Program(i) => i.into(),
-                Insert::Scope(i) => i.into(),
-                Insert::Scopes(i) => i.into(),
-                Insert::Sub(i) => i.into(),
-                Insert::Subs(i) => i.into(),
-                Insert::Url(i) => i.into(),
-                Insert::Urls(i) => i.into(),
-                Insert::Host(i) => i.into(),
-                Insert::Hosts(i) => i.into(),
-            };
-            let mut file = Luna::from_file(path).unwrap_or_default();
-            file.merge(insert);
-            file.save(path).unwrap();
+            debug!("{:#?}", insert);
+
+            let insert: Luna = (*insert).into();
+            luna.merge(insert);
+
+            // TODO better mechanism for retry saving in errors
+            if let Err(err) = luna.save(json) {
+                error!("Error while saving: {}", err);
+            } else {
+                info!("Saved in \"{}\" successfully.", json);
+            }
         }
+
         Cli::Find(find) => {
-            let luna = Luna::from_file(path).unwrap_or_default();
+            debug!("{:#?}", find);
+
             let results = luna.find(&find);
-            results.iter().for_each(|r| println!("{}", r))
+            results.iter().for_each(|r| println!("{}", r));
         }
-        _ => (),
+
+        Cli::Script(script) => {
+            debug!("{:#?}", script);
+
+            match script::parse(script.path) {
+                Ok(script) => {
+                    script.run(&luna).into_iter().for_each(|r| match r {
+                        Ok(i) => luna.merge(i),
+                        Err(err) => error!("{}", err),
+                    });
+                    info!("Scripts completed.");
+
+                    if let Err(err) = luna.save(json) {
+                        error!("Error while saving: {}", err);
+                    } else {
+                        info!("Saved in \"{}\" successfully.", json);
+                    }
+                }
+                Err(err) => error!("Error in parsing file: {}", err),
+            }
+        }
+
+        Cli::Check => todo!(),
+        Cli::Test => todo!(),
+        Cli::Report => todo!(),
+        Cli::Server(_) => todo!(),
     }
 }
-
-// TODO
-// luna find sub --url index.html --status-code 200

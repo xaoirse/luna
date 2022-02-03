@@ -1,7 +1,6 @@
 use super::*;
 use chrono::{DateTime, Utc};
-use lazy_static::lazy_static;
-use regex::Regex;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
@@ -34,10 +33,6 @@ pub struct Url {
 }
 
 impl Url {
-    fn new() -> Self {
-        Default::default()
-    }
-
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
         if a.url == b.url {
             let new = a.update < b.update;
@@ -50,7 +45,7 @@ impl Url {
             a.update = a.update.max(b.update);
 
             a.techs.append(&mut b.techs);
-            a.techs.sort();
+            a.techs.par_sort();
             a.techs.dedup_by(Tech::same_bucket);
 
             true
@@ -68,22 +63,11 @@ impl Url {
             && (filter.content_type.is_none() || filter.content_type == self.content_type)
             && (filter.content_length.is_none() || filter.content_length == self.content_length)
             && (filter.tech.is_none() && filter.tech_version.is_none()
-                || self.techs.iter().any(|t| t.matches(filter)))
+                || self.techs.par_iter().any(|t| t.matches(filter)))
     }
 
     pub fn sub_asset(&self) -> String {
         todo!()
-    }
-    fn regex() -> Regex {
-        // TODO scheme is in match 1
-        static PAT: &str = r"(\w+)://[-a-zA-Z0-9:@;?&=/%\+\.\*!'\(\),\$_\{\}\^~\[\]`#|]+";
-        lazy_static! {
-            static ref RE: Regex = regex::RegexBuilder::new(PAT)
-                .multi_line(true)
-                .build()
-                .unwrap();
-        }
-        RE.clone()
     }
 }
 
@@ -91,10 +75,11 @@ impl std::str::FromStr for Url {
     type Err = std::str::Utf8Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut url = Self::new();
-        url.url = s.to_string();
-        url.update = Some(Utc::now());
-        Ok(url)
+        Ok(Url {
+            url: s.to_string(),
+            update: Some(Utc::now()),
+            ..Default::default()
+        })
     }
 }
 

@@ -1,5 +1,6 @@
 use super::*;
 use chrono::{DateTime, Utc};
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::io::Write;
@@ -30,342 +31,117 @@ impl Luna {
 
         // Fill nones
         let luna_copy = self.clone();
-        for i in 0..self.programs.len() {
-            if self.programs[i].name.is_empty() {
-                self.programs[i].set_name(&luna_copy);
-            }
-        }
+        self.programs
+            .par_iter_mut()
+            .for_each(|p| p.set_name(&luna_copy));
 
         // Merge
-        self.programs.sort();
+        self.programs.par_sort();
         self.programs.dedup_by(Program::same_bucket);
     }
-    /*
-    pub fn get_rid_of_none(&mut self) {
-        let mut commons = vec![];
 
-        if let Some(scopes) = self
-            .programs
-            .iter()
-            .find(|p| p.name == "none")
-            .map(|p| &p.scopes)
-        {
-            for scope in scopes {
-                if let Some(program) = self.program(&scope.asset) {
-                    if !program.name.is_empty() {
-                        commons.push((program.name.clone(), scope.clone()));
-                    }
-                }
-            }
-        }
-
-        let mut luna = Self::new();
-
-        for (p, s) in commons {
-            let mut program = Program::new();
-            program.name = p;
-            program.scopes.push(s.clone());
-            luna.programs.push(program);
-            self.programs
-                .iter_mut()
-                .filter(|p| p.name == "none")
-                .for_each(|p| p.scopes.retain(|sc| sc.asset != s.asset))
-        }
-        self.merge(luna);
-    }
-
-    pub fn remove_nones(&mut self) {
-        let mut ip = 0;
-        while ip < self.programs.len() {
-            let mut is = 0;
-            while is < self.programs[ip].scopes.len() {
-                let mut isub = 0;
-                while isub < self.programs[ip].scopes[is].subs.len() {
-                    let mut ih = 0;
-                    if self.programs[ip].scopes[is].subs[isub].asset.is_empty() {
-                        while ih < self.programs[ip].scopes[is].subs[isub].hosts.len() {
-                            if let Some(sub) =
-                                self.sub(&self.programs[ip].scopes[is].subs[isub].hosts[ih].ip)
-                            {
-                                self.programs[ip].scopes[is].subs[isub].asset = sub.asset.clone();
-                            }
-                            ih += 1;
-                        }
-                    }
-
-                    isub += 1;
-                }
-                is += 1;
-            }
-            ip += 1;
-        }
-    }
-    */
-
-    /*
-    pub fn from_insert(insert: Insert) -> Self {
-        let path = "luna.json";
-        let mut luna = Self::new();
-
-        match insert {
-            Insert::Program(insert_program) => {
-                luna.programs.push(insert_program.program);
-            }
-            Insert::Scope(insert_scope) => {
-                let mut program = Program::new();
-                program.name = insert_scope.program.unwrap_or_else(|| {
-                    Luna::from_file(path)
-                        .unwrap_or_default()
-                        .get_program_name_from_scope(&insert_scope.scope.asset)
-                        .unwrap_or_else(|| "none".to_string())
-                });
-                program.scopes.push(insert_scope.scope);
-                program.scopes.extend(insert_scope.scopes);
-                luna.programs.push(program);
-            }
-            Insert::Sub(insert_sub) => {
-                let mut scope = Scope::new();
-                scope.asset = insert_sub.scope.clone();
-                scope.subs.push(insert_sub.sub);
-                let mut program = Program::new();
-                program.name = Luna::from_file(path)
-                    .unwrap_or_default()
-                    .get_program_name_from_scope(&insert_sub.scope)
-                    .unwrap_or_else(|| insert_sub.program.unwrap_or_else(|| "none".to_string()));
-                program.scopes.push(scope);
-                luna.programs.push(program);
-            }
-            Insert::Url(insert_url) => {
-                let mut sub = Sub::new();
-                sub.asset = insert_url.sub.clone();
-                sub.urls.push(insert_url.url);
-                let scope_name = Luna::from_file(path)
-                    .unwrap_or_default()
-                    .get_scope_name_from_sub(&insert_url.sub)
-                    .unwrap_or_else(|| "none".to_string());
-                let mut scope = Scope::new();
-                scope.asset = scope_name.clone();
-                scope.subs.push(sub);
-
-                let mut program = Program::new();
-                program.name = Luna::from_file(path)
-                    .unwrap_or_default()
-                    .get_program_name_from_scope(&scope_name)
-                    .unwrap_or_else(|| "none".to_string());
-                program.scopes.push(scope);
-                luna.programs.push(program);
-            }
-            Insert::Host(insert_host) => {
-                let mut sub = Sub::new();
-                sub.asset = insert_host.sub.clone();
-                sub.hosts.push(insert_host.host);
-                let scope_name = Luna::from_file(path)
-                    .unwrap_or_default()
-                    .get_scope_name_from_sub(&insert_host.sub)
-                    .unwrap_or_else(|| "none".to_string());
-                let mut scope = Scope::new();
-                scope.asset = scope_name.clone();
-                scope.subs.push(sub);
-
-                let mut program = Program::new();
-                program.name = Luna::from_file(path)
-                    .unwrap_or_default()
-                    .get_program_name_from_scope(&scope_name)
-                    .unwrap_or_else(|| "none".to_string());
-                program.scopes.push(scope);
-                luna.programs.push(program);
-            }
-        }
-
-        luna
-    }
-    */
-
-    pub fn find(self, filter: &Filter) -> Vec<String> {
-        /*
-        let tech_filter = |t: &Tech| {
-            (find.tech.is_none()
-                || t.name
-                    .to_lowercase()
-                    .contains(&find.tech.as_ref().unwrap().to_lowercase()))
-                && (find.tech_version.is_none() || find.tech_version == t.version)
-        };
-
-        let url_filter = |u: &Url| {
-            (find.url.is_none()
-                || u.url
-                    .to_lowercase()
-                    .contains(&find.url.as_ref().unwrap().to_lowercase()))
-                && are_same(&find.title, &u.title)
-                && (find.status_code.is_none() || find.status_code == u.status_code)
-                && (find.content_type.is_none() || find.content_type == u.content_type)
-                && (find.content_length.is_none() || find.content_length == u.content_length)
-                && (find.tech.is_none() && find.tech_version.is_none()
-                    || u.techs.iter().any(tech_filter))
-        };
-
-        let service_filter = |s: &Service| {
-            (find.port.is_none()
-                || s.port
-                    .to_lowercase()
-                    .contains(&find.port.as_ref().unwrap().to_lowercase()))
-                && are_same(&find.service_name, &s.name)
-        };
-        let host_filter = |h: &Host| {
-            (find.ip.is_none()
-                || h.ip
-                    .to_lowercase()
-                    .contains(&find.ip.as_ref().unwrap().to_lowercase()))
-                && (find.port.is_none() && find.service_name.is_none()
-                    || h.services.iter().any(service_filter))
-        };
-        let sub_filter = |s: &Sub| {
-            (find.sub.is_none()
-                || s.asset
-                    .to_lowercase()
-                    .contains(&find.sub.as_ref().unwrap().to_lowercase()))
-                && (find.ip.is_none() && find.port.is_none() && find.service_name.is_none()
-                    || s.hosts.iter().any(host_filter))
-                && (find.url.is_none()
-                    && find.title.is_none()
-                    && find.status_code.is_none()
-                    && find.content_type.is_none()
-                    && find.content_length.is_none()
-                    && find.tech.is_none()
-                    && find.tech_version.is_none()
-                    || s.urls.iter().any(url_filter))
-        };
-
-        let scope_filter = |s: &Scope| {
-            (find.scope.is_none()
-                || s.asset
-                    .to_lowercase()
-                    .contains(&find.scope.as_ref().unwrap().to_lowercase()))
-                && are_same(&find.scope_type, &s.typ)
-                && (find.scope_bounty.is_none() || find.scope_bounty == s.bounty)
-                && (find.sub.is_none()
-                    && find.ip.is_none()
-                    && find.port.is_none()
-                    && find.service_name.is_none()
-                    && find.url.is_none()
-                    && find.title.is_none()
-                    && find.status_code.is_none()
-                    && find.content_type.is_none()
-                    && find.content_length.is_none()
-                    && find.tech.is_none()
-                    && find.tech_version.is_none()
-                    || s.subs.iter().any(sub_filter))
-        };
-
-        let program_filter = |p: &Program| {
-            (find.program.is_none()
-                || p.name
-                    .to_lowercase()
-                    .contains(&find.program.as_ref().unwrap().to_lowercase()))
-                && are_same(&find.program_platform, &p.platform)
-                && are_same(&find.program_type, &p.typ)
-                && (find.program_bounty.is_none() || find.program_bounty == p.bounty)
-                && (find.program_state.is_none() || find.program_state == p.state)
-                && ((find.scope.is_none()
-                    && find.scope_type.is_none()
-                    && find.scope_bounty.is_none()
-                    && find.sub.is_none()
-                    && find.ip.is_none()
-                    && find.port.is_none()
-                    && find.service_name.is_none()
-                    && find.url.is_none()
-                    && find.title.is_none()
-                    && find.status_code.is_none()
-                    && find.content_type.is_none()
-                    && find.content_length.is_none()
-                    && find.tech.is_none()
-                    && find.tech_version.is_none())
-                    || p.scopes.iter().any(scope_filter))
-        };
-        */
-
+    pub fn find(&self, filter: &Filter) -> Vec<String> {
         match filter.field {
             Fields::Program => self
                 .programs
-                .into_iter()
+                .par_iter()
                 .filter(|p| p.matches(filter))
-                .map(|p| p.name)
+                .map(|p| p.stringify(filter.verbose))
                 .collect(),
             Fields::Scope => self
                 .programs
-                .into_iter()
+                .par_iter()
                 .filter(|p| p.matches(filter))
-                .map(|p| p.scopes)
-                .flatten()
-                .into_iter()
+                .flat_map(|p| &p.scopes)
                 .filter(|s| s.matches(filter))
-                .map(|s| s.asset)
+                .map(|s| match filter.verbose {
+                    0 => s.asset.to_string(),
+                    _ => format!("{:#?}", s),
+                })
                 .collect(),
 
             Fields::Sub => self
                 .programs
-                .into_iter()
+                .par_iter()
                 .filter(|p| p.matches(filter))
-                .map(|p| p.scopes)
-                .flatten()
-                .into_iter()
+                .flat_map(|p| &p.scopes)
                 .filter(|s| s.matches(filter))
-                .map(|s| s.subs)
-                .flatten()
-                .into_iter()
+                .flat_map(|s| &s.subs)
                 .filter(|s| s.matches(filter))
-                .map(|s| s.asset)
+                .map(|s| match filter.verbose {
+                    0 => s.asset.to_string(),
+                    _ => format!("{:#?}", s),
+                })
                 .collect(),
-            Fields::URL => self
+            Fields::Url => self
                 .programs
-                .into_iter()
+                .par_iter()
                 .filter(|p| p.matches(filter))
-                .map(|p| p.scopes)
-                .flatten()
-                .into_iter()
+                .flat_map(|p| &p.scopes)
                 .filter(|s| s.matches(filter))
-                .map(|s| s.subs)
-                .flatten()
-                .into_iter()
+                .flat_map(|s| &s.subs)
                 .filter(|s| s.matches(filter))
-                .map(|s| s.urls)
-                .flatten()
+                .flat_map(|s| &s.urls)
                 .filter(|u| u.matches(filter))
-                .map(|u| u.url)
+                .map(|u| match filter.verbose {
+                    0 => u.url.to_string(),
+                    _ => format!("{:#?}", u),
+                })
                 .collect(),
+            Fields::IP => self
+                .programs
+                .par_iter()
+                .filter(|p| p.matches(filter))
+                .flat_map(|p| &p.scopes)
+                .filter(|s| s.matches(filter))
+                .flat_map(|s| &s.subs)
+                .filter(|s| s.matches(filter))
+                .flat_map(|s| &s.hosts)
+                .filter(|u| u.matches(filter))
+                .map(|h| match filter.verbose {
+                    0 => h.ip.to_string(),
+                    _ => format!("{:#?}", h),
+                })
+                .collect(),
+            Fields::None => vec!["".to_string()],
+            Fields::Service => todo!(),
+            Fields::Tech => todo!(),
+            Fields::Keyword => todo!(),
         }
-
-        // luna.programs.iter().find(|x|x.eq(slef.))
+    }
+    pub fn find_all(&self, field: Fields) -> Vec<String> {
+        self.find(&Filter {
+            field,
+            ..Default::default()
+        })
     }
 
     pub fn program(&self, scope: &str) -> Option<&Program> {
         self.programs
-            .iter()
+            .par_iter()
             .filter(|p| !p.name.is_empty())
-            .find(|p| p.scopes.iter().any(|s| s.asset == scope))
+            .find_any(|p| p.scopes.par_iter().any(|s| s.asset == scope))
     }
 
     pub fn scope(&self, sub: &str) -> Option<&Scope> {
         self.programs
-            .iter()
-            .map(|p| &p.scopes)
-            .flatten()
+            .par_iter()
+            .flat_map(|p| &p.scopes)
             .filter(|s| !s.asset.is_empty())
-            .find(|s| s.subs.iter().any(|s| s.asset == sub))
+            .find_any(|s| s.subs.par_iter().any(|s| s.asset == sub))
     }
     pub fn sub(&self, ip: &str) -> Option<&Sub> {
         self.programs
-            .iter()
-            .map(|p| &p.scopes)
-            .flatten()
-            .map(|s| &s.subs)
-            .flatten()
+            .par_iter()
+            .flat_map(|p| &p.scopes)
+            .flat_map(|s| &s.subs)
             .filter(|s| !s.asset.is_empty())
-            .find(|s| s.hosts.iter().any(|h| h.ip == ip))
+            .find_any(|s| s.hosts.par_iter().any(|h| h.ip == ip))
     }
 
     pub fn save(&self, path: &str) -> Result<usize, Box<dyn std::error::Error>> {
-        let str = serde_json::to_string(&self).unwrap();
+        std::fs::copy(path, &format!("{}{}", path, Utc::now().to_rfc2822()))?;
+        let str = serde_json::to_string(&self)?;
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .write(true)
@@ -377,10 +153,6 @@ impl Luna {
     pub fn from_file(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let file = std::fs::read_to_string(path)?;
         Ok(serde_json::from_str(&file)?)
-    }
-
-    pub fn new() -> Self {
-        Default::default()
     }
 }
 
@@ -577,6 +349,22 @@ impl From<InsertHosts> for Luna {
     }
 }
 
+impl From<Insert> for Luna {
+    fn from(i: Insert) -> Self {
+        match i {
+            Insert::Program(i) => i.into(),
+            Insert::Scope(i) => i.into(),
+            Insert::Scopes(i) => i.into(),
+            Insert::Sub(i) => i.into(),
+            Insert::Subs(i) => i.into(),
+            Insert::Url(i) => i.into(),
+            Insert::Urls(i) => i.into(),
+            Insert::Host(i) => i.into(),
+            Insert::Hosts(i) => i.into(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
 
@@ -584,7 +372,7 @@ mod test {
 
     #[test]
     fn rw_file() {
-        assert_eq!(Luna::new().save("test.json").unwrap(), 74);
-        assert_eq!(Luna::from_file("test.json").unwrap(), Luna::new());
+        assert_eq!(Luna::default().save("test.json").unwrap(), 74);
+        assert_eq!(Luna::from_file("test.json").unwrap(), Luna::default());
     }
 }

@@ -13,10 +13,6 @@ pub struct Tech {
     pub version: Option<String>,
 }
 impl Tech {
-    fn new() -> Self {
-        Default::default()
-    }
-
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
         if a.name == b.name {
             a.version = a.version.take().max(b.version.take());
@@ -39,8 +35,9 @@ impl std::str::FromStr for Tech {
     type Err = std::str::Utf8Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut tech = Self::new();
-        tech.name = s.to_string();
-        Ok(tech)
+        Ok(Tech {
+            name: s.to_string(),
+            ..Default::default()
+        })
     }
 }

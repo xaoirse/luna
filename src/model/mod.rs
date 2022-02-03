@@ -17,20 +17,13 @@ pub use sub::Sub;
 pub use tech::Tech;
 pub use url::Url;
 
-pub use crate::alert::Alert;
 pub use crate::cmd::run::*;
-
-pub trait Model {
-    fn new() -> Self;
-    fn same_bucket(b: &mut Self, a: &mut Self) -> bool;
-    fn is_same(&self, find: &Filter) -> bool;
-}
 
 mod utc_rfc2822 {
 
     // https://serde.rs/custom-date-format.html
 
-    use chrono::{DateTime, Utc};
+    use chrono::{DateTime, Local, Utc};
     use serde::{self, Deserialize, Deserializer, Serializer};
 
     // The signature of a serialize_with function must follow the pattern:
@@ -45,7 +38,7 @@ mod utc_rfc2822 {
         S: Serializer,
     {
         if let Some(date) = date {
-            let s = date.to_rfc2822();
+            let s = date.with_timezone(&Local::now().timezone()).to_rfc2822();
             serializer.serialize_str(&s)
         } else {
             let s = String::new();
