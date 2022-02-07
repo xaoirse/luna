@@ -22,12 +22,8 @@ impl Tech {
         }
     }
 
-    pub fn matches(&self, filter: &Filter) -> bool {
-        filter
-            .tech
-            .as_ref()
-            .map_or(true, |pat| self.name.to_lowercase().contains(pat))
-            && (filter.tech_version.is_none() || filter.tech_version == self.version)
+    pub fn matches(&self, filter: &FilterRegex) -> bool {
+        self.name.contains_opt(&filter.tech) && self.version.contains_opt(&filter.tech_version)
     }
 }
 

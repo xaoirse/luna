@@ -47,21 +47,11 @@ impl Sub {
         }
     }
 
-    pub fn matches(&self, filter: &Filter) -> bool {
-        filter
-            .sub
-            .as_ref()
-            .map_or(true, |pat| self.asset.to_lowercase().contains(pat))
-            && (filter.ip.is_none() && filter.port.is_none() && filter.service_name.is_none()
-                || self.hosts.par_iter().any(|h| h.matches(filter)))
-            && (filter.url.is_none()
-                && filter.title.is_none()
-                && filter.status_code.is_none()
-                && filter.content_type.is_none()
-                && filter.content_length.is_none()
-                && filter.tech.is_none()
-                && filter.tech_version.is_none()
-                || self.urls.par_iter().any(|u| u.matches(filter)))
+    pub fn matches(&self, filter: &FilterRegex) -> bool {
+        self.asset.contains_opt(&filter.sub)
+            && self.typ.contains_opt(&filter.sub_typ)
+            && (filter.host_is_none() || self.hosts.par_iter().any(|h| h.matches(filter)))
+            && (filter.url_is_none() || self.urls.par_iter().any(|u| u.matches(filter)))
     }
 
     pub fn set_name(&mut self, luna: &Luna) {

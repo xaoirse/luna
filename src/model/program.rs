@@ -41,7 +41,7 @@ pub struct Program {
 
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
-    pub started_at: Option<DateTime<Utc>>,
+    pub start: Option<DateTime<Utc>>,
 
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
@@ -62,42 +62,27 @@ impl Program {
             merge(&mut a.state, &mut b.state, new);
 
             a.update = a.update.max(b.update);
-            a.started_at = a.started_at.min(b.started_at);
+            a.start = a.start.min(b.start);
 
             a.scopes.append(&mut b.scopes);
             a.scopes.par_sort();
             a.scopes.dedup_by(Scope::same_bucket);
 
-            true
-        } else {
-            false
+            return true;
         }
+        false
     }
 
-    pub fn matches(&self, filter: &Filter) -> bool {
-        filter
-            .program
-            .as_ref()
-            .map_or(true, |pat| self.name.to_lowercase().contains(pat))
-            && has(&self.platform, &filter.program_platform)
-            && has(&self.typ, &filter.program_type)
-            && (filter.program_bounty.is_none() || filter.program_bounty == self.bounty)
-            && (filter.program_state.is_none() || filter.program_state == self.state)
-            && ((filter.scope.is_none()
-                && filter.scope_type.is_none()
-                && filter.scope_bounty.is_none()
-                && filter.sub.is_none()
-                && filter.ip.is_none()
-                && filter.port.is_none()
-                && filter.service_name.is_none()
-                && filter.url.is_none()
-                && filter.title.is_none()
-                && filter.status_code.is_none()
-                && filter.content_type.is_none()
-                && filter.content_length.is_none()
-                && filter.tech.is_none()
-                && filter.tech_version.is_none())
-                || self.scopes.par_iter().any(|s| s.matches(filter)))
+    pub fn matches(&self, filter: &FilterRegex) -> bool {
+        self.name.contains_opt(&filter.program)
+            && self.platform.contains_opt(&filter.program_platform)
+            && self.handle.contains_opt(&filter.program_handle)
+            && self.typ.contains_opt(&filter.program_type)
+            && self.url.contains_opt(&filter.program_url)
+            && self.icon.contains_opt(&filter.program_icon)
+            && self.bounty.contains_opt(&filter.program_bounty)
+            && self.state.contains_opt(&filter.program_state)
+            && (filter.scope_is_none() || self.scopes.par_iter().any(|s| s.matches(filter)))
     }
 
     pub fn set_name(&mut self, luna: &Luna) {

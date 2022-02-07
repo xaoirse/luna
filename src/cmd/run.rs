@@ -1,4 +1,3 @@
-use clap::arg_enum;
 use colored::Colorize;
 use log::{debug, error, info, warn};
 use structopt::StructOpt;
@@ -124,107 +123,6 @@ pub struct InsertHosts {
     pub program: Option<String>,
 }
 
-#[derive(Debug, StructOpt, Default)]
-pub struct Filter {
-    #[structopt(possible_values = &Fields::variants(), case_insensitive = true, help="Case Insensitive")]
-    pub field: Fields,
-    #[structopt(short, long, parse(from_occurrences))]
-    pub verbose: u8,
-
-    #[structopt(long, short)]
-    pub program: Option<String>,
-    #[structopt(long)]
-    pub program_platform: Option<String>,
-    #[structopt(long)]
-    pub program_type: Option<String>,
-    #[structopt(long)]
-    pub program_bounty: Option<String>,
-    #[structopt(long)]
-    pub program_state: Option<String>,
-
-    #[structopt(long, short)]
-    pub scope: Option<String>,
-    #[structopt(long)]
-    pub scope_type: Option<String>,
-    #[structopt(long)]
-    pub scope_bounty: Option<String>,
-
-    #[structopt(long)]
-    pub sub: Option<String>,
-    #[structopt(long)]
-    pub ip: Option<String>,
-
-    #[structopt(long)]
-    pub port: Option<String>,
-    #[structopt(long)]
-    pub service_name: Option<String>,
-
-    #[structopt(long, short = "u")]
-    pub url: Option<String>,
-    #[structopt(long)]
-    pub title: Option<String>,
-    #[structopt(long, short = "c")]
-    pub status_code: Option<String>,
-    #[structopt(long)]
-    pub content_type: Option<String>,
-    #[structopt(long)]
-    pub content_length: Option<String>,
-
-    #[structopt(long)]
-    pub tech: Option<String>,
-    #[structopt(long)]
-    pub tech_version: Option<String>,
-
-    #[structopt(long, short = "m")]
-    pub minutes_before: Option<i32>,
-    #[structopt(long, short = "d")]
-    pub days_before: Option<i32>,
-}
-
-arg_enum! {
-    #[derive(Debug, Clone, Copy)]
-    pub enum Fields {
-        None,
-        Keyword,
-        Tech,
-        Service,
-        IP,
-        Url,
-        Sub,
-        Scope,
-        Program,
-    }
-}
-
-impl Default for Fields {
-    fn default() -> Self {
-        Self::Scope
-    }
-}
-
-impl From<&Fields> for &str {
-    fn from(f: &Fields) -> Self {
-        match f {
-            Fields::Program => "program",
-            Fields::Scope => "scope",
-            Fields::Sub => "sub",
-            Fields::Url => "url",
-            Fields::IP => "ip",
-            Fields::Keyword => "keyword",
-            Fields::Service => "port",
-            Fields::None => "",
-            Fields::Tech => todo!(),
-        }
-    }
-}
-
-impl Fields {
-    pub fn substitution(&self) -> String {
-        let f: &str = self.into();
-        format!("${{{}}}", f)
-    }
-}
-
 #[derive(Debug, StructOpt)]
 pub struct Script {
     pub path: String,
@@ -261,7 +159,7 @@ pub fn run() {
             luna
         }
         Err(err) => {
-            warn!("Can't load Luna from file!: {}", err);
+            error!("Can't load Luna from file!: {}", err);
             warn!("Empty Luna will be used!");
             Luna::default()
         }
@@ -285,8 +183,13 @@ pub fn run() {
         Cli::Find(find) => {
             debug!("{:#?}", find);
 
-            let results = luna.find(&find);
-            results.iter().for_each(|r| println!("{}", r));
+            match (*find).try_into() {
+                Ok(find) => {
+                    let results = luna.find(&find);
+                    results.iter().for_each(|r| println!("{}", r));
+                }
+                Err(err) => error!("Use fucking right regex: {}", err),
+            }
         }
 
         Cli::Script(script) => {
@@ -294,10 +197,7 @@ pub fn run() {
 
             match script::parse(script.path) {
                 Ok(script) => {
-                    script.run(&luna).into_iter().for_each(|r| match r {
-                        Ok(i) => luna.merge(i),
-                        Err(err) => error!("{}", err),
-                    });
+                    script.run(&luna).into_iter().for_each(|l| luna.merge(l));
                     info!("Scripts completed.");
 
                     if let Err(err) = luna.save(json) {

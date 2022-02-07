@@ -48,25 +48,12 @@ impl Scope {
         }
     }
 
-    pub fn matches(&self, filter: &Filter) -> bool {
-        filter
-            .scope
-            .as_ref()
-            .map_or(true, |pat| self.asset.to_lowercase().contains(pat))
-            && has(&self.typ, &filter.scope_type)
-            && (filter.scope_bounty.is_none() || filter.scope_bounty == self.bounty)
-            && (filter.sub.is_none()
-                && filter.ip.is_none()
-                && filter.port.is_none()
-                && filter.service_name.is_none()
-                && filter.url.is_none()
-                && filter.title.is_none()
-                && filter.status_code.is_none()
-                && filter.content_type.is_none()
-                && filter.content_length.is_none()
-                && filter.tech.is_none()
-                && filter.tech_version.is_none()
-                || self.subs.par_iter().any(|s| s.matches(filter)))
+    pub fn matches(&self, filter: &FilterRegex) -> bool {
+        self.asset.contains_opt(&filter.scope)
+            && self.typ.contains_opt(&filter.scope_type)
+            && self.bounty.contains_opt(&filter.scope_bounty)
+            && self.severity.contains_opt(&filter.scope_severity)
+            && (filter.sub_is_none() || self.subs.par_iter().any(|s| s.matches(filter)))
     }
 
     pub fn set_name(&mut self, luna: &Luna) {

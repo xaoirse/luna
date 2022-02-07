@@ -1,21 +1,9 @@
 use log::{debug, error};
 use rayon::prelude::*;
 use regex::Regex;
-use std::{
-    error, fmt,
-    process::{Command, Output},
-};
+use std::{error, fmt, process::Command};
 
-use super::run::{Fields, InsertProgram};
-use crate::model::{Luna, Program};
-
-macro_rules! regex {
-    ($re:ident $(,)?) => {{
-        static RE: once_cell::sync::OnceCell<Result<regex::Regex, regex::Error>> =
-            once_cell::sync::OnceCell::new();
-        RE.get_or_init(|| regex::Regex::new($re.as_str()))
-    }};
-}
+use crate::model::{Errors, Fields, Filter, Luna};
 
 #[derive(Debug)]
 pub enum Error {
@@ -37,63 +25,91 @@ impl error::Error for Error {
     }
 }
 
-type LunaResult = Result<Luna, Box<dyn std::error::Error + Send + Sync>>;
-
 pub struct Data {
     pub input: String,
     pub field: Fields,
-    pub output: Result<Output, std::io::Error>,
+    pub output: String,
 }
 impl Data {
-    fn into_luna(self, regex: &Regex) -> LunaResult {
-        if let Some(caps) = regex.captures(&String::from_utf8(self.output?.stdout)?) {
-            let get = |key| caps.name(key).map(|v| v.as_str().to_string());
+    fn parse(&self, regex: Regex) -> Vec<Luna> {
+        self.output
+            .par_lines()
+            .filter_map(|line| {
+                if let Some(caps) = regex.captures(line) {
+                    let get = |key| caps.name(key).map(|v| v.as_str().to_string());
 
-            let luna: Luna = match self.field {
-                Fields::Program => InsertProgram {
-                    program: Program {
-                        name: self.input,
-                        url: get("program_url"),
-                        ..Default::default()
-                    },
+                    let luna = Filter {
+                        field: Fields::default(),
+                        verbose: 0,
+
+                        program: get("program"),
+                        program_platform: get("program_platform"),
+                        program_handle: get("program_handle"),
+                        program_type: get("program_type"),
+                        program_url: get("program_url"),
+                        program_icon: get("program_icon"),
+                        program_bounty: get("program_bounty"),
+                        program_state: get("program_state"),
+
+                        scope: get("scope"),
+                        scope_type: get("scope_type"),
+                        scope_bounty: get("scope_bounty"),
+                        scope_severity: get("scop_severity"),
+
+                        sub: get("sub"),
+                        sub_typ: get("sub_type"),
+
+                        ip: get("ip"),
+
+                        port: get("port"),
+                        service_name: get("service_name"),
+                        service_protocol: get("service_protocol"),
+                        service_banner: get("service_banner"),
+
+                        url: get("url"),
+                        title: get("title"),
+                        status_code: get("status_code"),
+                        response: get("response"),
+
+                        tech: get("tech"),
+                        tech_version: get("tech_version"),
+
+                        minutes_before: None,
+                        days_before: None,
+                    }
+                    .into();
+
+                    Some(luna)
+                } else {
+                    debug!("No regex match in this line: \"{}\"", line);
+                    None
                 }
-                .into(),
-                Fields::Scope => todo!(),
-                Fields::Sub => todo!(),
-                Fields::Url => todo!(),
-                Fields::IP => todo!(),
-                Fields::Keyword => todo!(),
-                Fields::Service => todo!(),
-                Fields::None => todo!(),
-                Fields::Tech => todo!(),
-            };
-            Ok(luna)
-        } else {
-            Err(Box::new(Error::Pattern("No match".to_string())))
-        }
+            })
+            .collect()
     }
 }
 
 #[derive(Debug)]
 pub struct Script {
-    pub regex: &'static Regex,
+    pub regex: Regex,
     pub command: String,
     pub field: Fields,
 }
 
 impl Script {
-    fn execute(&self, luna: &Luna) -> Vec<Data> {
+    fn execute(&self, luna: &Luna) -> Vec<Result<Data, Errors>> {
         luna.find_all(self.field)
             .into_par_iter()
             .map(|input| {
                 let cmd = self.command.replace(&self.field.substitution(), &input);
                 debug!("Command: {}", cmd);
-                let output = Command::new("sh").arg("-c").arg(cmd).output();
-                Data {
+                let output =
+                    String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
+                Ok(Data {
                     input,
                     field: self.field,
                     output,
-                }
+                })
             })
             .collect()
     }
@@ -106,21 +122,28 @@ pub struct Scripts {
 }
 
 impl Scripts {
-    pub fn run(self, luna: &Luna) -> Vec<LunaResult> {
+    pub fn run(self, luna: &Luna) -> Vec<Luna> {
         self.scripts
             .into_iter() // No parallel here for preserving order of scripts
-            .flat_map(|script| {
+            .flat_map(|script| -> Vec<Luna> {
                 script
                     .execute(luna)
                     .into_par_iter()
-                    .map(|data| data.into_luna(script.regex))
-                    .collect::<Vec<LunaResult>>()
+                    .filter_map(|result| match result {
+                        Ok(data) => Some(data),
+                        Err(err) => {
+                            error!("Error in executing: {}", err);
+                            None
+                        }
+                    })
+                    .flat_map(|data| data.parse(script.regex.clone()))
+                    .collect()
             })
             .collect()
     }
 }
 
-pub fn parse(path: String) -> Result<Scripts, Box<dyn error::Error>> {
+pub fn parse(path: String) -> Result<Scripts, Errors> {
     let mut scripts = vec![];
     let mut pattern = String::new();
 
@@ -155,13 +178,22 @@ pub fn parse(path: String) -> Result<Scripts, Box<dyn error::Error>> {
                 Fields::Service
             } else if line.contains("${tech}") {
                 Fields::Tech
+            } else if line.contains("${header}") {
+                Fields::Header
             } else if line.contains("${keyword}") {
                 Fields::Keyword
             } else {
                 Fields::None
             };
 
-            if let Ok(regex) = regex!(pattern).as_ref() {
+            if let Ok(regex) = regex::Regex::new(&pattern) {
+                if !regex_check(&regex) {
+                    return Err(Box::new(Error::Pattern(
+                    "Pattern doesn't have any of necessery names \"program, scope, sub, url, ip\""
+                        .to_string(),
+                )));
+                }
+
                 scripts.push(Script {
                     regex,
                     command: line.trim().to_string(),
@@ -175,6 +207,13 @@ pub fn parse(path: String) -> Result<Scripts, Box<dyn error::Error>> {
     }
 
     Ok(Scripts { scripts })
+}
+
+fn regex_check(regex: &Regex) -> bool {
+    regex
+        .capture_names()
+        .flatten()
+        .any(|name| name == "program" || name == "scope" || name == "sub" || name == "host")
 }
 
 // sub

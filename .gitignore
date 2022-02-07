@@ -1,8 +1,5 @@
 /target
 wl.txt
-/tools
-test.json
-luna.json
+*.json*
 report.md
-luna.ini
 s.sh

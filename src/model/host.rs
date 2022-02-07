@@ -32,13 +32,9 @@ impl Host {
         }
     }
 
-    pub fn matches(&self, filter: &Filter) -> bool {
-        filter
-            .ip
-            .as_ref()
-            .map_or(true, |pat| self.ip.to_lowercase().contains(pat))
-            && (filter.port.is_none() && filter.service_name.is_none()
-                || self.services.par_iter().any(|s| s.matches(filter)))
+    pub fn matches(&self, filter: &FilterRegex) -> bool {
+        self.ip.contains_opt(&filter.ip)
+            && (filter.service_is_none() || self.services.par_iter().any(|s| s.matches(filter)))
     }
 }
 

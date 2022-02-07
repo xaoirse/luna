@@ -1,10 +1,7 @@
 ## Usable but still beta (Under heavy development and tests)
 # Luna 
-### Automatic and **Full Parallel** Script Runner Powered by **Rust** 🖤
-لونا فقط یه ابزار برای اوتومیت سازی اجرای اسکریپت ها و ذخیره ی نتایج اوناست  
-Luna can run any bunch of bash scripts in **Parallel** and collect results and save them as json format.  
+### **Recon** tool Powered by **Rust** 🖤
 
-  
 ```
    __  __  ___  _____ 
   / / / / / / |/ / _ |  v0.4.0
@@ -12,21 +9,26 @@ Luna can run any bunch of bash scripts in **Parallel** and collect results and s
 /____|____/_/|_/_/ |_|  SA    
 
 ```
+ 
+Luna can run any bunch of bash scripts in **Parallel** and collect results and save them as JSON format then find them with **Regex**.
+
+  
+
 
 ## Simple Using
-1. Create script file `script.sh`:  
-set pattern for parsing results
+1. Create script file like `script.sh`:  
+set pattern for parsing each line of results
 ```bash
 pattern = (?P<sub>)
 subfinder -d ${scope} # sub.sample.com -> sub
 ammass -d ${scope} # sub.sample.com -> sub
 
 pattern = (?P<url>)-(?P<status_code>)
-x  ${sub} # https://sub.sample.com/login 200 -> url status_code
+x  ${sub} # https://sub.sample.com/login 200 -> url, status_code
 ```
-2. Insert some scope:  
+2. Insert some scopes:  
 `luna insert scope --name google`
-3. Run script for each scope:  
+3. Run script:  
 `luna script script.sh`  
 4. Find subs:  
 `luna find sub --scope google.com`
@@ -72,21 +74,28 @@ SUBCOMMANDS:
 ## Built With
 - **StructOpt**: Parse **command line arguments** by defining a struct. It combines clap with custom derive.
 - **Rayon**: A data-parallelism library for Rust.
+- **Regex**: A library for parsing, compiling, and executing regular expressions.
 - ...
 
 
 ## In Progress
-- Better Data structures
 - Tests
 - Comments
 - Regex test
 - Reduce release size
-- headers
+- Report -vvv
+- Filter by date
+- Default luna parameters
+- Regex names in readme
 
-## ToDo
+
+## TODO
 - [ ] **WebServer**  
 - [ ] Report system  
 - [ ] Script validateor  
 - [ ] Cache system  
 - [ ] Update and delete mechanism  
 - [ ] Limit for parallel requests to prevent rate limit  
+- [ ] Worldlist
+- [ ] Custom inputs for script
+- [ ] Request and Response for Url

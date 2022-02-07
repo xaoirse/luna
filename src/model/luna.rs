@@ -40,7 +40,7 @@ impl Luna {
         self.programs.dedup_by(Program::same_bucket);
     }
 
-    pub fn find(&self, filter: &Filter) -> Vec<String> {
+    pub fn find(&self, filter: &FilterRegex) -> Vec<String> {
         match filter.field {
             Fields::Program => self
                 .programs
@@ -106,11 +106,12 @@ impl Luna {
             Fields::None => vec!["".to_string()],
             Fields::Service => todo!(),
             Fields::Tech => todo!(),
+            Fields::Header => todo!(),
             Fields::Keyword => todo!(),
         }
     }
     pub fn find_all(&self, field: Fields) -> Vec<String> {
-        self.find(&Filter {
+        self.find(&FilterRegex {
             field,
             ..Default::default()
         })
@@ -139,8 +140,8 @@ impl Luna {
             .find_any(|s| s.hosts.par_iter().any(|h| h.ip == ip))
     }
 
-    pub fn save(&self, path: &str) -> Result<usize, Box<dyn std::error::Error>> {
-        std::fs::copy(path, &format!("{}{}", path, Utc::now().to_rfc2822()))?;
+    pub fn save(&self, path: &str) -> Result<usize, Errors> {
+        std::fs::copy(path, &format!("{}_{}", Utc::now().to_rfc2822(), path))?;
         let str = serde_json::to_string(&self)?;
         let mut file = std::fs::OpenOptions::new()
             .create(true)
@@ -150,7 +151,7 @@ impl Luna {
         Ok(file.write(str.as_bytes())?)
     }
 
-    pub fn from_file(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_file(path: &str) -> Result<Self, Errors> {
         let file = std::fs::read_to_string(path)?;
         Ok(serde_json::from_str(&file)?)
     }
@@ -160,6 +161,7 @@ impl From<InsertProgram> for Luna {
     fn from(i: InsertProgram) -> Self {
         Luna {
             programs: vec![Program {
+                start: Some(Utc::now()),
                 update: Some(Utc::now()),
                 ..i.program
             }],
@@ -361,6 +363,95 @@ impl From<Insert> for Luna {
             Insert::Urls(i) => i.into(),
             Insert::Host(i) => i.into(),
             Insert::Hosts(i) => i.into(),
+        }
+    }
+}
+
+impl From<Filter> for Luna {
+    fn from(mut f: Filter) -> Self {
+        let techs = if f.tech_is_none() {
+            vec![]
+        } else {
+            vec![Tech {
+                name: f.tech.take().unwrap_or_default(),
+                version: f.tech_version.take(),
+            }]
+        };
+
+        let urls = if f.sub_is_none() {
+            vec![]
+        } else {
+            vec![Url {
+                url: f.url.take().unwrap_or_default(),
+                title: f.title.take(),
+                status_code: f.status_code.take(),
+                response: f.response.take(),
+                techs,
+                update: Some(Utc::now()),
+            }]
+        };
+
+        let services = if f.service_is_none() {
+            vec![]
+        } else {
+            vec![Service {
+                port: f.port.take().unwrap_or_default(),
+                name: f.service_name.take(),
+                banner: f.service_banner.take(),
+                protocol: f.service_protocol.take(),
+            }]
+        };
+
+        let hosts = if f.host_is_none() {
+            vec![]
+        } else {
+            vec![Host {
+                ip: f.ip.take().unwrap_or_default(),
+                services,
+                update: Some(Utc::now()),
+            }]
+        };
+
+        let subs = if f.scope_is_none() {
+            vec![]
+        } else {
+            vec![Sub {
+                asset: f.sub.take().unwrap_or_default(),
+                typ: f.sub_typ.take(),
+                hosts,
+                urls,
+                update: Some(Utc::now()),
+            }]
+        };
+
+        let scopes = if f.scope_is_none() {
+            vec![]
+        } else {
+            vec![Scope {
+                asset: f.scope.unwrap_or_default(),
+                typ: f.scope_type,
+                severity: f.scope_severity,
+                bounty: f.scope_bounty,
+                subs,
+                update: Some(Utc::now()),
+            }]
+        };
+
+        Self {
+            programs: vec![Program {
+                name: f.program.unwrap_or_default(),
+                platform: f.program_platform,
+                typ: f.program_type,
+                handle: f.program_handle,
+                url: f.program_url,
+                bounty: f.program_bounty,
+                icon: f.program_icon,
+                state: f.program_state,
+                scopes,
+                start: Some(Utc::now()),
+                update: Some(Utc::now()),
+            }],
+            ..Default::default()
         }
     }
 }

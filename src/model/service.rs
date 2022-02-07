@@ -30,12 +30,11 @@ impl Service {
             false
         }
     }
-    pub fn matches(&self, filter: &Filter) -> bool {
-        filter
-            .port
-            .as_ref()
-            .map_or(true, |pat| self.port.to_lowercase().contains(pat))
-            && has(&self.name, &filter.service_name)
+    pub fn matches(&self, filter: &FilterRegex) -> bool {
+        self.port.contains_opt(&filter.port)
+            && self.name.contains_opt(&filter.service_name)
+            && self.protocol.contains_opt(&filter.service_protocol)
+            && self.banner.contains_opt(&filter.service_banner)
     }
 }
 
