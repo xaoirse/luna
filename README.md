@@ -103,7 +103,7 @@ SUBCOMMANDS:
 ( pattern for parsing each line of results )  
 [ commands ]
 ```bash
-pattern = (?P<sub>)
+pattern = (?P<sub>.+)
 subfinder -d ${scope} # sub.sample.com -> sub
 ammass -d ${scope} # sub.sample.com -> sub
 

@@ -389,7 +389,7 @@ impl From<Filter> for Luna {
             }]
         };
 
-        let urls = if f.sub_is_none() {
+        let urls = if f.url_is_none() {
             vec![]
         } else {
             vec![Url {
@@ -423,7 +423,7 @@ impl From<Filter> for Luna {
             }]
         };
 
-        let subs = if f.scope_is_none() {
+        let subs = if f.sub_is_none() {
             vec![]
         } else {
             vec![Sub {
