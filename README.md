@@ -1,7 +1,8 @@
-## Usable but still beta (Under heavy development and tests)
-# Luna 
-### **Recon** tool Powered by **Rust** 🖤  
+## Hooray, it works :)
 [XAoirse](https://github.com/xaoirse)
+# Luna 
+(beta version, Under heavy development and tests)
+### **Recon** tool Powered by **Rust** 🖤  
 
 
 ```
