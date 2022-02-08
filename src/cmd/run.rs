@@ -159,8 +159,11 @@ pub fn run() {
             luna
         }
         Err(err) => {
-            error!("Can't load Luna from file!: {}", err);
-            warn!("Empty Luna will be used!");
+            if err.to_string() == "No such file or directory (os error 2)" {
+                warn!("Can't load Luna from file! New filw will be generated.")
+            } else {
+                error!("Can't load Luna from file!: {}", err);
+            }
             Luna::default()
         }
     };
@@ -173,7 +176,6 @@ pub fn run() {
             luna.append(insert);
             luna.merge();
 
-            // TODO better mechanism for retry saving in errors
             if let Err(err) = luna.save(json) {
                 error!("Error while saving: {}", err);
             } else {

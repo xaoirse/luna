@@ -11,7 +11,7 @@ pub struct Sub {
     #[structopt(short, long)]
     pub asset: String,
 
-    #[structopt(short, long,possible_values = &["IP","Domain"] ,case_insensitive= true)]
+    #[structopt(short, long, case_insensitive = true)]
     pub typ: Option<String>,
 
     #[structopt(short = "i", long)]
@@ -65,11 +65,11 @@ impl Sub {
 
     pub fn stringify(&self, v: u8) -> String {
         match v {
-            0..=1 => self.asset.to_string(),
-            2 => format!(
-                "{},
-    type: {},
-    hosts: {},
+            0 => self.asset.to_string(),
+            1 => format!(
+                "{}
+    type: {}
+    hosts: {}
     urls: {}
     update: {}
     ",
@@ -79,27 +79,27 @@ impl Sub {
                 self.urls.len(),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
-            3 => format!(
-                "{},
-    type: {},
+            2 => format!(
+                "{}
+    type: {}
     hosts: [
-        {}],
+        {}]
     urls: [
-        {}],
+        {}]
     update: {}
     ",
                 self.asset,
                 self.typ.as_ref().map_or("", |s| s),
                 self.hosts
                     .iter()
-                    .map(|s| s.stringify(1))
+                    .map(|s| s.stringify(0))
                     .collect::<Vec<String>>()
-                    .join(",\n        "),
+                    .join("\n        "),
                 self.urls
                     .iter()
-                    .map(|s| s.stringify(1))
+                    .map(|s| s.stringify(0))
                     .collect::<Vec<String>>()
-                    .join(",\n        "),
+                    .join("\n        "),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
             _ => format!("{:#?}", self),

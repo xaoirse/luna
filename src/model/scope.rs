@@ -11,13 +11,13 @@ pub struct Scope {
     #[structopt(short, long)]
     pub asset: String,
 
-    #[structopt(short, long,possible_values = &["SingleDomain","WildcardDomain","Mobile","IOS","Android","PC","Windows","Mac","Linux","SourceCode","CIDR"],case_insensitive = true)]
+    #[structopt(short, long, case_insensitive = true)]
     pub typ: Option<String>,
 
     #[structopt(short, long)]
     pub bounty: Option<String>,
 
-    #[structopt(long,possible_values = &["Critical","High","Medium","Low","None"],case_insensitive = true)]
+    #[structopt(long, case_insensitive = true)]
     pub severity: Option<String>,
 
     #[structopt(short, long)]
@@ -76,13 +76,13 @@ impl Scope {
 
     pub fn stringify(&self, v: u8) -> String {
         match v {
-            0..=1 => self.asset.to_string(),
-            2 => format!(
-                "{},
-    type: {},
-    bounty: {},
+            0 => self.asset.to_string(),
+            1 => format!(
+                "{}
+    type: {}
+    bounty: {}
     severity: {}
-    subs: {},
+    subs: {}
     update: {}
     ",
                 self.asset,
@@ -92,13 +92,13 @@ impl Scope {
                 self.subs.len(),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
-            3 => format!(
+            2 => format!(
                 "{},
     type: {},
     bounty: {},
     severity: {}
     subs: [
-        {}],
+        {}]
     update: {}
     ",
                 self.asset,
@@ -107,9 +107,9 @@ impl Scope {
                 self.severity.as_ref().map_or("", |s| s),
                 self.subs
                     .iter()
-                    .map(|s| s.stringify(1))
+                    .map(|s| s.stringify(0))
                     .collect::<Vec<String>>()
-                    .join(",\n        "),
+                    .join("\n        "),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
             _ => format!("{:#?}", self),

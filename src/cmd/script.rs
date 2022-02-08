@@ -38,8 +38,8 @@ impl Data {
                 if let Some(caps) = regex.captures(line) {
                     let get = |key| caps.name(key).map(|v| v.as_str().to_string());
 
-                    let luna = Filter {
-                        field: Fields::default(),
+                    let mut luna = Filter {
+                        field: self.field,
                         verbose: 0,
 
                         program: get("program"),
@@ -75,10 +75,20 @@ impl Data {
                         tech_version: get("tech_version"),
 
                         days_before: None,
+                    };
+                    let input = Some(self.input.clone());
+                    match self.field {
+                        Fields::Program => luna.program = input,
+                        Fields::Scope => luna.scope = input,
+                        Fields::Sub => luna.sub = input,
+                        Fields::Url => luna.url = input,
+                        Fields::IP => luna.ip = input,
+                        Fields::Service => luna.port = input,
+                        Fields::Tech => luna.tech = input,
+                        Fields::Keyword => todo!(),
+                        Fields::None => todo!(),
                     }
-                    .into();
-
-                    Some(luna)
+                    Some(luna.into())
                 } else {
                     debug!("No regex match in this line: \"{}\"", line);
                     None
@@ -141,6 +151,7 @@ impl Scripts {
     }
 }
 
+#[allow(clippy::blocks_in_if_conditions)]
 pub fn parse(path: String) -> Result<Scripts, Errors> {
     let mut scripts = vec![];
     let mut pattern = String::new();
@@ -150,12 +161,9 @@ pub fn parse(path: String) -> Result<Scripts, Errors> {
             pattern = line
                 .split_once("=")
                 .map_or("".to_string(), |p| p.1.trim().to_string())
-        } else if line
-            .trim()
-            .chars()
-            .next()
-            .map_or(false, |c| c.is_ascii_alphabetic())
-        {
+        } else if line.trim().chars().next().map_or(false, |c| {
+            c.is_ascii_alphabetic() || '.' == c || '/' == c || '\\' == c
+        }) {
             if pattern.is_empty() {
                 return Err(Box::new(Error::Pattern(
                     "Where the fuck is first pattern?".to_string(),

@@ -29,7 +29,7 @@ impl Tech {
     pub fn stringify(&self, v: u8) -> String {
         match v {
             0 => self.name.clone(),
-            1..=3 => format!("{} {}", self.name, self.version.as_ref().map_or("", |s| s)),
+            1 => format!("{} {}", self.name, self.version.as_ref().map_or("", |s| s)),
             _ => format!("{:#?}", self),
         }
     }

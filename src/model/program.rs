@@ -21,7 +21,7 @@ pub struct Program {
     #[structopt(long)]
     pub handle: Option<String>,
 
-    #[structopt(short, long,possible_values =&["public","private"])]
+    #[structopt(short, long)]
     pub typ: Option<String>,
 
     #[structopt(short, long)]
@@ -33,7 +33,7 @@ pub struct Program {
     #[structopt(short, long)]
     pub bounty: Option<String>,
 
-    #[structopt(long,possible_values=&["open","closed"],case_insensitive = true)]
+    #[structopt(long, case_insensitive = true)]
     pub state: Option<String>,
 
     #[structopt(short, long)]
@@ -137,14 +137,14 @@ impl Program {
             0 => self.name.to_string(),
             1 => format!("{}  {} ", self.name, self.url.as_ref().map_or("", |s| s)),
             2 => format!(
-                "{} - {}
-    platform: {},
-    type: {},
+                "{}  {}
+    platform: {}
+    type: {}
     handle: {}
-    bounty: {},
+    bounty: {}
     icon: {}
-    state: {},
-    scopes: {},
+    state: {}
+    scopes: {}
     start: {}
     update: {}
     ",
@@ -162,14 +162,14 @@ impl Program {
             ),
             3 => format!(
                 "{}  {}
-    platform: {},
-    type: {},
+    platform: {}
+    type: {}
     handle: {}
-    bounty: {},
+    bounty: {}
     icon: {}
-    state: {},
+    state: {}
     scopes: [
-        {}],
+        {}]
     start: {}
     update: {}
     ",
@@ -183,9 +183,9 @@ impl Program {
                 self.state.as_ref().map_or("", |s| s),
                 self.scopes
                     .iter()
-                    .map(|s| s.stringify(1))
+                    .map(|s| s.stringify(0))
                     .collect::<Vec<String>>()
-                    .join(",\n        "),
+                    .join("\n        "),
                 self.start.map_or("".to_string(), |s| s.to_rfc2822()),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
             ),

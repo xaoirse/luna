@@ -129,14 +129,22 @@ impl Luna {
     }
 
     pub fn save(&self, path: &str) -> Result<usize, Errors> {
-        std::fs::copy(path, &format!("{}_{}", Utc::now().to_rfc2822(), path))?;
         let str = serde_json::to_string(&self)?;
-        let mut file = std::fs::OpenOptions::new()
-            .create(true)
+
+        match std::fs::File::options()
             .write(true)
             .truncate(true)
-            .open(path)?;
-        Ok(file.write(str.as_bytes())?)
+            .open(path)
+        {
+            Ok(mut file) => {
+                std::fs::copy(path, &format!("{}_{}", Utc::now().to_rfc2822(), path))?;
+                Ok(file.write(str.as_bytes())?)
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+                Ok(std::fs::File::create(path)?.write(str.as_bytes())?)
+            }
+            Err(err) => Err(Box::new(err)),
+        }
     }
 
     pub fn from_file(path: &str) -> Result<Self, Errors> {
@@ -456,17 +464,5 @@ impl From<Filter> for Luna {
             }],
             ..Default::default()
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-
-    use super::*;
-
-    #[test]
-    fn rw_file() {
-        assert_eq!(Luna::default().save("test.json").unwrap(), 74);
-        assert_eq!(Luna::from_file("test.json").unwrap(), Luna::default());
     }
 }

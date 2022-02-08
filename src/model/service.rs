@@ -39,10 +39,10 @@ impl Service {
 
     pub fn stringify(&self, v: u8) -> String {
         match v {
-            0..=1 => self.port.clone(),
-            2..=3 => format!(
-                "{} - {},
-    protocol: {},
+            0 => self.port.clone(),
+            1 => format!(
+                "{} - {}
+    protocol: {}
     banner: {}
     ",
                 self.port,
