@@ -25,6 +25,14 @@ impl Tech {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.name.contains_opt(&filter.tech) && self.version.contains_opt(&filter.tech_version)
     }
+
+    pub fn stringify(&self, v: u8) -> String {
+        match v {
+            0 => self.name.clone(),
+            1..=3 => format!("{} {}", self.name, self.version.as_ref().map_or("", |s| s)),
+            _ => format!("{:#?}", self),
+        }
+    }
 }
 
 impl std::str::FromStr for Tech {

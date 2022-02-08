@@ -1,9 +1,9 @@
+use crate::model::{Errors, Fields, Filter, Luna};
 use log::{debug, error};
 use rayon::prelude::*;
+use rayon::{iter::Map, vec::IntoIter};
 use regex::Regex;
 use std::{error, fmt, process::Command};
-
-use crate::model::{Errors, Fields, Filter, Luna};
 
 #[derive(Debug)]
 pub enum Error {
@@ -31,7 +31,7 @@ pub struct Data {
     pub output: String,
 }
 impl Data {
-    fn parse(&self, regex: Regex) -> Vec<Luna> {
+    fn parse(&self, regex: &Regex) -> Vec<Luna> {
         self.output
             .par_lines()
             .filter_map(|line| {
@@ -74,7 +74,6 @@ impl Data {
                         tech: get("tech"),
                         tech_version: get("tech_version"),
 
-                        minutes_before: None,
                         days_before: None,
                     }
                     .into();
@@ -97,21 +96,20 @@ pub struct Script {
 }
 
 impl Script {
-    fn execute(&self, luna: &Luna) -> Vec<Result<Data, Errors>> {
-        luna.find_all(self.field)
-            .into_par_iter()
-            .map(|input| {
-                let cmd = self.command.replace(&self.field.substitution(), &input);
-                debug!("Command: {}", cmd);
-                let output =
-                    String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
-                Ok(Data {
-                    input,
-                    field: self.field,
-                    output,
-                })
+    fn execute<'a>(
+        &'a self,
+        luna: &Luna,
+    ) -> Map<IntoIter<String>, impl Fn(String) -> Result<Data, Errors> + 'a> {
+        luna.find_all(self.field).into_par_iter().map(|input| {
+            let cmd = self.command.replace(&self.field.substitution(), &input);
+            debug!("Command: {}", cmd);
+            let output = String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
+            Ok(Data {
+                input,
+                field: self.field,
+                output,
             })
-            .collect()
+        })
     }
 }
 
@@ -122,13 +120,12 @@ pub struct Scripts {
 }
 
 impl Scripts {
-    pub fn run(self, luna: &Luna) -> Vec<Luna> {
+    pub fn run(self, luna: &mut Luna) {
         self.scripts
             .into_iter() // No parallel here for preserving order of scripts
-            .flat_map(|script| -> Vec<Luna> {
+            .for_each(|script| {
                 script
                     .execute(luna)
-                    .into_par_iter()
                     .filter_map(|result| match result {
                         Ok(data) => Some(data),
                         Err(err) => {
@@ -136,10 +133,11 @@ impl Scripts {
                             None
                         }
                     })
-                    .flat_map(|data| data.parse(script.regex.clone()))
-                    .collect()
-            })
-            .collect()
+                    .flat_map(|data| data.parse(&script.regex))
+                    .collect::<Vec<Luna>>() // This should run parallel here
+                    .into_iter()
+                    .for_each(|l| luna.append(l))
+            });
     }
 }
 
@@ -178,8 +176,6 @@ pub fn parse(path: String) -> Result<Scripts, Errors> {
                 Fields::Service
             } else if line.contains("${tech}") {
                 Fields::Tech
-            } else if line.contains("${header}") {
-                Fields::Header
             } else if line.contains("${keyword}") {
                 Fields::Keyword
             } else {
@@ -215,66 +211,3 @@ fn regex_check(regex: &Regex) -> bool {
         .flatten()
         .any(|name| name == "program" || name == "scope" || name == "sub" || name == "host")
 }
-
-// sub
-// fn _regex() -> Regex {
-//     static PAT: &str =
-//         r"(?:^|//|\s)((?:[0-9\-a-z]+\.)+[0-9a-z][0-9\-a-z]*[0-9a-z])(?:$|[\D\W])";
-//     lazy_static! {
-//         static ref RE: Regex = regex::RegexBuilder::new(PAT)
-//             .multi_line(true)
-//             .build()
-//             .unwrap();
-//     }
-//     RE.clone()
-// }
-
-//url
-// fn _regex() -> Regex {
-//     // TODO scheme is in match 1
-//     static PAT: &str = r"(\w+)://[-a-zA-Z0-9:@;?&=/%\+\.\*!'\(\),\$_\{\}\^~\[\]`#|]+";
-//     lazy_static! {
-//         static ref RE: Regex = regex::RegexBuilder::new(PAT)
-//             .multi_line(true)
-//             .build()
-//             .unwrap();
-//     }
-//     RE.clone()
-// }
-
-// host
-// fn _regex() -> Regex {
-//     static PAT: &str = r"(?:^|//|\s|\b)((?:[0-9\-a-z]+\.)+[0-9a-z][0-9\-a-z]*[0-9a-z])[\D\W]*((?:[0-9]{1,3}\.){3}[0-9]{1,3})(?:$|[\D\W\s])";
-//     lazy_static! {
-//         static ref RE: Regex = regex::RegexBuilder::new(PAT)
-//             .multi_line(true)
-//             .build()
-//             .unwrap();
-//     }
-//     RE.clone()
-// }
-
-// async fn notif(self) -> bool {
-//     let text = self.to_string();
-//     let text = text.trim();
-//     if !text.is_empty() {
-//         if let Some(url) = crate::env::get("DISCORD") {
-//             let cli = reqwest::Client::builder().build().unwrap();
-//             match cli
-//                 .post(url)
-//                 .header("Content-Type", "application/json")
-//                 .body(format!(r#"{{"username": "Luna", "content": "{}"}}"#, text))
-//                 .send()
-//                 .await
-//             {
-//                 Ok(resp) => {
-//                     if resp.status() == 204 {
-//                         return true;
-//                     }
-//                 }
-//                 Err(err) => err.error(),
-//             };
-//         }
-//     }
-//     false
-// }

@@ -82,6 +82,7 @@ impl Program {
             && self.icon.contains_opt(&filter.program_icon)
             && self.bounty.contains_opt(&filter.program_bounty)
             && self.state.contains_opt(&filter.program_state)
+            && check_date(&self.update, &filter.days_before)
             && (filter.scope_is_none() || self.scopes.par_iter().any(|s| s.matches(filter)))
     }
 
@@ -99,11 +100,96 @@ impl Program {
         }
     }
 
+    /*
+        google
+
+        google - google.com
+
+        google - google.com
+        icon: url
+        platform: hackerone,
+        type: Private,
+        bounty: 500$,
+        state: open,
+        scopes: 51,
+        started at: Sat 6 19 2019
+        updated at: Sat 6 19 2019
+
+        google - google.com
+        icon: url
+        platform: hackerone,
+        type: Private,
+        bounty: 500$,
+        state: open,
+        scopes: [
+            a.com
+            b.com
+            c.com
+        ],
+        started at: Sat 6 19 2019
+        updated at: Sat 6 19 2019
+
+        debug
+    */
+
     pub fn stringify(&self, v: u8) -> String {
         match v {
             0 => self.name.to_string(),
-            1 => String::new(),
-            _ => "".to_string(),
+            1 => format!("{}  {} ", self.name, self.url.as_ref().map_or("", |s| s)),
+            2 => format!(
+                "{} - {}
+    platform: {},
+    type: {},
+    handle: {}
+    bounty: {},
+    icon: {}
+    state: {},
+    scopes: {},
+    start: {}
+    update: {}
+    ",
+                self.name,
+                self.url.as_ref().map_or("", |s| s),
+                self.platform.as_ref().map_or("", |s| s),
+                self.typ.as_ref().map_or("", |s| s),
+                self.handle.as_ref().map_or("", |s| s),
+                self.bounty.as_ref().map_or("", |s| s),
+                self.icon.as_ref().map_or("", |s| s),
+                self.state.as_ref().map_or("", |s| s),
+                self.scopes.len(),
+                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+            ),
+            3 => format!(
+                "{}  {}
+    platform: {},
+    type: {},
+    handle: {}
+    bounty: {},
+    icon: {}
+    state: {},
+    scopes: [
+        {}],
+    start: {}
+    update: {}
+    ",
+                self.name,
+                self.url.as_ref().map_or("", |s| s),
+                self.platform.as_ref().map_or("", |s| s),
+                self.typ.as_ref().map_or("", |s| s),
+                self.handle.as_ref().map_or("", |s| s),
+                self.bounty.as_ref().map_or("", |s| s),
+                self.icon.as_ref().map_or("", |s| s),
+                self.state.as_ref().map_or("", |s| s),
+                self.scopes
+                    .iter()
+                    .map(|s| s.stringify(1))
+                    .collect::<Vec<String>>()
+                    .join(",\n        "),
+                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+            ),
+            _ => format!("{:#?}", self),
         }
     }
 }
@@ -119,17 +205,3 @@ impl std::str::FromStr for Program {
         })
     }
 }
-
-/*
-
-    google - google.com
-    icon: url
-    platform: hackerone,
-    type: Private,
-    bounty: 500$,
-    state: open,
-    scopes: 51,
-    started at: Sat 6 19 2019
-    updated at: Sat 6 19 2019
-
-*/

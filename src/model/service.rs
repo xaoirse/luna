@@ -36,6 +36,23 @@ impl Service {
             && self.protocol.contains_opt(&filter.service_protocol)
             && self.banner.contains_opt(&filter.service_banner)
     }
+
+    pub fn stringify(&self, v: u8) -> String {
+        match v {
+            0..=1 => self.port.clone(),
+            2..=3 => format!(
+                "{} - {},
+    protocol: {},
+    banner: {}
+    ",
+                self.port,
+                self.name.as_ref().map_or("", |s| s),
+                self.protocol.as_ref().map_or("", |s| s),
+                self.banner.as_ref().map_or("", |s| s),
+            ),
+            _ => format!("{:#?}", self),
+        }
+    }
 }
 
 impl std::str::FromStr for Service {

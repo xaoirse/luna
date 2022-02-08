@@ -170,7 +170,8 @@ pub fn run() {
             debug!("{:#?}", insert);
 
             let insert: Luna = (*insert).into();
-            luna.merge(insert);
+            luna.append(insert);
+            luna.merge();
 
             // TODO better mechanism for retry saving in errors
             if let Err(err) = luna.save(json) {
@@ -197,8 +198,10 @@ pub fn run() {
 
             match script::parse(script.path) {
                 Ok(script) => {
-                    script.run(&luna).into_iter().for_each(|l| luna.merge(l));
+                    script.run(&mut luna);
                     info!("Scripts completed.");
+                    luna.merge();
+                    info!("Luna merged.");
 
                     if let Err(err) = luna.save(json) {
                         error!("Error while saving: {}", err);

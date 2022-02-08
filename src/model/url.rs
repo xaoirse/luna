@@ -53,7 +53,50 @@ impl Url {
             && self.title.contains_opt(&filter.title)
             && self.response.contains_opt(&filter.response)
             && self.status_code.contains_opt(&filter.status_code)
+            && check_date(&self.update, &filter.days_before)
             && (filter.tech_is_none() || self.techs.par_iter().any(|t| t.matches(filter)))
+    }
+
+    pub fn stringify(&self, v: u8) -> String {
+        match v {
+            0..=1 => self.url.to_string(),
+            2 => format!(
+                "{},
+    title: {},
+    status code: {},
+    response: length:{}
+    techs: {},
+    update: {}
+    ",
+                self.url,
+                self.title.as_ref().map_or("", |s| s),
+                self.status_code.as_ref().map_or("", |s| s),
+                self.response.as_ref().map_or(0, |s| s.len()),
+                self.techs.len(),
+                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+            ),
+            3 => format!(
+                "{},
+    title: {},
+    status code: {},
+    responce: {}
+    techs: [
+        {}],
+    update: {}
+    ",
+                self.url,
+                self.title.as_ref().map_or("", |s| s),
+                self.status_code.as_ref().map_or("", |s| s),
+                self.response.as_ref().map_or("", |s| s),
+                self.techs
+                    .iter()
+                    .map(|s| s.stringify(1))
+                    .collect::<Vec<String>>()
+                    .join(",\n        "),
+                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+            ),
+            _ => format!("{:#?}", self),
+        }
     }
 
     pub fn sub_asset(&self) -> String {
@@ -72,18 +115,3 @@ impl std::str::FromStr for Url {
         })
     }
 }
-
-// impl<'t> From<regex::Captures<'t>> for Url {
-//     fn from(cap: regex::Captures<'t>) -> Self {
-//         Self {
-//             url: cap
-//                 .get(0)
-//                 .map_or("".to_string(), |m| m.as_str().to_string()),
-//             title: None,
-//             status_code: None,
-//             response: vec![],
-//             techs: vec![],
-//             update: Some(Utc::now()),
-//         }
-//     }
-// }

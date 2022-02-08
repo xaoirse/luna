@@ -67,10 +67,8 @@ pub struct Filter {
     #[structopt(long)]
     pub tech_version: Option<String>,
 
-    #[structopt(long, short = "m")]
-    pub minutes_before: Option<i32>,
     #[structopt(long, short = "d")]
-    pub days_before: Option<i32>,
+    pub days_before: Option<i64>,
 }
 
 impl Filter {
@@ -112,7 +110,6 @@ arg_enum! {
     pub enum Fields {
         None,
         Keyword,
-        Header,
         Tech,
         Service,
         IP,
@@ -139,7 +136,6 @@ impl From<&Fields> for &str {
             Fields::IP => "ip",
             Fields::Keyword => "keyword",
             Fields::Service => "port",
-            Fields::Header => "header",
             Fields::None => "",
             Fields::Tech => todo!(),
         }
@@ -190,8 +186,7 @@ pub struct FilterRegex {
     pub tech: Option<regex::Regex>,
     pub tech_version: Option<regex::Regex>,
 
-    pub minutes_before: Option<i32>,
-    pub days_before: Option<i32>,
+    pub days_before: Option<i64>,
 }
 impl FilterRegex {
     pub fn scope_is_none(&self) -> bool {
@@ -375,7 +370,6 @@ impl TryFrom<Filter> for FilterRegex {
             tech,
             tech_version,
 
-            minutes_before: f.minutes_before,
             days_before: f.days_before,
         })
     }

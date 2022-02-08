@@ -53,6 +53,7 @@ impl Scope {
             && self.typ.contains_opt(&filter.scope_type)
             && self.bounty.contains_opt(&filter.scope_bounty)
             && self.severity.contains_opt(&filter.scope_severity)
+            && check_date(&self.update, &filter.days_before)
             && (filter.sub_is_none() || self.subs.par_iter().any(|s| s.matches(filter)))
     }
 
@@ -70,6 +71,48 @@ impl Scope {
             {
                 self.asset = scope.asset.clone();
             }
+        }
+    }
+
+    pub fn stringify(&self, v: u8) -> String {
+        match v {
+            0..=1 => self.asset.to_string(),
+            2 => format!(
+                "{},
+    type: {},
+    bounty: {},
+    severity: {}
+    subs: {},
+    update: {}
+    ",
+                self.asset,
+                self.typ.as_ref().map_or("", |s| s),
+                self.bounty.as_ref().map_or("", |s| s),
+                self.severity.as_ref().map_or("", |s| s),
+                self.subs.len(),
+                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+            ),
+            3 => format!(
+                "{},
+    type: {},
+    bounty: {},
+    severity: {}
+    subs: [
+        {}],
+    update: {}
+    ",
+                self.asset,
+                self.typ.as_ref().map_or("", |s| s),
+                self.bounty.as_ref().map_or("", |s| s),
+                self.severity.as_ref().map_or("", |s| s),
+                self.subs
+                    .iter()
+                    .map(|s| s.stringify(1))
+                    .collect::<Vec<String>>()
+                    .join(",\n        "),
+                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+            ),
+            _ => format!("{:#?}", self),
         }
     }
 }

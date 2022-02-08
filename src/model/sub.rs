@@ -50,6 +50,7 @@ impl Sub {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.asset.contains_opt(&filter.sub)
             && self.typ.contains_opt(&filter.sub_typ)
+            && check_date(&self.update, &filter.days_before)
             && (filter.host_is_none() || self.hosts.par_iter().any(|h| h.matches(filter)))
             && (filter.url_is_none() || self.urls.par_iter().any(|u| u.matches(filter)))
     }
@@ -59,6 +60,49 @@ impl Sub {
             self.asset = url.sub_asset();
         } else if let Some(sub) = self.hosts.par_iter_mut().find_map_any(|h| luna.sub(&h.ip)) {
             self.asset = sub.asset.clone();
+        }
+    }
+
+    pub fn stringify(&self, v: u8) -> String {
+        match v {
+            0..=1 => self.asset.to_string(),
+            2 => format!(
+                "{},
+    type: {},
+    hosts: {},
+    urls: {}
+    update: {}
+    ",
+                self.asset,
+                self.typ.as_ref().map_or("", |s| s),
+                self.hosts.len(),
+                self.urls.len(),
+                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+            ),
+            3 => format!(
+                "{},
+    type: {},
+    hosts: [
+        {}],
+    urls: [
+        {}],
+    update: {}
+    ",
+                self.asset,
+                self.typ.as_ref().map_or("", |s| s),
+                self.hosts
+                    .iter()
+                    .map(|s| s.stringify(1))
+                    .collect::<Vec<String>>()
+                    .join(",\n        "),
+                self.urls
+                    .iter()
+                    .map(|s| s.stringify(1))
+                    .collect::<Vec<String>>()
+                    .join(",\n        "),
+                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+            ),
+            _ => format!("{:#?}", self),
         }
     }
 }

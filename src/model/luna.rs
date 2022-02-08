@@ -6,7 +6,7 @@ use std::convert::From;
 use std::io::Write;
 use structopt::StructOpt;
 
-#[derive(Debug, Clone, StructOpt, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, StructOpt, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Luna {
     #[structopt(short, long)]
     pub name: String,
@@ -24,11 +24,12 @@ pub struct Luna {
 }
 
 impl Luna {
-    pub fn merge(&mut self, mut other: Self) {
+    pub fn append(&mut self, mut other: Self) {
         // Append
         self.counter += other.counter;
         self.programs.append(&mut other.programs);
-
+    }
+    pub fn merge(&mut self) {
         // Fill nones
         let luna_copy = self.clone();
         self.programs
@@ -54,10 +55,7 @@ impl Luna {
                 .filter(|p| p.matches(filter))
                 .flat_map(|p| &p.scopes)
                 .filter(|s| s.matches(filter))
-                .map(|s| match filter.verbose {
-                    0 => s.asset.to_string(),
-                    _ => format!("{:#?}", s),
-                })
+                .map(|s| s.stringify(filter.verbose))
                 .collect(),
 
             Fields::Sub => self
@@ -68,10 +66,7 @@ impl Luna {
                 .filter(|s| s.matches(filter))
                 .flat_map(|s| &s.subs)
                 .filter(|s| s.matches(filter))
-                .map(|s| match filter.verbose {
-                    0 => s.asset.to_string(),
-                    _ => format!("{:#?}", s),
-                })
+                .map(|s| s.stringify(filter.verbose))
                 .collect(),
             Fields::Url => self
                 .programs
@@ -83,10 +78,7 @@ impl Luna {
                 .filter(|s| s.matches(filter))
                 .flat_map(|s| &s.urls)
                 .filter(|u| u.matches(filter))
-                .map(|u| match filter.verbose {
-                    0 => u.url.to_string(),
-                    _ => format!("{:#?}", u),
-                })
+                .map(|u| u.stringify(filter.verbose))
                 .collect(),
             Fields::IP => self
                 .programs
@@ -98,15 +90,11 @@ impl Luna {
                 .filter(|s| s.matches(filter))
                 .flat_map(|s| &s.hosts)
                 .filter(|u| u.matches(filter))
-                .map(|h| match filter.verbose {
-                    0 => h.ip.to_string(),
-                    _ => format!("{:#?}", h),
-                })
+                .map(|h| h.stringify(filter.verbose))
                 .collect(),
             Fields::None => vec!["".to_string()],
             Fields::Service => todo!(),
             Fields::Tech => todo!(),
-            Fields::Header => todo!(),
             Fields::Keyword => todo!(),
         }
     }
@@ -154,6 +142,21 @@ impl Luna {
     pub fn from_file(path: &str) -> Result<Self, Errors> {
         let file = std::fs::read_to_string(path)?;
         Ok(serde_json::from_str(&file)?)
+    }
+}
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+impl Default for Luna {
+    fn default() -> Self {
+        Self {
+            name: "Luna".to_string(),
+            version: VERSION.to_string(),
+            counter: 1,
+            programs: vec![],
+            status: "The moon rider has arrived.".to_string(),
+            update: Some(Utc::now()),
+        }
     }
 }
 

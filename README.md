@@ -1,6 +1,8 @@
 ## Usable but still beta (Under heavy development and tests)
 # Luna 
-### **Recon** tool Powered by **Rust** 🖤
+### **Recon** tool Powered by **Rust** 🖤  
+[XAoirse](https://github.com/xaoirse)
+
 
 ```
    __  __  ___  _____ 
@@ -10,31 +12,10 @@
 
 ```
  
-Luna can run any bunch of bash scripts in **Parallel** and collect results and save them as JSON format then find them with **Regex**.
-
-  
+Luna can run any bunch of bash scripts in **Parallel**, collect results, save them as JSON format and find them with **Regex**.
 
 
-## Simple Using
-1. Create script file like `script.sh`:  
-set pattern for parsing each line of results
-```bash
-pattern = (?P<sub>)
-subfinder -d ${scope} # sub.sample.com -> sub
-ammass -d ${scope} # sub.sample.com -> sub
-
-pattern = (?P<url>)-(?P<status_code>)
-x  ${sub} # https://sub.sample.com/login 200 -> url, status_code
-```
-2. Insert some scopes:  
-`luna insert scope --name google`
-3. Run script:  
-`luna script script.sh`  
-4. Find subs:  
-`luna find sub --scope google.com`
-
-
-## Installation   
+# Installation   
 1. Install cargo
 2. Compile code with `cargo build --release`   
 
@@ -43,7 +24,7 @@ For building statically linked rust binary [read this link](https://blog.davidva
 
 
 
-## Usage
+# Usage
 
 ```
 luna 0.4.0
@@ -70,23 +51,91 @@ SUBCOMMANDS:
     server    
     test        
 ```
+## Features
+### Available keywords:
 
-## Built With
-- **StructOpt**: Parse **command line arguments** by defining a struct. It combines clap with custom derive.
-- **Rayon**: A data-parallelism library for Rust.
-- **Regex**: A library for parsing, compiling, and executing regular expressions.
+- ${program}
+- ${scope}
+- ${sub}
+- ${url}
+- ${ip}
+- ${port}
+- ${keyword}
+
+### Available regex names:
+- program
+    - program_platform
+    - program_handle
+    - program_type
+    - program_url
+    - program_icon
+    - program_bounty
+    - program_state  
+
+- scope
+    - scope_type
+    - scope_bounty
+    - scop_severity
+
+- sub
+    - sub_type
+
+- ip
+
+- port
+    - service_name
+    - service_protocol
+    - service_banner
+
+- url
+    - title
+    - status_code
+    - response
+
+- tech
+    - tech_version
+
+
+
+# Simple Using
+1. Create script file like `script.sh`:  
+( pattern for parsing each line of results )  
+[ commands ]
+```bash
+pattern = (?P<sub>)
+subfinder -d ${scope} # sub.sample.com -> sub
+ammass -d ${scope} # sub.sample.com -> sub
+
+pattern = (?P<url>)-(?P<status_code>)
+urlfinder  ${sub} # https://sub.sample.com/login 200 -> url, status_code
+```
+2. Insert some scopes (see helps):  
+`luna insert scope --name google`
+3. Run script:  
+`luna script script.sh`  
+4. Find subs (regex) :  
+`luna find sub --scope ^google.com`
+
+
+# Built With
+- [**StructOpt**](https://github.com/TeXitoi/structopt)
+: Parse command line arguments by defining a struct. It combines clap with custom derive.
+- [**Rayon**](https://github.com/rayon-rs/rayon): A data-parallelism library for Rust.
+- [**Regex**](https://github.com/rust-lang/regex
+): A library for parsing, compiling, and executing regular expressions.
 - ...
 
+# Contribute
+- Use
+- Share your idea
+- File Issue
+- Pull Request
+- ...
 
 ## In Progress
+- Wordlist
 - Tests
 - Comments
-- Regex test
-- Reduce release size
-- Report -vvv
-- Filter by date
-- Default luna parameters
-- Regex names in readme
 
 
 ## TODO
@@ -98,4 +147,10 @@ SUBCOMMANDS:
 - [ ] Limit for parallel requests to prevent rate limit  
 - [ ] Worldlist
 - [ ] Custom inputs for script
-- [ ] Request and Response for Url
+- [ ] Request body for Url
+- [ ] Regex test tool (subcommand)
+- [ ] Reduce release size
+- [x] Filter by date
+- [x] Find -vvv flags
+- [ ] Remove all clones  
+
