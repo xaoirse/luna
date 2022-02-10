@@ -32,67 +32,63 @@ pub struct Data {
 }
 impl Data {
     fn parse(&self, regex: &Regex) -> Vec<Luna> {
-        self.output
-            .par_lines()
-            .filter_map(|line| {
-                if let Some(caps) = regex.captures(line) {
-                    let get = |key| caps.name(key).map(|v| v.as_str().to_string());
+        regex
+            .captures_iter(&self.output)
+            .map(|caps| {
+                let get = |key| caps.name(key).map(|v| v.as_str().to_string());
 
-                    let mut luna = Filter {
-                        field: self.field,
-                        verbose: 0,
+                let mut luna = Filter {
+                    field: self.field,
+                    verbose: 0,
 
-                        program: get("program"),
-                        program_platform: get("program_platform"),
-                        program_handle: get("program_handle"),
-                        program_type: get("program_type"),
-                        program_url: get("program_url"),
-                        program_icon: get("program_icon"),
-                        program_bounty: get("program_bounty"),
-                        program_state: get("program_state"),
+                    program: get("program"),
+                    program_platform: get("program_platform"),
+                    program_handle: get("program_handle"),
+                    program_type: get("program_type"),
+                    program_url: get("program_url"),
+                    program_icon: get("program_icon"),
+                    program_bounty: get("program_bounty"),
+                    program_state: get("program_state"),
 
-                        scope: get("scope"),
-                        scope_type: get("scope_type"),
-                        scope_bounty: get("scope_bounty"),
-                        scope_severity: get("scop_severity"),
+                    scope: get("scope"),
+                    scope_type: get("scope_type"),
+                    scope_bounty: get("scope_bounty"),
+                    scope_severity: get("scop_severity"),
 
-                        sub: get("sub"),
-                        sub_typ: get("sub_type"),
+                    sub: get("sub"),
+                    sub_typ: get("sub_type"),
 
-                        ip: get("ip"),
+                    ip: get("ip"),
 
-                        port: get("port"),
-                        service_name: get("service_name"),
-                        service_protocol: get("service_protocol"),
-                        service_banner: get("service_banner"),
+                    port: get("port"),
+                    service_name: get("service_name"),
+                    service_protocol: get("service_protocol"),
+                    service_banner: get("service_banner"),
 
-                        url: get("url"),
-                        title: get("title"),
-                        status_code: get("status_code"),
-                        response: get("response"),
+                    url: get("url"),
+                    title: get("title"),
+                    status_code: get("status_code"),
+                    response: get("response"),
 
-                        tech: get("tech"),
-                        tech_version: get("tech_version"),
+                    tech: get("tech"),
+                    tech_version: get("tech_version"),
 
-                        days_before: None,
-                    };
-                    let input = Some(self.input.clone());
-                    match self.field {
-                        Fields::Program => luna.program = input,
-                        Fields::Scope => luna.scope = input,
-                        Fields::Sub => luna.sub = input,
-                        Fields::Url => luna.url = input,
-                        Fields::IP => luna.ip = input,
-                        Fields::Service => luna.port = input,
-                        Fields::Tech => luna.tech = input,
-                        Fields::Keyword => todo!(),
-                        Fields::None => todo!(),
-                    }
-                    Some(luna.into())
-                } else {
-                    debug!("No regex match in this line: \"{}\"", line);
-                    None
+                    updated_at: None,
+                    started_at: None,
+                };
+                let input = Some(self.input.clone());
+                match self.field {
+                    Fields::Program => luna.program = input,
+                    Fields::Scope => luna.scope = input,
+                    Fields::Sub => luna.sub = input,
+                    Fields::Url => luna.url = input,
+                    Fields::IP => luna.ip = input,
+                    Fields::Service => luna.port = input,
+                    Fields::Tech => luna.tech = input,
+                    Fields::Keyword => todo!(),
+                    Fields::None => todo!(),
                 }
+                luna.into()
             })
             .collect()
     }
