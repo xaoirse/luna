@@ -6,6 +6,7 @@ use super::script;
 use crate::model::*;
 
 #[derive(Debug, StructOpt)]
+#[structopt(author = "SA", about = "The moon rider has arived.")]
 pub struct Opt {
     #[structopt(short, long, global = true, help = "Quiet mode")]
     pub quiet: bool,

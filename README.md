@@ -54,7 +54,6 @@ SUBCOMMANDS:
 ```
 ## Features
 ### <a name="available-keywords"> </a>Available keywords:
-
 - ${program}
 - ${scope}
 - ${sub}
@@ -62,6 +61,10 @@ SUBCOMMANDS:
 - ${ip}
 - ${port}
 - ${keyword}
+
+Example:
+- `curl -I ${url}`
+- `subfinder -d ${scope}`
 
 ### <a name="regex-names"> </a>Available regex names:
 - program
@@ -96,7 +99,8 @@ SUBCOMMANDS:
 - tech
     - tech_version
 
-
+Example:
+- `(?P<response>.+)`
 
 # Simple Using
 1. Create script file like `script.sh`:  
@@ -107,11 +111,11 @@ pattern = (?P<sub>.+)
 subfinder -d ${scope} # sub1.sample.com -> sub
 findsuber -d ${scope} # sub2.sample.com -> sub
 
-pattern = (?P<url>.+)-(?P<status_code>\d+)
-urlfinder  ${sub} # https://sub.sample.com/login 200 -> url, status_code
+pattern = (?P<url>.+) (?P<status_code>\d+)
+urlfinder  ${sub} # https://sub.sample.com/login 200 -> url status_code
 ```
 2. Insert some scopes (see helps):  
-`luna insert scope --name google.com`
+`luna insert scope --asset google.com`
 3. Run script:  
 `luna script script.sh`  
 4. Find subs (regex) :  
