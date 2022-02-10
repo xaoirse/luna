@@ -8,9 +8,7 @@ use structopt::StructOpt;
 // that every scopes are in only one program?
 // or one scope can be in multi programs?
 
-#[derive(
-    Debug, Clone, Serialize, Deserialize, StructOpt, PartialEq, Eq, PartialOrd, Ord, Default,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize, StructOpt, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Program {
     #[structopt(short, long)]
     pub name: String,
@@ -41,11 +39,11 @@ pub struct Program {
 
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
-    pub start: Option<DateTime<Utc>>,
+    pub update: Option<DateTime<Utc>>,
 
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
-    pub update: Option<DateTime<Utc>>,
+    pub start: Option<DateTime<Utc>>,
 }
 
 impl Program {
@@ -82,7 +80,8 @@ impl Program {
             && self.icon.contains_opt(&filter.program_icon)
             && self.bounty.contains_opt(&filter.program_bounty)
             && self.state.contains_opt(&filter.program_state)
-            && check_date(&self.update, &filter.days_before)
+            && check_date(&self.update, &filter.updated_at)
+            && check_date(&self.start, &filter.started_at)
             && (filter.scope_is_none() || self.scopes.par_iter().any(|s| s.matches(filter)))
     }
 
@@ -145,8 +144,8 @@ impl Program {
     icon: {}
     state: {}
     scopes: {}
-    start: {}
     update: {}
+    start: {}
     ",
                 self.name,
                 self.url.as_ref().map_or("", |s| s),
@@ -157,8 +156,8 @@ impl Program {
                 self.icon.as_ref().map_or("", |s| s),
                 self.state.as_ref().map_or("", |s| s),
                 self.scopes.len(),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
             3 => format!(
                 "{}  {}
@@ -170,8 +169,8 @@ impl Program {
     state: {}
     scopes: [
         {}]
-    start: {}
     update: {}
+    start: {}
     ",
                 self.name,
                 self.url.as_ref().map_or("", |s| s),
@@ -186,10 +185,28 @@ impl Program {
                     .map(|s| s.stringify(0))
                     .collect::<Vec<String>>()
                     .join("\n        "),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
             _ => format!("{:#?}", self),
+        }
+    }
+}
+
+impl Default for Program {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            url: None,
+            platform: None,
+            typ: None,
+            state: None,
+            icon: None,
+            bounty: None,
+            handle: None,
+            scopes: vec![],
+            update: Some(Utc::now()),
+            start: Some(Utc::now()),
         }
     }
 }
@@ -200,7 +217,6 @@ impl std::str::FromStr for Program {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Program {
             name: s.to_string(),
-            update: Some(Utc::now()),
             ..Default::default()
         })
     }

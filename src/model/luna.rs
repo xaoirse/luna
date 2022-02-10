@@ -16,11 +16,14 @@ pub struct Luna {
     pub version: String,
     #[structopt(skip)]
     pub counter: i32,
+    #[structopt(short, long)]
+    pub programs: Vec<Program>,
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
-    #[structopt(short, long)]
-    pub programs: Vec<Program>,
+    #[structopt(skip)]
+    #[serde(with = "utc_rfc2822")]
+    pub start: Option<DateTime<Utc>>,
 }
 
 impl Luna {
@@ -28,6 +31,9 @@ impl Luna {
         // Append
         self.counter += other.counter;
         self.programs.append(&mut other.programs);
+
+        self.update = self.update.max(other.update);
+        self.start = self.start.min(other.start);
     }
     pub fn merge(&mut self) {
         // Fill nones
@@ -164,6 +170,7 @@ impl Default for Luna {
             programs: vec![],
             status: "The moon rider has arrived.".to_string(),
             update: Some(Utc::now()),
+            start: Some(Utc::now()),
         }
     }
 }
@@ -176,7 +183,6 @@ impl From<InsertProgram> for Luna {
                 update: Some(Utc::now()),
                 ..i.program
             }],
-            update: Some(Utc::now()),
             ..Default::default()
         }
     }
@@ -188,12 +194,11 @@ impl From<InsertScope> for Luna {
                 name: i.program.unwrap_or_default(),
                 scopes: vec![Scope {
                     update: Some(Utc::now()),
+                    start: Some(Utc::now()),
                     ..i.scope
                 }],
-                update: Some(Utc::now()),
                 ..Default::default()
             }],
-            update: Some(Utc::now()),
             ..Default::default()
         }
     }
@@ -204,10 +209,8 @@ impl From<InsertScopes> for Luna {
             programs: vec![Program {
                 name: i.program.unwrap_or_default(),
                 scopes: i.scopes,
-                update: Some(Utc::now()),
                 ..Default::default()
             }],
-            update: Some(Utc::now()),
             ..Default::default()
         }
     }
@@ -222,15 +225,13 @@ impl From<InsertSub> for Luna {
                     asset: i.scope.unwrap_or_default(),
                     subs: vec![Sub {
                         update: Some(Utc::now()),
+                        start: Some(Utc::now()),
                         ..i.sub
                     }],
-                    update: Some(Utc::now()),
                     ..Default::default()
                 }],
-                update: Some(Utc::now()),
                 ..Default::default()
             }],
-            update: Some(Utc::now()),
             ..Default::default()
         }
     }
@@ -244,13 +245,10 @@ impl From<InsertSubs> for Luna {
                 scopes: vec![Scope {
                     asset: i.scope.unwrap_or_default(),
                     subs: i.subs,
-                    update: Some(Utc::now()),
                     ..Default::default()
                 }],
-                update: Some(Utc::now()),
                 ..Default::default()
             }],
-            update: Some(Utc::now()),
             ..Default::default()
         }
     }
@@ -267,18 +265,15 @@ impl From<InsertUrl> for Luna {
                         asset: i.sub.unwrap_or_default(),
                         urls: vec![Url {
                             update: Some(Utc::now()),
+                            start: Some(Utc::now()),
                             ..i.url
                         }],
-                        update: Some(Utc::now()),
                         ..Default::default()
                     }],
-                    update: Some(Utc::now()),
                     ..Default::default()
                 }],
-                update: Some(Utc::now()),
                 ..Default::default()
             }],
-            update: Some(Utc::now()),
             ..Default::default()
         }
     }
@@ -294,16 +289,12 @@ impl From<InsertUrls> for Luna {
                     subs: vec![Sub {
                         asset: i.sub.unwrap_or_default(),
                         urls: i.urls,
-                        update: Some(Utc::now()),
                         ..Default::default()
                     }],
-                    update: Some(Utc::now()),
                     ..Default::default()
                 }],
-                update: Some(Utc::now()),
                 ..Default::default()
             }],
-            update: Some(Utc::now()),
             ..Default::default()
         }
     }
@@ -320,18 +311,15 @@ impl From<InsertHost> for Luna {
                         asset: i.sub.unwrap_or_default(),
                         hosts: vec![Host {
                             update: Some(Utc::now()),
+                            start: Some(Utc::now()),
                             ..i.host
                         }],
-                        update: Some(Utc::now()),
                         ..Default::default()
                     }],
-                    update: Some(Utc::now()),
                     ..Default::default()
                 }],
-                update: Some(Utc::now()),
                 ..Default::default()
             }],
-            update: Some(Utc::now()),
             ..Default::default()
         }
     }
@@ -347,16 +335,12 @@ impl From<InsertHosts> for Luna {
                     subs: vec![Sub {
                         asset: i.sub.unwrap_or_default(),
                         hosts: i.hosts,
-                        update: Some(Utc::now()),
                         ..Default::default()
                     }],
-                    update: Some(Utc::now()),
                     ..Default::default()
                 }],
-                update: Some(Utc::now()),
                 ..Default::default()
             }],
-            update: Some(Utc::now()),
             ..Default::default()
         }
     }
@@ -399,6 +383,7 @@ impl From<Filter> for Luna {
                 response: f.response.take(),
                 techs,
                 update: Some(Utc::now()),
+                start: Some(Utc::now()),
             }]
         };
 
@@ -420,6 +405,7 @@ impl From<Filter> for Luna {
                 ip: f.ip.take().unwrap_or_default(),
                 services,
                 update: Some(Utc::now()),
+                start: Some(Utc::now()),
             }]
         };
 
@@ -432,6 +418,7 @@ impl From<Filter> for Luna {
                 hosts,
                 urls,
                 update: Some(Utc::now()),
+                start: Some(Utc::now()),
             }]
         };
 
@@ -445,6 +432,7 @@ impl From<Filter> for Luna {
                 bounty: f.scope_bounty,
                 subs,
                 update: Some(Utc::now()),
+                start: Some(Utc::now()),
             }]
         };
 
@@ -459,8 +447,8 @@ impl From<Filter> for Luna {
                 icon: f.program_icon,
                 state: f.program_state,
                 scopes,
-                start: Some(Utc::now()),
                 update: Some(Utc::now()),
+                start: Some(Utc::now()),
             }],
             ..Default::default()
         }

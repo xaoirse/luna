@@ -4,9 +4,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
-#[derive(
-    Default, Clone, Debug, Serialize, Deserialize, StructOpt, PartialEq, Eq, PartialOrd, Ord,
-)]
+#[derive(Clone, Debug, Serialize, Deserialize, StructOpt, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Sub {
     #[structopt(short, long)]
     pub asset: String,
@@ -23,6 +21,10 @@ pub struct Sub {
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
+
+    #[structopt(skip)]
+    #[serde(with = "utc_rfc2822")]
+    pub start: Option<DateTime<Utc>>,
 }
 
 impl Sub {
@@ -33,6 +35,7 @@ impl Sub {
             merge(&mut a.typ, &mut b.typ, new);
 
             a.update = a.update.max(b.update);
+            a.start = a.start.min(b.start);
 
             a.hosts.append(&mut b.hosts);
             a.hosts.par_sort();
@@ -50,7 +53,8 @@ impl Sub {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.asset.contains_opt(&filter.sub)
             && self.typ.contains_opt(&filter.sub_typ)
-            && check_date(&self.update, &filter.days_before)
+            && check_date(&self.update, &filter.updated_at)
+            && check_date(&self.start, &filter.started_at)
             && (filter.host_is_none() || self.hosts.par_iter().any(|h| h.matches(filter)))
             && (filter.url_is_none() || self.urls.par_iter().any(|u| u.matches(filter)))
     }
@@ -72,12 +76,14 @@ impl Sub {
     hosts: {}
     urls: {}
     update: {}
+    start: {}
     ",
                 self.asset,
                 self.typ.as_ref().map_or("", |s| s),
                 self.hosts.len(),
                 self.urls.len(),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
             2 => format!(
                 "{}
@@ -87,6 +93,7 @@ impl Sub {
     urls: [
         {}]
     update: {}
+    start: {}
     ",
                 self.asset,
                 self.typ.as_ref().map_or("", |s| s),
@@ -101,19 +108,31 @@ impl Sub {
                     .collect::<Vec<String>>()
                     .join("\n        "),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
             _ => format!("{:#?}", self),
         }
     }
 }
 
+impl Default for Sub {
+    fn default() -> Self {
+        Self {
+            asset: String::new(),
+            typ: None,
+            hosts: vec![],
+            urls: vec![],
+            update: Some(Utc::now()),
+            start: Some(Utc::now()),
+        }
+    }
+}
 impl std::str::FromStr for Sub {
     type Err = std::str::Utf8Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Sub {
             asset: s.to_string(),
-            update: Some(Utc::now()),
             ..Default::default()
         })
     }

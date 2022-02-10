@@ -53,7 +53,7 @@ pub struct Filter {
     #[structopt(long)]
     pub service_banner: Option<String>,
 
-    #[structopt(long, short = "u")]
+    #[structopt(long)]
     pub url: Option<String>,
     #[structopt(long)]
     pub title: Option<String>,
@@ -67,8 +67,11 @@ pub struct Filter {
     #[structopt(long)]
     pub tech_version: Option<String>,
 
-    #[structopt(long, short = "d")]
-    pub days_before: Option<i64>,
+    #[structopt(long, short)]
+    pub updated_at: Option<i64>,
+
+    #[structopt(long, short)]
+    pub started_at: Option<i64>,
 }
 
 impl Filter {
@@ -186,7 +189,8 @@ pub struct FilterRegex {
     pub tech: Option<regex::Regex>,
     pub tech_version: Option<regex::Regex>,
 
-    pub days_before: Option<i64>,
+    pub updated_at: Option<i64>,
+    pub started_at: Option<i64>,
 }
 impl FilterRegex {
     pub fn scope_is_none(&self) -> bool {
@@ -370,7 +374,8 @@ impl TryFrom<Filter> for FilterRegex {
             tech,
             tech_version,
 
-            days_before: f.days_before,
+            updated_at: f.updated_at,
+            started_at: f.started_at,
         })
     }
 }

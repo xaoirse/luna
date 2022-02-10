@@ -4,11 +4,9 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
-#[derive(
-    Debug, Default, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord,
-)]
+#[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Url {
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub url: String,
 
     #[structopt(long)]
@@ -26,6 +24,10 @@ pub struct Url {
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
+
+    #[structopt(skip)]
+    #[serde(with = "utc_rfc2822")]
+    pub start: Option<DateTime<Utc>>,
 }
 
 impl Url {
@@ -38,6 +40,7 @@ impl Url {
             merge(&mut a.response, &mut b.response, new);
 
             a.update = a.update.max(b.update);
+            a.start = a.start.min(b.start);
 
             a.techs.append(&mut b.techs);
             a.techs.par_sort();
@@ -53,7 +56,8 @@ impl Url {
             && self.title.contains_opt(&filter.title)
             && self.response.contains_opt(&filter.response)
             && self.status_code.contains_opt(&filter.status_code)
-            && check_date(&self.update, &filter.days_before)
+            && check_date(&self.update, &filter.updated_at)
+            && check_date(&self.start, &filter.started_at)
             && (filter.tech_is_none() || self.techs.par_iter().any(|t| t.matches(filter)))
     }
 
@@ -67,6 +71,7 @@ impl Url {
     response: length:{}
     techs: {}
     update: {}
+    start: {}
     ",
                 self.url,
                 self.title.as_ref().map_or("", |s| s),
@@ -74,6 +79,7 @@ impl Url {
                 self.response.as_ref().map_or(0, |s| s.len()),
                 self.techs.len(),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
             2 => format!(
                 "{}
@@ -83,6 +89,7 @@ impl Url {
     techs: [
         {}]
     update: {}
+    start: {}
     ",
                 self.url,
                 self.title.as_ref().map_or("", |s| s),
@@ -94,6 +101,7 @@ impl Url {
                     .collect::<Vec<String>>()
                     .join("\n        "),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
             _ => format!("{:#?}", self),
         }
@@ -104,13 +112,26 @@ impl Url {
     }
 }
 
+impl Default for Url {
+    fn default() -> Self {
+        Self {
+            url: String::new(),
+            title: None,
+            status_code: None,
+            response: None,
+            techs: vec![],
+            update: Some(Utc::now()),
+            start: Some(Utc::now()),
+        }
+    }
+}
+
 impl std::str::FromStr for Url {
     type Err = std::str::Utf8Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Url {
             url: s.to_string(),
-            update: Some(Utc::now()),
             ..Default::default()
         })
     }

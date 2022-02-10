@@ -4,9 +4,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
-#[derive(
-    Debug, Default, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord,
-)]
+#[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Host {
     #[structopt(short, long)]
     pub ip: String,
@@ -17,12 +15,17 @@ pub struct Host {
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
+
+    #[structopt(skip)]
+    #[serde(with = "utc_rfc2822")]
+    pub start: Option<DateTime<Utc>>,
 }
 
 impl Host {
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
         if a.ip == b.ip {
             a.update = a.update.max(b.update);
+            a.start = a.start.min(b.start);
 
             a.services.append(&mut b.services);
             a.services.dedup_by(Service::same_bucket);
@@ -34,7 +37,8 @@ impl Host {
 
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.ip.contains_opt(&filter.ip)
-            && check_date(&self.update, &filter.days_before)
+            && check_date(&self.update, &filter.updated_at)
+            && check_date(&self.start, &filter.started_at)
             && (filter.service_is_none() || self.services.par_iter().any(|s| s.matches(filter)))
     }
 
@@ -45,16 +49,19 @@ impl Host {
                 "{}
     services: {}
     update: {}
+    start: {}
     ",
                 self.ip,
                 self.services.len(),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
             2 => format!(
                 "{}
     services: [
         {}]
     update: {}
+    start: {}
     ",
                 self.ip,
                 self.services
@@ -63,19 +70,29 @@ impl Host {
                     .collect::<Vec<String>>()
                     .join("\n        "),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
             _ => format!("{:#?}", self),
         }
     }
 }
 
+impl Default for Host {
+    fn default() -> Self {
+        Self {
+            ip: String::new(),
+            services: vec![],
+            update: Some(Utc::now()),
+            start: Some(Utc::now()),
+        }
+    }
+}
 impl std::str::FromStr for Host {
     type Err = std::str::Utf8Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Host {
             ip: s.to_string(),
-            update: Some(Utc::now()),
             ..Default::default()
         })
     }
