@@ -1,8 +1,8 @@
-## Hooray, it works :)
+## My automation tool
 [XAoirse](https://github.com/xaoirse)
 # Luna 
 (beta version, Under heavy development and tests)
-### **Recon** tool Powered by **Rust** 🖤  
+### **Reconnaissance** tool, Powered by **Rust**, built with 🖤  
 
 
 ```
@@ -53,7 +53,7 @@ SUBCOMMANDS:
     test        
 ```
 ## Features
-### Available keywords:
+### <a name="available-keywords"> </a>Available keywords:
 
 - ${program}
 - ${scope}
@@ -63,7 +63,7 @@ SUBCOMMANDS:
 - ${port}
 - ${keyword}
 
-### Available regex names:
+### <a name="regex-names"> </a>Available regex names:
 - program
     - program_platform
     - program_handle
@@ -100,18 +100,18 @@ SUBCOMMANDS:
 
 # Simple Using
 1. Create script file like `script.sh`:  
-( pattern for parsing each line of results )  
-[ commands ]
+( pattern for parsing each line of results [see this](#regex-names) )  
+[ commands [see this](#available-keywords)]
 ```bash
 pattern = (?P<sub>.+)
-subfinder -d ${scope} # sub.sample.com -> sub
-ammass -d ${scope} # sub.sample.com -> sub
+subfinder -d ${scope} # sub1.sample.com -> sub
+findsuber -d ${scope} # sub2.sample.com -> sub
 
-pattern = (?P<url>)-(?P<status_code>)
+pattern = (?P<url>.+)-(?P<status_code>\d+)
 urlfinder  ${sub} # https://sub.sample.com/login 200 -> url, status_code
 ```
 2. Insert some scopes (see helps):  
-`luna insert scope --name google`
+`luna insert scope --name google.com`
 3. Run script:  
 `luna script script.sh`  
 4. Find subs (regex) :  
@@ -154,4 +154,4 @@ urlfinder  ${sub} # https://sub.sample.com/login 200 -> url, status_code
 - [x] Filter by date
 - [x] Find -vvv flags
 - [ ] Remove all clones  
-
+- [ ] No-backup flag

@@ -7,9 +7,15 @@ use crate::model::*;
 
 #[derive(Debug, StructOpt)]
 pub struct Opt {
-    #[structopt(short, long, global = true)]
+    #[structopt(short, long, global = true, help = "Quiet mode")]
     pub quiet: bool,
-    #[structopt(short, long, default_value = "luna.json", global = true)]
+    #[structopt(
+        short,
+        long,
+        default_value = "luna.json",
+        global = true,
+        help = "Json file's path"
+    )]
     pub json: String,
     #[structopt(subcommand)]
     pub cli: Cli,
@@ -20,9 +26,13 @@ pub enum Cli {
     Insert(Box<Insert>),
     Find(Box<Filter>),
     Script(Script),
+    #[structopt(help = "not implemented yet")]
     Check,
+    #[structopt(help = "not implemented yet")]
     Test,
+    #[structopt(help = "not implemented yet")]
     Report,
+    #[structopt(help = "not implemented yet")]
     Server(Server),
 }
 
@@ -147,12 +157,10 @@ pub fn run() {
     debug!("Running...");
 
     let opt = Opt::from_args();
-
     let json = &opt.json;
     if !opt.quiet {
         println!("{}", BANNER.blue());
     }
-
     let mut luna = match Luna::from_file(json) {
         Ok(luna) => {
             info!("Luna loaded successfully.");
