@@ -143,7 +143,9 @@ impl Luna {
             .open(path)
         {
             Ok(mut file) => {
-                std::fs::copy(path, &format!("{}_{}", Utc::now().to_rfc2822(), path))?;
+                if !Opt::from_args().no_backup {
+                    std::fs::copy(path, &format!("{}_{}", Utc::now().to_rfc2822(), path))?;
+                }
                 Ok(file.write(str.as_bytes())?)
             }
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => {

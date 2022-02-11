@@ -18,6 +18,8 @@ pub struct Opt {
         help = "Json file's path"
     )]
     pub json: String,
+    #[structopt(long, global = true, help = "Save without backup")]
+    pub no_backup: bool,
     #[structopt(subcommand)]
     pub cli: Cli,
 }

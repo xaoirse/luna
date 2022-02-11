@@ -17,7 +17,7 @@ Luna can run any bunch of bash scripts in **Parallel**, collect results, save th
 
 
 # Installation   
-1. Install cargo
+1. [Install Rust](https://www.rust-lang.org/tools/install)
 2. Compile code with `cargo build --release`   
 
 ### Linux portable binary:
@@ -158,4 +158,4 @@ urlfinder  ${sub} # https://sub.sample.com/login 200 -> url status_code
 - [x] Filter by date
 - [x] Find -vvv flags
 - [ ] Remove all clones  
-- [ ] No-backup flag
+- [x] No-backup flag
