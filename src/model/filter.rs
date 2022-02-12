@@ -30,8 +30,6 @@ pub struct Filter {
     #[structopt(long)]
     pub scope: Option<String>,
     #[structopt(long)]
-    pub scope_type: Option<String>,
-    #[structopt(long)]
     pub scope_bounty: Option<String>,
     #[structopt(long)]
     pub scope_severity: Option<String>,
@@ -39,7 +37,7 @@ pub struct Filter {
     #[structopt(long)]
     pub sub: Option<String>,
     #[structopt(long)]
-    pub sub_typ: Option<String>,
+    pub sub_type: Option<String>,
 
     #[structopt(long)]
     pub ip: Option<String>,
@@ -76,13 +74,10 @@ pub struct Filter {
 
 impl Filter {
     pub fn scope_is_none(&self) -> bool {
-        self.scope.is_none()
-            && self.scope_type.is_none()
-            && self.scope_bounty.is_none()
-            && self.sub_is_none()
+        self.scope.is_none() && self.scope_bounty.is_none() && self.sub_is_none()
     }
     pub fn sub_is_none(&self) -> bool {
-        self.sub.is_none() && self.sub_typ.is_none() && self.host_is_none() && self.url_is_none()
+        self.sub.is_none() && self.sub_type.is_none() && self.host_is_none() && self.url_is_none()
     }
 
     pub fn url_is_none(&self) -> bool {
@@ -169,12 +164,11 @@ pub struct FilterRegex {
     pub program_state: Option<regex::Regex>,
 
     pub scope: Option<regex::Regex>,
-    pub scope_type: Option<regex::Regex>,
     pub scope_bounty: Option<regex::Regex>,
     pub scope_severity: Option<regex::Regex>,
 
     pub sub: Option<regex::Regex>,
-    pub sub_typ: Option<regex::Regex>,
+    pub sub_type: Option<regex::Regex>,
 
     pub ip: Option<regex::Regex>,
 
@@ -196,13 +190,10 @@ pub struct FilterRegex {
 }
 impl FilterRegex {
     pub fn scope_is_none(&self) -> bool {
-        self.scope.is_none()
-            && self.scope_type.is_none()
-            && self.scope_bounty.is_none()
-            && self.sub_is_none()
+        self.scope.is_none() && self.scope_bounty.is_none() && self.sub_is_none()
     }
     pub fn sub_is_none(&self) -> bool {
-        self.sub.is_none() && self.sub_typ.is_none() && self.host_is_none() && self.url_is_none()
+        self.sub.is_none() && self.sub_type.is_none() && self.host_is_none() && self.url_is_none()
     }
 
     pub fn url_is_none(&self) -> bool {
@@ -270,10 +261,6 @@ impl TryFrom<Filter> for FilterRegex {
             Some(ref p) => Some(Regex::new(p)?),
             None => None,
         };
-        let scope_type = match f.scope_type {
-            Some(ref p) => Some(Regex::new(p)?),
-            None => None,
-        };
         let scope_bounty = match f.scope_bounty {
             Some(ref p) => Some(Regex::new(p)?),
             None => None,
@@ -287,7 +274,7 @@ impl TryFrom<Filter> for FilterRegex {
             Some(ref p) => Some(Regex::new(p)?),
             None => None,
         };
-        let sub_typ = match f.sub_typ {
+        let sub_type = match f.sub_type {
             Some(ref p) => Some(Regex::new(p)?),
             None => None,
         };
@@ -354,12 +341,11 @@ impl TryFrom<Filter> for FilterRegex {
             program_state,
 
             scope,
-            scope_type,
             scope_bounty,
             scope_severity,
 
             sub,
-            sub_typ,
+            sub_type,
 
             ip,
 

@@ -52,7 +52,7 @@ impl Sub {
 
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.asset.contains_opt(&filter.sub)
-            && self.typ.contains_opt(&filter.sub_typ)
+            && self.typ.contains_opt(&filter.sub_type)
             && check_date(&self.update, &filter.updated_at)
             && check_date(&self.start, &filter.started_at)
             && (filter.host_is_none() || self.hosts.par_iter().any(|h| h.matches(filter)))

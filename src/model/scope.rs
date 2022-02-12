@@ -14,9 +14,6 @@ pub struct Scope {
     #[structopt(short, long)]
     pub asset: ScopeType,
 
-    #[structopt(short, long, case_insensitive = true)]
-    pub typ: Option<String>,
-
     #[structopt(short, long)]
     pub bounty: Option<String>,
 
@@ -77,7 +74,6 @@ impl Scope {
         if a.asset != ScopeType::Empty && a.asset == b.asset {
             let new = a.update < b.update;
 
-            merge(&mut a.typ, &mut b.typ, new);
             merge(&mut a.bounty, &mut b.bounty, new);
             merge(&mut a.severity, &mut b.severity, new);
 
@@ -95,7 +91,6 @@ impl Scope {
 
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.asset.contains_opt(&filter.scope)
-            && self.typ.contains_opt(&filter.scope_type)
             && self.bounty.contains_opt(&filter.scope_bounty)
             && self.severity.contains_opt(&filter.scope_severity)
             && check_date(&self.update, &filter.updated_at)
@@ -125,7 +120,6 @@ impl Scope {
             0 => self.asset.to_string(),
             1 => format!(
                 "{}
-    type: {}
     bounty: {}
     severity: {}
     subs: {}
@@ -133,7 +127,6 @@ impl Scope {
     start: {}
     ",
                 self.asset,
-                self.typ.as_ref().map_or("", |s| s),
                 self.bounty.as_ref().map_or("", |s| s),
                 self.severity.as_ref().map_or("", |s| s),
                 self.subs.len(),
@@ -142,7 +135,6 @@ impl Scope {
             ),
             2 => format!(
                 "{},
-    type: {},
     bounty: {},
     severity: {}
     subs: [
@@ -151,7 +143,6 @@ impl Scope {
     start: {}
     ",
                 self.asset,
-                self.typ.as_ref().map_or("", |s| s),
                 self.bounty.as_ref().map_or("", |s| s),
                 self.severity.as_ref().map_or("", |s| s),
                 self.subs
@@ -171,7 +162,6 @@ impl Default for Scope {
     fn default() -> Self {
         Self {
             asset: ScopeType::Empty,
-            typ: None,
             severity: None,
             bounty: None,
             subs: vec![],

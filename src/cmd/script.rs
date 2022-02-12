@@ -1,5 +1,5 @@
 use crate::model::{Errors, Fields, Filter, Luna};
-use log::{debug, error};
+use log::{debug, error, warn};
 use rayon::prelude::*;
 use rayon::{iter::Map, vec::IntoIter};
 use regex::Regex;
@@ -34,7 +34,7 @@ impl Data {
     fn parse(&self, regex: &Regex) -> Vec<Luna> {
         regex
             .captures_iter(&self.output)
-            .map(|caps| {
+            .filter_map(|caps| {
                 let get = |key| caps.name(key).map(|v| v.as_str().to_string());
 
                 let mut luna = Filter {
@@ -51,12 +51,11 @@ impl Data {
                     program_state: get("program_state"),
 
                     scope: get("scope"),
-                    scope_type: get("scope_type"),
                     scope_bounty: get("scope_bounty"),
                     scope_severity: get("scop_severity"),
 
                     sub: get("sub"),
-                    sub_typ: get("sub_type"),
+                    sub_type: get("sub_type"),
 
                     ip: get("ip"),
 
@@ -87,12 +86,40 @@ impl Data {
                     Fields::Service => luna.port = input,
                     Fields::Tech => luna.tech = input,
                     Fields::Keyword => todo!(),
-                    Fields::None => todo!(),
+                    Fields::None => (),
                 }
 
-                // Check orphan fields
-
-                luna.into()
+                // Filter orphan fields
+                if (luna.program.is_some()
+                    || luna.program.is_some()
+                        == (luna.program_platform.is_some()
+                            || luna.program_handle.is_some()
+                            || luna.program_type.is_some()
+                            || luna.program_url.is_some()
+                            || luna.program_icon.is_some()
+                            || luna.program_bounty.is_some()
+                            || luna.program_state.is_some()))
+                    && (luna.scope.is_some()
+                        || luna.scope.is_some()
+                            == (luna.scope_bounty.is_some() || luna.scope_severity.is_some()))
+                    && (luna.sub.is_some() || luna.sub.is_some() == luna.sub_type.is_some())
+                    && (luna.port.is_some()
+                        || luna.port.is_some()
+                            == (luna.service_name.is_some()
+                                || luna.service_protocol.is_some()
+                                || luna.service_banner.is_some()))
+                    && (luna.url.is_some()
+                        || luna.url.is_some()
+                            == (luna.title.is_some()
+                                || luna.status_code.is_some()
+                                || luna.response.is_some()))
+                    && (luna.tech.is_some() || luna.tech.is_some() == luna.tech_version.is_some())
+                {
+                    Some(luna.into())
+                } else {
+                    warn!("Fucking Orphan detected: {:#?}", luna);
+                    None
+                }
             })
             .collect()
     }
@@ -166,7 +193,7 @@ pub fn parse(path: String) -> Result<Scripts, Errors> {
         }) {
             if pattern.is_empty() {
                 return Err(Box::new(Error::Pattern(
-                    "Where the fuck is first pattern?".to_string(),
+                    "Where the fuck is the first pattern?".to_string(),
                 )));
             }
 
@@ -217,12 +244,6 @@ pub fn parse(path: String) -> Result<Scripts, Errors> {
 
 fn regex_check(regex: &Regex) -> bool {
     let names: Vec<_> = regex.capture_names().flatten().collect();
-    // (names.contains(&"program_platform") || names.contains(&"program_bounty"))
-    //     == names.contains(&"program")
-    // regex
-    //     .capture_names()
-    //     .flatten()
-    //     .any(|name| name == "program" || name == "scope" || name == "sub" || name == "host")
 
     (names.contains(&"program")
         || names.contains(&"program")
@@ -235,9 +256,7 @@ fn regex_check(regex: &Regex) -> bool {
                 || names.contains(&"program_state")))
         && (names.contains(&"scope")
             || names.contains(&"scope")
-                == (names.contains(&"scope_type")
-                    || names.contains(&"scope_bounty")
-                    || names.contains(&"scop_severity")))
+                == (names.contains(&"scope_bounty") || names.contains(&"scope_severity")))
         && (names.contains(&"sub") || names.contains(&"sub") == names.contains(&"sub_type"))
         && (names.contains(&"port")
             || names.contains(&"port")

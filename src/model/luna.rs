@@ -428,7 +428,7 @@ impl From<Filter> for Luna {
         } else {
             vec![Sub {
                 asset: f.sub.take().unwrap_or_default(),
-                typ: f.sub_typ.take(),
+                typ: f.sub_type.take(),
                 hosts,
                 urls,
                 update: Some(Utc::now()),
@@ -441,7 +441,6 @@ impl From<Filter> for Luna {
         } else {
             vec![Scope {
                 asset: ScopeType::from_str(&f.scope.unwrap_or_default()).unwrap(),
-                typ: f.scope_type,
                 severity: f.scope_severity,
                 bounty: f.scope_bounty,
                 subs,
