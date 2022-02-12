@@ -137,17 +137,15 @@ impl Luna {
     pub fn save(&self, path: &str) -> Result<usize, Errors> {
         let str = serde_json::to_string(&self)?;
 
+        if !Opt::from_args().no_backup && std::path::Path::new(path).exists() {
+            std::fs::copy(path, &format!("{}_{}", Utc::now().to_rfc2822(), path))?;
+        }
         match std::fs::File::options()
             .write(true)
             .truncate(true)
             .open(path)
         {
-            Ok(mut file) => {
-                if !Opt::from_args().no_backup {
-                    std::fs::copy(path, &format!("{}_{}", Utc::now().to_rfc2822(), path))?;
-                }
-                Ok(file.write(str.as_bytes())?)
-            }
+            Ok(mut file) => Ok(file.write(str.as_bytes())?),
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
                 Ok(std::fs::File::create(path)?.write(str.as_bytes())?)
             }
