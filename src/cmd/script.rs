@@ -79,7 +79,8 @@ impl Data {
                 let input = Some(self.input.clone());
                 match self.field {
                     Fields::Program => luna.program = input,
-                    Fields::Scope => luna.scope = input,
+                    Fields::Domain => luna.scope = input,
+                    Fields::Cidr => luna.scope = input,
                     Fields::Sub => luna.sub = input,
                     Fields::Url => luna.url = input,
                     Fields::IP => luna.ip = input,
@@ -88,6 +89,9 @@ impl Data {
                     Fields::Keyword => todo!(),
                     Fields::None => todo!(),
                 }
+
+                // Check orphan fields
+
                 luna.into()
             })
             .collect()
@@ -152,7 +156,7 @@ pub fn parse(path: String) -> Result<Scripts, Errors> {
     let mut scripts = vec![];
     let mut pattern = String::new();
 
-    for line in std::fs::read_to_string(path)?.trim().lines() {
+    for (n, line) in std::fs::read_to_string(path)?.trim().lines().enumerate() {
         if line.trim().starts_with("pattern") {
             pattern = line
                 .split_once("=")
@@ -168,8 +172,10 @@ pub fn parse(path: String) -> Result<Scripts, Errors> {
 
             let field = if line.contains("${program}") {
                 Fields::Program
-            } else if line.contains("${scope}") {
-                Fields::Scope
+            } else if line.contains("${domain}") {
+                Fields::Domain
+            } else if line.contains("${cidr}") {
+                Fields::Cidr
             } else if line.contains("${sub}") {
                 Fields::Sub
             } else if line.contains("${url}") {
@@ -189,9 +195,9 @@ pub fn parse(path: String) -> Result<Scripts, Errors> {
             if let Ok(regex) = regex::Regex::new(&pattern) {
                 if !regex_check(&regex) {
                     return Err(Box::new(Error::Pattern(
-                    "Pattern doesn't have any of necessery names \"program, scope, sub, url, ip\""
-                        .to_string(),
-                )));
+                        format!("line {} pattern \"{}\"  doesn't have necessery names \"program\", \"scope\", \"sub\", \"url\" or \"ip\""
+                            ,n,pattern),
+                    )));
                 }
 
                 scripts.push(Script {
@@ -210,8 +216,38 @@ pub fn parse(path: String) -> Result<Scripts, Errors> {
 }
 
 fn regex_check(regex: &Regex) -> bool {
-    regex
-        .capture_names()
-        .flatten()
-        .any(|name| name == "program" || name == "scope" || name == "sub" || name == "host")
+    let names: Vec<_> = regex.capture_names().flatten().collect();
+    // (names.contains(&"program_platform") || names.contains(&"program_bounty"))
+    //     == names.contains(&"program")
+    // regex
+    //     .capture_names()
+    //     .flatten()
+    //     .any(|name| name == "program" || name == "scope" || name == "sub" || name == "host")
+
+    (names.contains(&"program")
+        || names.contains(&"program")
+            == (names.contains(&"program_platform")
+                || names.contains(&"program_handle")
+                || names.contains(&"program_type")
+                || names.contains(&"program_url")
+                || names.contains(&"program_icon")
+                || names.contains(&"program_bounty")
+                || names.contains(&"program_state")))
+        && (names.contains(&"scope")
+            || names.contains(&"scope")
+                == (names.contains(&"scope_type")
+                    || names.contains(&"scope_bounty")
+                    || names.contains(&"scop_severity")))
+        && (names.contains(&"sub") || names.contains(&"sub") == names.contains(&"sub_type"))
+        && (names.contains(&"port")
+            || names.contains(&"port")
+                == (names.contains(&"service_name")
+                    || names.contains(&"service_protocol")
+                    || names.contains(&"service_banner")))
+        && (names.contains(&"url")
+            || names.contains(&"url")
+                == (names.contains(&"title")
+                    || names.contains(&"status_code")
+                    || names.contains(&"response")))
+        && (names.contains(&"tech") || names.contains(&"tech") == names.contains(&"tech_version"))
 }

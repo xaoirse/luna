@@ -10,18 +10,18 @@ pub mod tech;
 pub mod url;
 pub mod utc_rfc2822;
 
+pub use crate::cmd::run::*;
 pub use filter::{Fields, Filter, FilterRegex};
 pub use host::Host;
 pub use luna::Luna;
 pub use program::Program;
 use regex::Regex;
 pub use scope::Scope;
+pub use scope::ScopeType;
 pub use service::Service;
 pub use sub::Sub;
 pub use tech::Tech;
 pub use url::Url;
-
-pub use crate::cmd::run::*;
 
 pub type Errors = Box<dyn std::error::Error + Sync + Send>;
 

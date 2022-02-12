@@ -4,6 +4,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::io::Write;
+use std::str::FromStr;
 use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt, Serialize, Deserialize, PartialEq, Eq)]
@@ -55,15 +56,28 @@ impl Luna {
                 .filter(|p| p.matches(filter))
                 .map(|p| p.stringify(filter.verbose))
                 .collect(),
-            Fields::Scope => self
+            Fields::Domain => self
                 .programs
                 .par_iter()
                 .filter(|p| p.matches(filter))
                 .flat_map(|p| &p.scopes)
                 .filter(|s| s.matches(filter))
-                .map(|s| s.stringify(filter.verbose))
+                .filter_map(|s| match &s.asset {
+                    ScopeType::Domain(_) => Some(s.stringify(filter.verbose)),
+                    _ => None,
+                })
                 .collect(),
-
+            Fields::Cidr => self
+                .programs
+                .par_iter()
+                .filter(|p| p.matches(filter))
+                .flat_map(|p| &p.scopes)
+                .filter(|s| s.matches(filter))
+                .filter_map(|s| match &s.asset {
+                    ScopeType::Cidr(_) => Some(s.stringify(filter.verbose)),
+                    _ => None,
+                })
+                .collect(),
             Fields::Sub => self
                 .programs
                 .par_iter()
@@ -111,18 +125,18 @@ impl Luna {
         })
     }
 
-    pub fn program(&self, scope: &str) -> Option<&Program> {
+    pub fn program(&self, scope: &ScopeType) -> Option<&Program> {
         self.programs
             .par_iter()
             .filter(|p| !p.name.is_empty())
-            .find_any(|p| p.scopes.par_iter().any(|s| s.asset == scope))
+            .find_any(|p| p.scopes.par_iter().any(|s| &s.asset == scope))
     }
 
     pub fn scope(&self, sub: &str) -> Option<&Scope> {
         self.programs
             .par_iter()
             .flat_map(|p| &p.scopes)
-            .filter(|s| !s.asset.is_empty())
+            .filter(|s| s.asset != ScopeType::Empty)
             .find_any(|s| s.subs.par_iter().any(|s| s.asset == sub))
     }
     pub fn sub(&self, ip: &str) -> Option<&Sub> {
@@ -222,7 +236,7 @@ impl From<InsertSub> for Luna {
             programs: vec![Program {
                 name: i.program.unwrap_or_default(),
                 scopes: vec![Scope {
-                    asset: i.scope.unwrap_or_default(),
+                    asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
                     subs: vec![Sub {
                         update: Some(Utc::now()),
                         start: Some(Utc::now()),
@@ -243,7 +257,7 @@ impl From<InsertSubs> for Luna {
             programs: vec![Program {
                 name: i.program.unwrap_or_default(),
                 scopes: vec![Scope {
-                    asset: i.scope.unwrap_or_default(),
+                    asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
                     subs: i.subs,
                     ..Default::default()
                 }],
@@ -260,7 +274,7 @@ impl From<InsertUrl> for Luna {
             programs: vec![Program {
                 name: i.program.unwrap_or_default(),
                 scopes: vec![Scope {
-                    asset: i.scope.unwrap_or_default(),
+                    asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
                     subs: vec![Sub {
                         asset: i.sub.unwrap_or_default(),
                         urls: vec![Url {
@@ -285,7 +299,7 @@ impl From<InsertUrls> for Luna {
             programs: vec![Program {
                 name: i.program.unwrap_or_default(),
                 scopes: vec![Scope {
-                    asset: i.scope.unwrap_or_default(),
+                    asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
                     subs: vec![Sub {
                         asset: i.sub.unwrap_or_default(),
                         urls: i.urls,
@@ -306,7 +320,7 @@ impl From<InsertHost> for Luna {
             programs: vec![Program {
                 name: i.program.unwrap_or_default(),
                 scopes: vec![Scope {
-                    asset: i.scope.unwrap_or_default(),
+                    asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
                     subs: vec![Sub {
                         asset: i.sub.unwrap_or_default(),
                         hosts: vec![Host {
@@ -331,7 +345,7 @@ impl From<InsertHosts> for Luna {
             programs: vec![Program {
                 name: i.program.unwrap_or_default(),
                 scopes: vec![Scope {
-                    asset: i.scope.unwrap_or_default(),
+                    asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
                     subs: vec![Sub {
                         asset: i.sub.unwrap_or_default(),
                         hosts: i.hosts,
@@ -426,7 +440,7 @@ impl From<Filter> for Luna {
             vec![]
         } else {
             vec![Scope {
-                asset: f.scope.unwrap_or_default(),
+                asset: ScopeType::from_str(&f.scope.unwrap_or_default()).unwrap(),
                 typ: f.scope_type,
                 severity: f.scope_severity,
                 bounty: f.scope_bounty,

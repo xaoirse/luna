@@ -27,7 +27,7 @@ pub struct Filter {
     #[structopt(long)]
     pub program_state: Option<String>,
 
-    #[structopt(long, short)]
+    #[structopt(long)]
     pub scope: Option<String>,
     #[structopt(long)]
     pub scope_type: Option<String>,
@@ -118,14 +118,15 @@ arg_enum! {
         IP,
         Url,
         Sub,
-        Scope,
+        Cidr,
+        Domain,
         Program,
     }
 }
 
 impl Default for Fields {
     fn default() -> Self {
-        Self::Scope
+        Self::Domain
     }
 }
 
@@ -133,7 +134,8 @@ impl From<&Fields> for &str {
     fn from(f: &Fields) -> Self {
         match f {
             Fields::Program => "program",
-            Fields::Scope => "scope",
+            Fields::Domain => "domain",
+            Fields::Cidr => "cidr",
             Fields::Sub => "sub",
             Fields::Url => "url",
             Fields::IP => "ip",

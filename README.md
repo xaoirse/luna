@@ -55,7 +55,8 @@ SUBCOMMANDS:
 ## Features
 ### <a name="available-keywords"> </a>Available keywords:
 - ${program}
-- ${scope}
+- ${domain}
+- ${cidr}
 - ${sub}
 - ${url}
 - ${ip}
