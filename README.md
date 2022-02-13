@@ -29,17 +29,20 @@ For building statically linked rust binary [read this link](https://blog.davidva
 
 ```
 luna 0.4.0
+SA
+The moon rider has arived.
 
 USAGE:
     luna [FLAGS] [OPTIONS] <SUBCOMMAND>
 
 FLAGS:
-    -h, --help       Prints help information
-    -q, --quiet      
-    -V, --version    Prints version information
+    -h, --help         Prints help information
+        --no-backup    Save without backup
+    -q, --quiet        Quiet mode
+    -V, --version      Prints version information
 
 OPTIONS:
-    -j, --json <json>     [default: luna.json]
+    -j, --json <json>    Json file's path [default: luna.json]
 
 SUBCOMMANDS:
     check     
@@ -50,7 +53,7 @@ SUBCOMMANDS:
     report    
     script    
     server    
-    test        
+    test      
 ```
 ## Features
 ### <a name="available-keywords"> </a>Available keywords:
@@ -78,7 +81,6 @@ Example:
     - program_state  
 
 - scope
-    - scope_type
     - scope_bounty
     - scop_severity
 

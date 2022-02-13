@@ -1,13 +1,19 @@
-use std::{
-    fmt::{self, Display},
-    str::FromStr,
-};
-
 use super::*;
 use chrono::{DateTime, Utc};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::{
+    fmt::{self, Display},
+    str::FromStr,
+};
 use structopt::StructOpt;
+
+macro_rules! regex {
+    ($re:literal $(,)?) => {{
+        static RE: once_cell::sync::OnceCell<regex::Regex> = once_cell::sync::OnceCell::new();
+        RE.get_or_init(|| regex::Regex::new($re).unwrap())
+    }};
+}
 
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Scope {
@@ -49,9 +55,11 @@ impl Display for ScopeType {
 impl FromStr for ScopeType {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let cidr = regex!(r"(?:\d{1,3}\.){3}\d{1,3}/\d{1,2}");
+
         if s.is_empty() {
             Ok(Self::Empty)
-        } else if s.starts_with('1') {
+        } else if cidr.is_match(s) {
             Ok(Self::Cidr(s.to_string()))
         } else {
             Ok(Self::Domain(s.to_string()))

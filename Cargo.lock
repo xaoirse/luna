@@ -234,6 +234,7 @@ dependencies = [
  "colored",
  "env_logger",
  "log",
+ "once_cell",
  "openssl",
  "rayon",
  "regex",
