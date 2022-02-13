@@ -31,6 +31,9 @@ impl Host {
             a.services.dedup_by(Service::same_bucket);
             true
         } else {
+            a.services.append(&mut b.services);
+            a.services.dedup_by(Service::same_bucket);
+
             false
         }
     }

@@ -44,8 +44,15 @@ impl Sub {
             a.urls.append(&mut b.urls);
             a.urls.par_sort();
             a.urls.dedup_by(Url::same_bucket);
+
             true
         } else {
+            a.hosts.par_sort();
+            a.hosts.dedup_by(Host::same_bucket);
+
+            a.urls.par_sort();
+            a.urls.dedup_by(Url::same_bucket);
+
             false
         }
     }

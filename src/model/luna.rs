@@ -378,7 +378,14 @@ impl From<Insert> for Luna {
 
 impl From<Filter> for Luna {
     fn from(mut f: Filter) -> Self {
-        let techs = if f.tech_is_none() {
+        let tech_is_none = f.tech_is_none();
+        let url_is_none = f.url_is_none();
+        let service_is_none = f.service_is_none();
+        let host_is_none = f.host_is_none();
+        let sub_is_none = f.sub_is_none();
+        let scope_is_none = f.scope_is_none();
+
+        let techs = if tech_is_none {
             vec![]
         } else {
             vec![Tech {
@@ -387,7 +394,7 @@ impl From<Filter> for Luna {
             }]
         };
 
-        let urls = if f.url_is_none() {
+        let urls = if url_is_none {
             vec![]
         } else {
             vec![Url {
@@ -401,7 +408,7 @@ impl From<Filter> for Luna {
             }]
         };
 
-        let services = if f.service_is_none() {
+        let services = if service_is_none {
             vec![]
         } else {
             vec![Service {
@@ -412,7 +419,7 @@ impl From<Filter> for Luna {
             }]
         };
 
-        let hosts = if f.host_is_none() {
+        let hosts = if host_is_none {
             vec![]
         } else {
             vec![Host {
@@ -423,7 +430,7 @@ impl From<Filter> for Luna {
             }]
         };
 
-        let subs = if f.sub_is_none() {
+        let subs = if sub_is_none {
             vec![]
         } else {
             vec![Sub {
@@ -436,7 +443,7 @@ impl From<Filter> for Luna {
             }]
         };
 
-        let scopes = if f.scope_is_none() {
+        let scopes = if scope_is_none {
             vec![]
         } else {
             vec![Scope {

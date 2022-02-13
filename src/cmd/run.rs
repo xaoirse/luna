@@ -1,5 +1,6 @@
 use colored::Colorize;
 use log::{debug, error, info, warn};
+use rayon::prelude::*;
 use structopt::StructOpt;
 
 use super::script;
@@ -199,7 +200,9 @@ pub fn run() {
 
             match (*find).try_into() {
                 Ok(find) => {
-                    let results = luna.find(&find);
+                    let mut results = luna.find(&find);
+                    results.par_sort();
+                    results.dedup();
                     results.iter().for_each(|r| println!("{}", r));
                 }
                 Err(err) => error!("Use fucking right regex: {}", err),
@@ -212,9 +215,8 @@ pub fn run() {
             match script::parse(script.path) {
                 Ok(script) => {
                     script.run(&mut luna);
-                    info!("Scripts completed.");
+                    info!("Scripts Executed.");
                     luna.merge();
-                    info!("Luna merged.");
 
                     if let Err(err) = luna.save(json) {
                         error!("Error while saving: {}", err);

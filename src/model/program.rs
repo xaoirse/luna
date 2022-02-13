@@ -66,9 +66,13 @@ impl Program {
             a.scopes.par_sort();
             a.scopes.dedup_by(Scope::same_bucket);
 
-            return true;
+            true
+        } else {
+            a.scopes.par_sort();
+            a.scopes.dedup_by(Scope::same_bucket);
+
+            false
         }
-        false
     }
 
     pub fn matches(&self, filter: &FilterRegex) -> bool {
@@ -91,7 +95,7 @@ impl Program {
         if self.name.is_empty() {
             if let Some(program) = self
                 .scopes
-                .par_iter_mut()
+                .par_iter()
                 .find_map_any(|s| luna.program(&s.asset))
             {
                 self.name = program.name.clone();

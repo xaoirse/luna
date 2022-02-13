@@ -48,6 +48,9 @@ impl Url {
 
             true
         } else {
+            a.techs.par_sort();
+            a.techs.dedup_by(Tech::same_bucket);
+
             false
         }
     }

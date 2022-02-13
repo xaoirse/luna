@@ -83,8 +83,12 @@ impl Scope {
             a.subs.append(&mut b.subs);
             a.subs.par_sort();
             a.subs.dedup_by(Sub::same_bucket);
+
             true
         } else {
+            a.subs.par_sort();
+            a.subs.dedup_by(Sub::same_bucket);
+
             false
         }
     }
@@ -181,3 +185,21 @@ impl std::str::FromStr for Scope {
         })
     }
 }
+
+// mod test {
+//     use super::*;
+//     #[test]
+//     fn test_same_buket() {
+//         let s1 = Scope::from_str("s1").unwrap();
+//         let s2 = Scope::from_str("s3").unwrap();
+//         let s3 = Scope::from_str("s3").unwrap();
+
+//         let mut vec = vec![s1.clone(), s2.clone(), s3.clone()];
+
+//         vec.par_sort();
+//         vec.dedup_by(Scope::same_bucket);
+//         assert_eq!(s2.clone(), s2.clone());
+
+//         assert_eq!(vec, vec![s1, s2]);
+//     }
+// }

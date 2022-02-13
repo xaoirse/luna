@@ -93,11 +93,12 @@ impl Filter {
     }
 
     pub fn host_is_none(&self) -> bool {
-        self.ip.is_none() && self.port.is_none() && self.service_is_none()
+        self.ip.is_none() && self.service_is_none()
     }
 
     pub fn service_is_none(&self) -> bool {
-        self.service_name.is_none()
+        self.port.is_none()
+            && self.service_name.is_none()
             && self.service_protocol.is_none()
             && self.service_banner.is_none()
     }
