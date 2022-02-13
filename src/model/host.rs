@@ -57,12 +57,16 @@ impl Host {
     ",
                 self.ip,
                 self.services.len(),
-                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             2 => format!(
                 "{}
-    services: [{}]
+    services: [{}{}
     update: {}
     start: {}
     ",
@@ -72,8 +76,17 @@ impl Host {
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),
-                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                if self.services.is_empty() {
+                    "]"
+                } else {
+                    "\n    ]"
+                },
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             _ => format!("{:#?}", self),
         }

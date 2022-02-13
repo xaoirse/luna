@@ -143,7 +143,7 @@ urlfinder  ${sub} # https://sub.sample.com/login 200 -> url status-code
 
 # FAQ
 ### Is it works?
-Yes, I am using it. but it's may has bugs so I try to fix them.
+Yes, I am using it. but it may has bugs so I try to fix them.
 ### Why Rust?
 I want a standalone binary release from my code,
 

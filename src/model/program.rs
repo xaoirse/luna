@@ -162,8 +162,12 @@ impl Program {
                 self.icon.as_ref().map_or("", |s| s),
                 self.state.as_ref().map_or("", |s| s),
                 self.scopes.len(),
-                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             3 => format!(
                 "{}  {}
@@ -173,7 +177,7 @@ impl Program {
     bounty: {}
     icon: {}
     state: {}
-    scopes: [{}]
+    scopes: [{}{}
     update: {}
     start: {}
     ",
@@ -190,8 +194,17 @@ impl Program {
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),
-                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                if self.scopes.is_empty() {
+                    "]"
+                } else {
+                    "\n    ]"
+                },
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             _ => format!("{:#?}", self),
         }

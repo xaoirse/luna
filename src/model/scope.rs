@@ -143,14 +143,18 @@ impl Scope {
                 self.bounty.as_ref().map_or("", |s| s),
                 self.severity.as_ref().map_or("", |s| s),
                 self.subs.len(),
-                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             2 => format!(
                 "{},
     bounty: {},
     severity: {}
-    subs: [{}]
+    subs: [{}{}
     update: {}
     start: {}
     ",
@@ -162,8 +166,13 @@ impl Scope {
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),
-                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                if self.subs.is_empty() { "]" } else { "\n    ]" },
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             _ => format!("{:#?}", self),
         }

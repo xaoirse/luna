@@ -82,15 +82,19 @@ impl Url {
                 self.status_code.as_ref().map_or("", |s| s),
                 self.response.as_ref().map_or(0, |s| s.len()),
                 self.techs.len(),
-                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             2 => format!(
                 "{}
     title: {}
     status code: {}
     responce: {}
-    techs: [{}]
+    techs: [{}{}
     update: {}
     start: {}
     ",
@@ -103,8 +107,17 @@ impl Url {
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),
-                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                if self.techs.is_empty() {
+                    "]"
+                } else {
+                    "\n    ]"
+                },
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             _ => format!("{:#?}", self),
         }

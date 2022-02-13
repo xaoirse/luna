@@ -90,14 +90,18 @@ impl Sub {
                 self.typ.as_ref().map_or("", |s| s),
                 self.hosts.len(),
                 self.urls.len(),
-                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             2 => format!(
                 "{}
     type: {}
-    hosts: [{}]
-    urls: [{}]
+    hosts: [{}{}
+    urls: [{}{}
     update: {}
     start: {}
     ",
@@ -108,13 +112,23 @@ impl Sub {
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),
+                if self.hosts.is_empty() {
+                    "]"
+                } else {
+                    "\n    ]"
+                },
                 self.urls
                     .iter()
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),
-                self.update.map_or("".to_string(), |s| s.to_rfc2822()),
-                self.start.map_or("".to_string(), |s| s.to_rfc2822()),
+                if self.urls.is_empty() { "]" } else { "\n    ]" },
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             _ => format!("{:#?}", self),
         }
