@@ -6,20 +6,6 @@ description = "A Recon Tool"
 readme = "README.md"
 edition = "2021"
 
-# RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-s' cargo build --target x86_64-unknown-linux-musl --release
-
-
-# Should be in .cargo/config
-# # https://blog.davidvassallo.me/2021/06/10/lessons-learned-building-statically-linked-rust-binaries-openssl/
-# [target.x86_64-unknown-linux-musl]
-# # https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes
-# # rustflags = ["-C", "target-feature=+crt-static"]
-#
-# # -s, --strip-all Omit all symbol information from the output file.
-# rustflags = ["-C", "link-arg=-s"]
-# target = "x86_64-unknown-linux-musl"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 # https://docs.rs/openssl/0.10.36/openssl/#vendored

@@ -21,8 +21,14 @@ Luna can run any bunch of bash scripts in **Parallel**, collect results, save th
 2. Compile code with `cargo build --release`   
 
 ### Linux portable binary:
-For building statically linked rust binary [read this link](https://blog.davidvassallo.me/2021/06/10/lessons-learned-building-statically-linked-rust-binaries-openssl/).
+For building statically linked rust binary [read this link](https://blog.davidvassallo.me/2021/06/10/lessons-learned-building-statically-linked-rust-binaries-openssl/) and [here](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes)
 
+`RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-s' cargo build --target x86_64-unknown-linux-musl --release`
+
+
+`-s`, `--strip-all` Omit all symbol information from the output file.
+
+See more keys and their definitions [here](https://doc.rust-lang.org/cargo/reference/manifest.html)
 
 
 # Usage
@@ -121,8 +127,10 @@ urlfinder  ${sub} # https://sub.sample.com/login 200 -> url status_code
 `luna insert scope --asset google.com`
 3. Run script:  
 `luna script script.sh`  
-4. Find subs (regex) :  
+4. Find subs (regex):  
 `luna find sub --scope ^google.com`
+5. log levels: debug, error, info  
+`RUST_LOG=error luna insert program --name blah`
 
 
 # Built With
@@ -132,6 +140,13 @@ urlfinder  ${sub} # https://sub.sample.com/login 200 -> url status_code
 - [**Regex**](https://github.com/rust-lang/regex
 ): A library for parsing, compiling, and executing regular expressions.
 - ...
+
+# FAQ
+### Is it works?
+Yes, I am using it. but it's may has bugs so I try to fix them.
+### Why Rust?
+I want a standalone binary release of my code,
+
 
 # Contribute
 - Use
