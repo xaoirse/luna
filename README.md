@@ -78,35 +78,35 @@ Example:
 
 ### <a name="regex-names"> </a>Available regex names:
 - program
-    - program_platform
-    - program_handle
-    - program_type
-    - program_url
-    - program_icon
-    - program_bounty
-    - program_state  
+    - program-platform
+    - program-handle
+    - program-type
+    - program-url
+    - program-icon
+    - program-bounty
+    - program-state  
 
 - scope
-    - scope_bounty
-    - scop_severity
+    - scope-bounty
+    - scop-severity
 
 - sub
-    - sub_type
+    - sub-type
 
 - ip
 
 - port
-    - service_name
-    - service_protocol
-    - service_banner
+    - service-name
+    - service-protocol
+    - service-banner
 
 - url
     - title
-    - status_code
+    - status-code
     - response
 
 - tech
-    - tech_version
+    - tech-version
 
 Example:
 - `(?P<response>.+)`
@@ -120,8 +120,8 @@ pattern = (?P<sub>.+)
 subfinder -d ${scope} # sub1.sample.com -> sub
 findsuber -d ${scope} # sub2.sample.com -> sub
 
-pattern = (?P<url>.+) (?P<status_code>\d+)
-urlfinder  ${sub} # https://sub.sample.com/login 200 -> url status_code
+pattern = (?P<url>.+) (?P<status-code>\d+)
+urlfinder  ${sub} # https://sub.sample.com/login 200 -> url status-code
 ```
 2. Insert some scopes (see helps):  
 `luna insert scope --asset google.com`
@@ -145,7 +145,7 @@ urlfinder  ${sub} # https://sub.sample.com/login 200 -> url status_code
 ### Is it works?
 Yes, I am using it. but it's may has bugs so I try to fix them.
 ### Why Rust?
-I want a standalone binary release of my code,
+I want a standalone binary release from my code,
 
 
 # Contribute

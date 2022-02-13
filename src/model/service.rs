@@ -1,10 +1,9 @@
 use super::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use structopt::StructOpt;
 
-#[derive(
-    Default, Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord,
-)]
+#[derive(Default, Debug, Serialize, Deserialize, StructOpt, Clone)]
 pub struct Service {
     #[structopt(long)]
     pub port: String,
@@ -65,3 +64,23 @@ impl std::str::FromStr for Service {
         })
     }
 }
+
+impl Ord for Service {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.port.cmp(&other.port)
+    }
+}
+
+impl PartialOrd for Service {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Service {
+    fn eq(&self, other: &Self) -> bool {
+        self.port == other.port
+    }
+}
+
+impl Eq for Service {}

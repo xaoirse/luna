@@ -2,9 +2,10 @@ use super::*;
 use chrono::{DateTime, Utc};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use structopt::StructOpt;
 
-#[derive(Clone, Debug, Serialize, Deserialize, StructOpt, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Serialize, Deserialize, StructOpt)]
 pub struct Sub {
     #[structopt(short, long)]
     pub asset: String,
@@ -142,3 +143,23 @@ impl std::str::FromStr for Sub {
         })
     }
 }
+
+impl Ord for Sub {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.asset.cmp(&other.asset)
+    }
+}
+
+impl PartialOrd for Sub {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Sub {
+    fn eq(&self, other: &Self) -> bool {
+        self.asset == other.asset
+    }
+}
+
+impl Eq for Sub {}

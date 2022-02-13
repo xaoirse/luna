@@ -42,35 +42,35 @@ impl Data {
                     verbose: 0,
 
                     program: get("program"),
-                    program_platform: get("program_platform"),
-                    program_handle: get("program_handle"),
-                    program_type: get("program_type"),
-                    program_url: get("program_url"),
-                    program_icon: get("program_icon"),
-                    program_bounty: get("program_bounty"),
-                    program_state: get("program_state"),
+                    program_platform: get("program-platform"),
+                    program_handle: get("program-handle"),
+                    program_type: get("program-type"),
+                    program_url: get("program-url"),
+                    program_icon: get("program-icon"),
+                    program_bounty: get("program-bounty"),
+                    program_state: get("program-state"),
 
                     scope: get("scope"),
-                    scope_bounty: get("scope_bounty"),
-                    scope_severity: get("scop_severity"),
+                    scope_bounty: get("scope-bounty"),
+                    scope_severity: get("scop-severity"),
 
                     sub: get("sub"),
-                    sub_type: get("sub_type"),
+                    sub_type: get("sub-type"),
 
                     ip: get("ip"),
 
                     port: get("port"),
-                    service_name: get("service_name"),
-                    service_protocol: get("service_protocol"),
-                    service_banner: get("service_banner"),
+                    service_name: get("service-name"),
+                    service_protocol: get("service-protocol"),
+                    service_banner: get("service-banner"),
 
                     url: get("url"),
                     title: get("title"),
-                    status_code: get("status_code"),
+                    status_code: get("status-code"),
                     response: get("response"),
 
                     tech: get("tech"),
-                    tech_version: get("tech_version"),
+                    tech_version: get("tech-version"),
 
                     updated_at: None,
                     started_at: None,
@@ -255,32 +255,32 @@ fn regex_check(regex: &Regex) -> bool {
         || names.contains(&"ip")
         || names.contains(&"url")
         || names.contains(&"program")
-            == (names.contains(&"program_platform")
-                || names.contains(&"program_handle")
-                || names.contains(&"program_type")
-                || names.contains(&"program_url")
-                || names.contains(&"program_icon")
-                || names.contains(&"program_bounty")
-                || names.contains(&"program_state")))
+            == (names.contains(&"program-platform")
+                || names.contains(&"program-handle")
+                || names.contains(&"program-type")
+                || names.contains(&"program-url")
+                || names.contains(&"program-icon")
+                || names.contains(&"program-bounty")
+                || names.contains(&"program-state")))
         && (names.contains(&"scope")
             || names.contains(&"sub")
             || names.contains(&"ip")
             || names.contains(&"url")
             || names.contains(&"scope")
-                == (names.contains(&"scope_bounty") || names.contains(&"scope_severity")))
+                == (names.contains(&"scope-bounty") || names.contains(&"scope-severity")))
         && (names.contains(&"sub")
             || names.contains(&"ip")
             || names.contains(&"url")
-            || names.contains(&"sub") == names.contains(&"sub_type"))
+            || names.contains(&"sub") == names.contains(&"sub-type"))
         && (names.contains(&"port")
             || names.contains(&"port")
-                == (names.contains(&"service_name")
-                    || names.contains(&"service_protocol")
-                    || names.contains(&"service_banner")))
+                == (names.contains(&"service-name")
+                    || names.contains(&"service-protocol")
+                    || names.contains(&"service-banner")))
         && (names.contains(&"url")
             || names.contains(&"url")
                 == (names.contains(&"title")
-                    || names.contains(&"status_code")
+                    || names.contains(&"status-code")
                     || names.contains(&"response")))
-        && (names.contains(&"tech") || names.contains(&"tech") == names.contains(&"tech_version"))
+        && (names.contains(&"tech") || names.contains(&"tech") == names.contains(&"tech-version"))
 }

@@ -7,7 +7,7 @@ use std::io::Write;
 use std::str::FromStr;
 use structopt::StructOpt;
 
-#[derive(Debug, Clone, StructOpt, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, StructOpt, Serialize, Deserialize)]
 pub struct Luna {
     #[structopt(short, long)]
     pub name: String,
@@ -44,7 +44,8 @@ impl Luna {
             .for_each(|p| p.set_name(&luna_copy));
 
         // Merge
-        self.programs.par_sort();
+        self.programs
+            .par_sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
         self.programs.dedup_by(Program::same_bucket);
     }
 

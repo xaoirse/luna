@@ -2,13 +2,14 @@ use super::*;
 use chrono::{DateTime, Utc};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use structopt::StructOpt;
 
 // I was doubt in Program type but this is matter
 // that every scopes are in only one program?
 // or one scope can be in multi programs?
 
-#[derive(Debug, Clone, Serialize, Deserialize, StructOpt, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, StructOpt)]
 pub struct Program {
     #[structopt(short, long)]
     pub name: String,
@@ -64,6 +65,7 @@ impl Program {
 
             a.scopes.append(&mut b.scopes);
             a.scopes.par_sort();
+
             a.scopes.dedup_by(Scope::same_bucket);
 
             true
@@ -224,3 +226,23 @@ impl std::str::FromStr for Program {
         })
     }
 }
+
+impl Ord for Program {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.name.to_lowercase().cmp(&other.name.to_lowercase())
+    }
+}
+
+impl PartialOrd for Program {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Program {
+    fn eq(&self, other: &Self) -> bool {
+        self.name.to_lowercase() == other.name.to_lowercase()
+    }
+}
+
+impl Eq for Program {}

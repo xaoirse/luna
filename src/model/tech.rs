@@ -1,10 +1,9 @@
 use super::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use structopt::StructOpt;
 
-#[derive(
-    Default, Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord,
-)]
+#[derive(Default, Debug, Serialize, Deserialize, StructOpt, Clone)]
 pub struct Tech {
     #[structopt(short, long)]
     pub name: String,
@@ -45,3 +44,23 @@ impl std::str::FromStr for Tech {
         })
     }
 }
+
+impl Ord for Tech {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.name.to_lowercase().cmp(&other.name.to_lowercase())
+    }
+}
+
+impl PartialOrd for Tech {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Tech {
+    fn eq(&self, other: &Self) -> bool {
+        self.name.to_lowercase() == other.name.to_lowercase()
+    }
+}
+
+impl Eq for Tech {}

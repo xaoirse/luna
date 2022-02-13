@@ -2,6 +2,7 @@ use super::*;
 use chrono::{DateTime, Utc};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::{
     fmt::{self, Display},
     str::FromStr,
@@ -15,7 +16,7 @@ macro_rules! regex {
     }};
 }
 
-#[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
 pub struct Scope {
     #[structopt(short, long)]
     pub asset: ScopeType,
@@ -193,20 +194,22 @@ impl std::str::FromStr for Scope {
     }
 }
 
-// mod test {
-//     use super::*;
-//     #[test]
-//     fn test_same_buket() {
-//         let s1 = Scope::from_str("s1").unwrap();
-//         let s2 = Scope::from_str("s3").unwrap();
-//         let s3 = Scope::from_str("s3").unwrap();
+impl Ord for Scope {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.asset.cmp(&other.asset)
+    }
+}
 
-//         let mut vec = vec![s1.clone(), s2.clone(), s3.clone()];
+impl PartialOrd for Scope {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
-//         vec.par_sort();
-//         vec.dedup_by(Scope::same_bucket);
-//         assert_eq!(s2.clone(), s2.clone());
+impl PartialEq for Scope {
+    fn eq(&self, other: &Self) -> bool {
+        self.asset == other.asset
+    }
+}
 
-//         assert_eq!(vec, vec![s1, s2]);
-//     }
-// }
+impl Eq for Scope {}

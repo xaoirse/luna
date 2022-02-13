@@ -2,9 +2,10 @@ use super::*;
 use chrono::{DateTime, Utc};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use structopt::StructOpt;
 
-#[derive(Debug, Serialize, Deserialize, StructOpt, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
 pub struct Url {
     #[structopt(long)]
     pub url: String,
@@ -138,3 +139,23 @@ impl std::str::FromStr for Url {
         })
     }
 }
+
+impl Ord for Url {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.url.cmp(&other.url)
+    }
+}
+
+impl PartialOrd for Url {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Url {
+    fn eq(&self, other: &Self) -> bool {
+        self.url == other.url
+    }
+}
+
+impl Eq for Url {}
