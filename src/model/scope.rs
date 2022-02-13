@@ -141,8 +141,7 @@ impl Scope {
                 "{},
     bounty: {},
     severity: {}
-    subs: [
-        {}]
+    subs: [{}]
     update: {}
     start: {}
     ",
@@ -151,9 +150,9 @@ impl Scope {
                 self.severity.as_ref().map_or("", |s| s),
                 self.subs
                     .iter()
-                    .map(|s| s.stringify(0))
+                    .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
-                    .join("\n        "),
+                    .join(""),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
                 self.start.map_or("".to_string(), |s| s.to_rfc2822()),
             ),

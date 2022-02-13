@@ -113,18 +113,11 @@ mod test {
         assert_eq!(a, None);
     }
 
-    // #[test]
-    // fn test_contains_opt() {
-    //     assert!(contains_opt(
-    //         &Some("abcd".to_string()),
-    //         &Some("cd".to_string())
-    //     ));
-    //     assert!(!contains_opt(
-    //         &Some("abc".to_string()),
-    //         &Some("ef".to_string())
-    //     ));
-    //     assert!(contains_opt(&Some("abcd".to_string()), &None));
-    //     assert!(!contains_opt(&None, &Some("abcd".to_string())));
-    //     assert!(contains_opt(&None, &None));
-    // }
+    #[test]
+    fn test_contains_opt() {
+        assert!(Some("abcd".to_string()).contains_opt(&Some(regex::Regex::new("ab").unwrap())));
+        assert!(!Some("abcd".to_string()).contains_opt(&Some(regex::Regex::new("gf").unwrap())));
+        assert!(!None.contains_opt(&Some(regex::Regex::new("gf").unwrap())));
+        assert!(None.contains_opt(&None));
+    }
 }

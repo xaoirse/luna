@@ -109,7 +109,7 @@ impl Luna {
                 .flat_map(|s| &s.subs)
                 .filter(|s| s.matches(filter))
                 .flat_map(|s| &s.hosts)
-                .filter(|u| u.matches(filter))
+                .filter(|h| h.matches(filter))
                 .map(|h| h.stringify(filter.verbose))
                 .collect(),
             Fields::None => vec!["".to_string()],
@@ -360,6 +360,56 @@ impl From<InsertHosts> for Luna {
     }
 }
 
+impl From<InsertTech> for Luna {
+    fn from(i: InsertTech) -> Self {
+        Luna {
+            programs: vec![Program {
+                name: i.program.unwrap_or_default(),
+                scopes: vec![Scope {
+                    asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
+                    subs: vec![Sub {
+                        asset: i.sub.unwrap_or_default(),
+                        urls: vec![Url {
+                            url: i.url,
+                            techs: vec![Tech { ..i.tech }],
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        }
+    }
+}
+
+impl From<InsertService> for Luna {
+    fn from(i: InsertService) -> Self {
+        Luna {
+            programs: vec![Program {
+                name: i.program.unwrap_or_default(),
+                scopes: vec![Scope {
+                    asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
+                    subs: vec![Sub {
+                        asset: i.sub.unwrap_or_default(),
+                        hosts: vec![Host {
+                            ip: i.host,
+                            services: vec![Service { ..i.service }],
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        }
+    }
+}
+
 impl From<Insert> for Luna {
     fn from(i: Insert) -> Self {
         match i {
@@ -372,6 +422,8 @@ impl From<Insert> for Luna {
             Insert::Urls(i) => i.into(),
             Insert::Host(i) => i.into(),
             Insert::Hosts(i) => i.into(),
+            Insert::Tech(i) => i.into(),
+            Insert::Service(i) => i.into(),
         }
     }
 }

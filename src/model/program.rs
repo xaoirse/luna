@@ -171,8 +171,7 @@ impl Program {
     bounty: {}
     icon: {}
     state: {}
-    scopes: [
-        {}]
+    scopes: [{}]
     update: {}
     start: {}
     ",
@@ -186,9 +185,9 @@ impl Program {
                 self.state.as_ref().map_or("", |s| s),
                 self.scopes
                     .iter()
-                    .map(|s| s.stringify(0))
+                    .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
-                    .join("\n        "),
+                    .join(""),
                 self.update.map_or("".to_string(), |s| s.to_rfc2822()),
                 self.start.map_or("".to_string(), |s| s.to_rfc2822()),
             ),
