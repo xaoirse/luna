@@ -9,6 +9,8 @@ pub struct Filter {
     pub field: Fields,
     #[structopt(short, long, parse(from_occurrences))]
     pub verbose: u8,
+    #[structopt(short, help = "Number of results")]
+    pub n: Option<usize>,
 
     #[structopt(long, short)]
     pub program: Option<String>,
@@ -154,6 +156,7 @@ impl Fields {
 pub struct FilterRegex {
     pub field: Fields,
     pub verbose: u8,
+    pub n: usize,
 
     pub program: Option<regex::Regex>,
     pub program_platform: Option<regex::Regex>,
@@ -332,6 +335,7 @@ impl TryFrom<Filter> for FilterRegex {
         Ok(Self {
             field: f.field,
             verbose: f.verbose,
+            n: f.n.unwrap_or(std::usize::MAX),
 
             program,
             program_platform,

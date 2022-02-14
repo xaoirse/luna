@@ -233,7 +233,7 @@ pub fn run() {
                     let mut results = luna.find(&find);
                     results.par_sort();
                     results.dedup();
-                    results.iter().for_each(|r| println!("{}", r));
+                    results.iter().take(find.n).for_each(|r| println!("{}", r));
                 }
                 Err(err) => error!("Use fucking right regex: {}", err),
             }

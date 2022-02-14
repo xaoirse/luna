@@ -40,6 +40,7 @@ impl Data {
                 let mut luna = Filter {
                     field: self.field,
                     verbose: 0,
+                    n: None,
 
                     program: get("program"),
                     program_platform: get("program-platform"),
@@ -220,6 +221,7 @@ pub fn parse(path: String) -> Result<Scripts, Errors> {
             } else if line.contains("${keyword}") {
                 Fields::Keyword
             } else {
+                // TODO check if ${invalid}
                 Fields::None
             };
 

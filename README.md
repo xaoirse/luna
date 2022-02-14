@@ -74,7 +74,7 @@ SUBCOMMANDS:
 
 Example:
 - `curl -I ${url}`
-- `subfinder -d ${scope}`
+- `subfinder -d ${domain}`
 
 ### <a name="regex-names"> </a>Available regex names:
 - program
@@ -109,7 +109,9 @@ Example:
     - tech-version
 
 Example:
-- `(?P<response>.+)`
+- `(?P<response>.+)`  
+
+[Test your patterns](https://rustexp.lpil.uk/)
 
 # Simple Using
 1. Create script file like `script.sh`:  
@@ -177,3 +179,7 @@ I want a standalone binary release from my code,
 - [x] Find -vvv flags
 - [ ] Remove all clones  
 - [x] No-backup flag
+- [ ] Label or tag for vulnerabilities   
+(how to add and remove)(vec of Strings)  
+How got this regex `"[a-z]+ (?P<tag>\[[a-z]+\]){1,3}"` for `"url [crit][a][b]"` to captures a and b individually?
+- [ ] Rename to delete for delete a field
