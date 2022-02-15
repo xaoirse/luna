@@ -56,7 +56,8 @@ SUBCOMMANDS:
     help      Prints this message or the help of the given
               subcommand(s)
     import
-    insert    
+    insert
+    luna    
     report    
     script    
     server    

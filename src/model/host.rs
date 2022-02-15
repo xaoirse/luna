@@ -40,7 +40,19 @@ impl Host {
     }
 
     pub fn matches(&self, filter: &FilterRegex) -> bool {
-        self.ip.contains_opt(&filter.ip)
+        filter
+            .ip_cidr
+            .as_ref()
+            .map_or(true, |ip_cidr| match ip_cidr {
+                IpCidr::Cidr(cidr) => self
+                    .ip
+                    .parse::<std::net::IpAddr>()
+                    .map_or(false, |ip| cidr.contains(&ip)),
+                IpCidr::Ip(ip) => self
+                    .ip
+                    .parse::<std::net::IpAddr>()
+                    .map_or(false, |i| ip == &i),
+            })
             && check_date(&self.update, &filter.updated_at)
             && check_date(&self.start, &filter.started_at)
             && (filter.service_is_none() || self.services.par_iter().any(|s| s.matches(filter)))
@@ -104,11 +116,11 @@ impl Default for Host {
     }
 }
 impl std::str::FromStr for Host {
-    type Err = std::str::Utf8Error;
+    type Err = Errors;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Host {
-            ip: s.to_string(),
+            ip: s.parse()?,
             ..Default::default()
         })
     }

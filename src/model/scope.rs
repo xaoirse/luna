@@ -67,6 +67,7 @@ impl FromStr for ScopeType {
         }
     }
 }
+
 impl EqExt for ScopeType {
     fn contains_opt(&self, regex: &Option<Regex>) -> bool {
         match (self, regex) {

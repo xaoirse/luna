@@ -9,7 +9,7 @@ pub struct Filter {
     pub field: Fields,
     #[structopt(short, long, parse(from_occurrences))]
     pub verbose: u8,
-    #[structopt(short, help = "Number of results")]
+    #[structopt(short, help = "Number of Results")]
     pub n: Option<usize>,
 
     #[structopt(long, short)]
@@ -41,7 +41,7 @@ pub struct Filter {
     #[structopt(long)]
     pub sub_type: Option<String>,
 
-    #[structopt(long)]
+    #[structopt(long, name = "Ip or Cidr")]
     pub ip: Option<String>,
 
     #[structopt(long)]
@@ -67,10 +67,10 @@ pub struct Filter {
     #[structopt(long)]
     pub tech_version: Option<String>,
 
-    #[structopt(long, short)]
+    #[structopt(long, short, help = "Days ago")]
     pub updated_at: Option<i64>,
 
-    #[structopt(long, short)]
+    #[structopt(long, short, help = "Days ago")]
     pub started_at: Option<i64>,
 }
 
@@ -174,7 +174,7 @@ pub struct FilterRegex {
     pub sub: Option<regex::Regex>,
     pub sub_type: Option<regex::Regex>,
 
-    pub ip: Option<regex::Regex>,
+    pub ip_cidr: Option<IpCidr>,
 
     pub port: Option<regex::Regex>,
     pub service_name: Option<regex::Regex>,
@@ -192,6 +192,12 @@ pub struct FilterRegex {
     pub updated_at: Option<i64>,
     pub started_at: Option<i64>,
 }
+
+pub enum IpCidr {
+    Ip(std::net::IpAddr),
+    Cidr(cidr::IpCidr),
+}
+
 impl FilterRegex {
     pub fn scope_is_none(&self) -> bool {
         self.scope.is_none() && self.scope_bounty.is_none() && self.sub_is_none()
@@ -213,7 +219,7 @@ impl FilterRegex {
     }
 
     pub fn host_is_none(&self) -> bool {
-        self.ip.is_none() && self.service_is_none()
+        self.ip_cidr.is_none() && self.service_is_none()
     }
 
     pub fn service_is_none(&self) -> bool {
@@ -284,8 +290,11 @@ impl TryFrom<Filter> for FilterRegex {
             None => None,
         };
 
-        let ip = match f.ip {
-            Some(ref p) => Some(Regex::new(p)?),
+        let ip_cidr = match f.ip {
+            Some(ref p) => match p.parse::<std::net::IpAddr>() {
+                Ok(ip) => Some(IpCidr::Ip(ip)),
+                Err(_) => Some(IpCidr::Cidr(p.parse()?)),
+            },
             None => None,
         };
 
@@ -353,7 +362,7 @@ impl TryFrom<Filter> for FilterRegex {
             sub,
             sub_type,
 
-            ip,
+            ip_cidr,
 
             port,
             service_name,

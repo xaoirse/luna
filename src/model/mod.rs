@@ -11,7 +11,7 @@ pub mod url;
 pub mod utc_rfc2822;
 
 pub use crate::cmd::run::*;
-pub use filter::{Fields, Filter, FilterRegex};
+pub use filter::{Fields, Filter, FilterRegex, IpCidr};
 pub use host::Host;
 pub use luna::Luna;
 pub use program::Program;
