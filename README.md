@@ -186,4 +186,5 @@ I want a standalone binary release from my code,
 How got this regex `"[a-z]+ (?P<tag>\[[a-z]+\]){1,3}"` for `"url [crit][a][b]"` to captures a and b individually?
 - [ ] Rename to delete for delete a field
 - [x] Merge two file
-- [ ] Number of urls, subs and ... for program stringify
+- [ ] Number of urls, subs and ... for each program stringify
+- [ ] Update_at updates every time!

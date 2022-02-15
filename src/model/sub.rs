@@ -172,7 +172,17 @@ impl PartialOrd for Sub {
 
 impl PartialEq for Sub {
     fn eq(&self, other: &Self) -> bool {
-        self.asset == other.asset
+        if self.asset.is_empty() && other.asset.is_empty() {
+            self.urls
+                .par_iter()
+                .any(|s| other.urls.par_iter().any(|ss| s == ss))
+                || self
+                    .hosts
+                    .par_iter()
+                    .any(|s| other.hosts.par_iter().any(|ss| s == ss))
+        } else {
+            self.asset == other.asset
+        }
     }
 }
 

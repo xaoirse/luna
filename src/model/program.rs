@@ -49,7 +49,7 @@ pub struct Program {
 
 impl Program {
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if !a.name.is_empty() && a.name.to_lowercase() == b.name.to_lowercase() {
+        if a == b {
             let new = a.update < b.update;
 
             merge(&mut a.platform, &mut b.platform, new);
@@ -258,7 +258,13 @@ impl PartialOrd for Program {
 
 impl PartialEq for Program {
     fn eq(&self, other: &Self) -> bool {
-        self.name.to_lowercase() == other.name.to_lowercase()
+        if self.name.is_empty() && other.name.is_empty() {
+            self.scopes
+                .par_iter()
+                .any(|s| other.scopes.par_iter().any(|ss| s == ss))
+        } else {
+            self.name.to_lowercase() == other.name.to_lowercase()
+        }
     }
 }
 

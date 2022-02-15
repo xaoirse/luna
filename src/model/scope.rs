@@ -219,7 +219,13 @@ impl PartialOrd for Scope {
 
 impl PartialEq for Scope {
     fn eq(&self, other: &Self) -> bool {
-        self.asset == other.asset
+        if self.asset == ScopeType::Empty && other.asset == ScopeType::Empty {
+            self.subs
+                .par_iter()
+                .any(|s| other.subs.par_iter().any(|ss| s == ss))
+        } else {
+            self.asset == other.asset
+        }
     }
 }
 
