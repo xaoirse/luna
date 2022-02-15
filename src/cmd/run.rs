@@ -31,10 +31,23 @@ pub enum Cli {
     Find(Box<Filter>),
     Script(Script),
     Import { file: String },
-    Check,
+    Check(Check),
+    Luna(LunaStat),
     Test,
     Report,
     Server(Server),
+}
+
+#[derive(Debug, StructOpt)]
+pub struct Check {
+    #[structopt(short, long)]
+    script: Option<String>,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct LunaStat {
+    #[structopt(short, long, parse(from_occurrences))]
+    pub verbose: u8,
 }
 
 #[derive(Debug, StructOpt)]
@@ -268,7 +281,22 @@ pub fn run() {
             Err(err) => error!("Can't import: {}", err),
         },
 
-        Cli::Check => todo!(),
+        Cli::Check(check) => {
+            match Luna::from_file(json) {
+                Ok(luna) => println!("{} {}", "[+]".green(), luna.stringify(1)),
+                Err(_) => println!("{} ", "[-]".red()),
+            }
+
+            if let Some(script) = check.script {
+                match script::parse(script) {
+                    Ok(_) => println!("{} Scripts and Patterns", "[+]".green()),
+                    Err(err) => println!("{} {}", "[-]".red(), err),
+                }
+            } else {
+                println!("[ ] No script file detected!")
+            }
+        }
+        Cli::Luna(s) => println!("{}", luna.stringify(s.verbose)),
         Cli::Test => todo!(),
         Cli::Report => todo!(),
         Cli::Server(_) => todo!(),

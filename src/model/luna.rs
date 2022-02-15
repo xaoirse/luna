@@ -178,6 +178,63 @@ impl Luna {
         let file = std::fs::read_to_string(path)?;
         Ok(serde_json::from_str(&file)?)
     }
+
+    pub fn stringify(&self, v: u8) -> String {
+        match v {
+            0 => self.name.to_string(),
+            1 => format!("{} {} ", self.name, self.version),
+            2 => format!(
+                "{}  {}
+    status: {}
+    counter: {}
+    programs: {}
+    update: {}
+    start: {}
+    ",
+                self.name,
+                self.version,
+                self.status,
+                self.counter,
+                self.programs.len(),
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+            ),
+            3 => format!(
+                "{}  {}
+    status: {}
+    counter: {}
+    programs: [{}{}
+    update: {}
+    start: {}
+    ",
+                self.name,
+                self.version,
+                self.status,
+                self.counter,
+                self.programs
+                    .iter()
+                    .map(|s| format!("\n        {}", s.stringify(0)))
+                    .collect::<Vec<String>>()
+                    .join(""),
+                if self.programs.is_empty() {
+                    "]"
+                } else {
+                    "\n    ]"
+                },
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+            ),
+            _ => format!("{:#?}", self),
+        }
+    }
 }
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
