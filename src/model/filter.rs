@@ -230,19 +230,19 @@ impl TryFrom<Filter> for FilterRegex {
 
     fn try_from(f: Filter) -> Result<Self, Self::Error> {
         let program = match f.program {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
         let program_platform = match f.program_platform {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
         let program_handle = match f.program_handle {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
         let program_type = match f.program_type {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
         let program_url = match f.program_url {
@@ -254,11 +254,11 @@ impl TryFrom<Filter> for FilterRegex {
             None => None,
         };
         let program_bounty = match f.program_bounty {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
         let program_state = match f.program_state {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
 
@@ -267,11 +267,11 @@ impl TryFrom<Filter> for FilterRegex {
             None => None,
         };
         let scope_bounty = match f.scope_bounty {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
         let scope_severity = match f.scope_severity {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
 
@@ -280,7 +280,7 @@ impl TryFrom<Filter> for FilterRegex {
             None => None,
         };
         let sub_type = match f.sub_type {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
 
@@ -294,11 +294,11 @@ impl TryFrom<Filter> for FilterRegex {
             None => None,
         };
         let service_name = match f.service_name {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
         let service_protocol = match f.service_protocol {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
         let service_banner = match f.service_banner {
@@ -324,7 +324,7 @@ impl TryFrom<Filter> for FilterRegex {
         };
 
         let tech = match f.tech {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
         let tech_version = match f.tech_version {
