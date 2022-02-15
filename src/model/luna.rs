@@ -56,6 +56,7 @@ impl Luna {
                 .par_iter()
                 .filter(|p| p.matches(filter))
                 .map(|p| p.stringify(filter.verbose))
+                .filter(|s| !s.is_empty())
                 .collect(),
             Fields::Domain => self
                 .programs
@@ -67,6 +68,7 @@ impl Luna {
                     ScopeType::Domain(_) => Some(s.stringify(filter.verbose)),
                     _ => None,
                 })
+                .filter(|s| !s.is_empty())
                 .collect(),
             Fields::Cidr => self
                 .programs
@@ -78,6 +80,7 @@ impl Luna {
                     ScopeType::Cidr(_) => Some(s.stringify(filter.verbose)),
                     _ => None,
                 })
+                .filter(|s| !s.is_empty())
                 .collect(),
             Fields::Sub => self
                 .programs
@@ -88,6 +91,7 @@ impl Luna {
                 .flat_map(|s| &s.subs)
                 .filter(|s| s.matches(filter))
                 .map(|s| s.stringify(filter.verbose))
+                .filter(|s| !s.is_empty())
                 .collect(),
             Fields::Url => self
                 .programs
@@ -100,6 +104,7 @@ impl Luna {
                 .flat_map(|s| &s.urls)
                 .filter(|u| u.matches(filter))
                 .map(|u| u.stringify(filter.verbose))
+                .filter(|s| !s.is_empty())
                 .collect(),
             Fields::IP => self
                 .programs
@@ -112,6 +117,7 @@ impl Luna {
                 .flat_map(|s| &s.hosts)
                 .filter(|h| h.matches(filter))
                 .map(|h| h.stringify(filter.verbose))
+                .filter(|s| !s.is_empty())
                 .collect(),
             Fields::None => vec!["".to_string()],
             Fields::Service => todo!(),
