@@ -30,13 +30,10 @@ pub enum Cli {
     Insert(Box<Insert>),
     Find(Box<Filter>),
     Script(Script),
-    #[structopt(help = "not implemented yet")]
+    Import { file: String },
     Check,
-    #[structopt(help = "not implemented yet")]
     Test,
-    #[structopt(help = "not implemented yet")]
     Report,
-    #[structopt(help = "not implemented yet")]
     Server(Server),
 }
 
@@ -257,6 +254,19 @@ pub fn run() {
                 Err(err) => error!("Error in parsing file: {}", err),
             }
         }
+
+        Cli::Import { file } => match Luna::from_file(&file) {
+            Ok(file) => {
+                luna.append(file);
+                luna.merge();
+                if let Err(err) = luna.save(json) {
+                    error!("Error while saving: {}", err);
+                } else {
+                    info!("Saved in \"{}\" successfully.", json);
+                }
+            }
+            Err(err) => error!("Can't import: {}", err),
+        },
 
         Cli::Check => todo!(),
         Cli::Test => todo!(),
