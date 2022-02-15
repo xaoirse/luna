@@ -16,7 +16,7 @@ pub struct Luna {
     #[structopt(short, long)]
     pub version: String,
     #[structopt(skip)]
-    pub counter: i32,
+    pub counter: i64,
     #[structopt(short, long)]
     pub programs: Vec<Program>,
     #[structopt(skip)]
@@ -185,17 +185,27 @@ impl Luna {
             1 => format!("{} {} ", self.name, self.version),
             2 => format!(
                 "{}  {}
-    status: {}
-    counter: {}
-    programs: {}
-    update: {}
-    start: {}
+    Status: {}
+    Counter: {}
+    Programs: {}
+    Domains: {}
+    CIDRs: {}
+    Subs: {}
+    IPs: {}
+    URLs: {}
+    Update: {}
+    Start: {}
     ",
                 self.name,
                 self.version,
                 self.status,
                 self.counter,
-                self.programs.len(),
+                self.programs.iter().filter(|p| !p.name.is_empty()).count(),
+                self.find_all(Fields::Domain).len(),
+                self.find_all(Fields::Cidr).len(),
+                self.find_all(Fields::Sub).len(),
+                self.find_all(Fields::IP).len(),
+                self.find_all(Fields::Url).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -205,11 +215,16 @@ impl Luna {
             ),
             3 => format!(
                 "{}  {}
-    status: {}
-    counter: {}
-    programs: [{}{}
-    update: {}
-    start: {}
+    Status: {}
+    Counter: {}
+    Programs: [{}{}
+    Domains: {}
+    CIDRs: {}
+    Subs: {}
+    IPs: {}
+    URLs: {}
+    Update: {}
+    Start: {}
     ",
                 self.name,
                 self.version,
@@ -217,7 +232,8 @@ impl Luna {
                 self.counter,
                 self.programs
                     .iter()
-                    .map(|s| format!("\n        {}", s.stringify(0)))
+                    .filter(|p| !p.name.is_empty())
+                    .map(|s| format!("\n        {}", s.stringify(1)))
                     .collect::<Vec<String>>()
                     .join(""),
                 if self.programs.is_empty() {
@@ -225,6 +241,11 @@ impl Luna {
                 } else {
                     "\n    ]"
                 },
+                self.find_all(Fields::Domain).len(),
+                self.find_all(Fields::Cidr).len(),
+                self.find_all(Fields::Sub).len(),
+                self.find_all(Fields::IP).len(),
+                self.find_all(Fields::Url).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),

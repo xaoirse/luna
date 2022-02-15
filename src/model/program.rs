@@ -161,7 +161,10 @@ impl Program {
                 self.bounty.as_ref().map_or("", |s| s),
                 self.icon.as_ref().map_or("", |s| s),
                 self.state.as_ref().map_or("", |s| s),
-                self.scopes.len(),
+                self.scopes
+                    .iter()
+                    .filter(|p| p.asset != ScopeType::Empty)
+                    .count(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -191,6 +194,7 @@ impl Program {
                 self.state.as_ref().map_or("", |s| s),
                 self.scopes
                     .iter()
+                    .filter(|p| p.asset != ScopeType::Empty)
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),

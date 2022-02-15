@@ -192,9 +192,9 @@ pub enum Server {
 
 static BANNER: &str = r"
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.4.0
- / /_/ /_/ /    / __ |        
-/____|____/_/|_/_/ |_|  SA    
+  / / / / / / |/ / _ |    
+ / /_/ /_/ /    / __ |    
+/____|____/_/|_/_/ |_|  SA
 ";
 
 pub fn run() {
@@ -203,7 +203,7 @@ pub fn run() {
     let opt = Opt::from_args();
     let json = &opt.json;
     if !opt.quiet {
-        println!("{}", BANNER.blue());
+        println!("{}", BANNER.cyan().bold());
     }
     let mut luna = match Luna::from_file(json) {
         Ok(luna) => {
@@ -252,7 +252,7 @@ pub fn run() {
         Cli::Script(script) => {
             debug!("{:#?}", script);
 
-            match script::parse(script.path) {
+            match script::parse(&script.path) {
                 Ok(script) => {
                     script.run(&mut luna);
                     info!("Scripts Executed.");
@@ -283,13 +283,13 @@ pub fn run() {
 
         Cli::Check(check) => {
             match Luna::from_file(json) {
-                Ok(luna) => println!("{} {}", "[+]".green(), luna.stringify(1)),
+                Ok(luna) => println!("{} {}: {}", "[+]".green(), luna.stringify(1), json),
                 Err(_) => println!("{} ", "[-]".red()),
             }
 
-            if let Some(script) = check.script {
+            if let Some(script) = check.script.as_ref() {
                 match script::parse(script) {
-                    Ok(_) => println!("{} Scripts and Patterns", "[+]".green()),
+                    Ok(_) => println!("{} Script: {}", "[+]".green(), script),
                     Err(err) => println!("{} {}", "[-]".red(), err),
                 }
             } else {

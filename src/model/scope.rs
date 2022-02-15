@@ -142,7 +142,7 @@ impl Scope {
                 self.asset,
                 self.bounty.as_ref().map_or("", |s| s),
                 self.severity.as_ref().map_or("", |s| s),
-                self.subs.len(),
+                self.subs.iter().filter(|p| !p.asset.is_empty()).count(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -163,6 +163,7 @@ impl Scope {
                 self.severity.as_ref().map_or("", |s| s),
                 self.subs
                     .iter()
+                    .filter(|p| !p.asset.is_empty())
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),

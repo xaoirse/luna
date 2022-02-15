@@ -184,7 +184,7 @@ impl Scripts {
 }
 
 #[allow(clippy::blocks_in_if_conditions)]
-pub fn parse(path: String) -> Result<Scripts, Errors> {
+pub fn parse(path: &str) -> Result<Scripts, Errors> {
     let mut scripts = vec![];
     let mut pattern = String::new();
 
