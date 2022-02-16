@@ -25,6 +25,7 @@ impl error::Error for Error {
     }
 }
 
+#[derive(Debug)]
 pub struct Data {
     pub input: String,
     pub field: Fields,
@@ -32,6 +33,7 @@ pub struct Data {
 }
 impl Data {
     fn parse(&self, regex: &Regex) -> Vec<Luna> {
+        debug!("{:#?}", &self);
         regex
             .captures_iter(&self.output)
             .filter_map(|caps| {
@@ -43,35 +45,35 @@ impl Data {
                     n: None,
 
                     program: get("program"),
-                    program_platform: get("program-platform"),
-                    program_handle: get("program-handle"),
-                    program_type: get("program-type"),
-                    program_url: get("program-url"),
-                    program_icon: get("program-icon"),
-                    program_bounty: get("program-bounty"),
-                    program_state: get("program-state"),
+                    program_platform: get("program_platform"),
+                    program_handle: get("program_handle"),
+                    program_type: get("program_type"),
+                    program_url: get("program_url"),
+                    program_icon: get("program_icon"),
+                    program_bounty: get("program_bounty"),
+                    program_state: get("program_state"),
 
                     scope: get("scope"),
-                    scope_bounty: get("scope-bounty"),
-                    scope_severity: get("scop-severity"),
+                    scope_bounty: get("scope_bounty"),
+                    scope_severity: get("scop_severity"),
 
                     sub: get("sub"),
-                    sub_type: get("sub-type"),
+                    sub_type: get("sub_type"),
 
                     ip: get("ip"),
 
                     port: get("port"),
-                    service_name: get("service-name"),
-                    service_protocol: get("service-protocol"),
-                    service_banner: get("service-banner"),
+                    service_name: get("service_name"),
+                    service_protocol: get("service_protocol"),
+                    service_banner: get("service_banner"),
 
                     url: get("url"),
                     title: get("title"),
-                    status_code: get("status-code"),
+                    status_code: get("status_code"),
                     response: get("response"),
 
                     tech: get("tech"),
-                    tech_version: get("tech-version"),
+                    tech_version: get("tech_version"),
 
                     updated_at: None,
                     started_at: None,
@@ -89,6 +91,7 @@ impl Data {
                     Fields::Keyword => todo!(),
                     Fields::None => (),
                 }
+                debug!("{:#?}", luna);
 
                 // Filter orphan fields
                 if (luna.program.is_some()
@@ -146,6 +149,7 @@ impl Script {
             let cmd = self.command.replace(&self.field.substitution(), &input);
             debug!("Command: {}", cmd);
             let output = String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
+            debug!("Output: {}", &output);
             Ok(Data {
                 input,
                 field: self.field,
@@ -257,32 +261,32 @@ fn regex_check(regex: &Regex) -> bool {
         || names.contains(&"ip")
         || names.contains(&"url")
         || names.contains(&"program")
-            == (names.contains(&"program-platform")
-                || names.contains(&"program-handle")
-                || names.contains(&"program-type")
-                || names.contains(&"program-url")
-                || names.contains(&"program-icon")
-                || names.contains(&"program-bounty")
-                || names.contains(&"program-state")))
+            == (names.contains(&"program_platform")
+                || names.contains(&"program_handle")
+                || names.contains(&"program_type")
+                || names.contains(&"program_url")
+                || names.contains(&"program_icon")
+                || names.contains(&"program_bounty")
+                || names.contains(&"program_state")))
         && (names.contains(&"scope")
             || names.contains(&"sub")
             || names.contains(&"ip")
             || names.contains(&"url")
             || names.contains(&"scope")
-                == (names.contains(&"scope-bounty") || names.contains(&"scope-severity")))
+                == (names.contains(&"scope_bounty") || names.contains(&"scope_severity")))
         && (names.contains(&"sub")
             || names.contains(&"ip")
             || names.contains(&"url")
-            || names.contains(&"sub") == names.contains(&"sub-type"))
+            || names.contains(&"sub") == names.contains(&"sub_type"))
         && (names.contains(&"port")
             || names.contains(&"port")
-                == (names.contains(&"service-name")
-                    || names.contains(&"service-protocol")
-                    || names.contains(&"service-banner")))
+                == (names.contains(&"service_name")
+                    || names.contains(&"service_protocol")
+                    || names.contains(&"service_banner")))
         && (names.contains(&"url")
             || names.contains(&"url")
                 == (names.contains(&"title")
-                    || names.contains(&"status-code")
+                    || names.contains(&"status_code")
                     || names.contains(&"response")))
-        && (names.contains(&"tech") || names.contains(&"tech") == names.contains(&"tech-version"))
+        && (names.contains(&"tech") || names.contains(&"tech") == names.contains(&"tech_version"))
 }

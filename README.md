@@ -80,35 +80,35 @@ Example:
 
 ### <a name="regex-names"> </a>Available regex names:
 - program
-    - program-platform
-    - program-handle
-    - program-type
-    - program-url
-    - program-icon
-    - program-bounty
-    - program-state  
+    - program_platform
+    - program_handle
+    - program_type
+    - program_url
+    - program_icon
+    - program_bounty
+    - program_state  
 
 - scope
-    - scope-bounty
-    - scop-severity
+    - scope_bounty
+    - scop_severity
 
 - sub
-    - sub-type
+    - sub_type
 
 - ip
 
 - port
-    - service-name
-    - service-protocol
-    - service-banner
+    - service_name
+    - service_protocol
+    - service_banner
 
 - url
     - title
-    - status-code
+    - status_code
     - response
 
 - tech
-    - tech-version
+    - tech_version
 
 Example:
 - `(?P<response>.+)`  
@@ -117,15 +117,17 @@ Example:
 
 # Simple Using
 1. Create script file like `script.sh`:  
-( pattern for parsing each line of results [see this](#regex-names) )  
+( pattern for parsing results [see this](#regex-names) )  
 [ commands [see this](#available-keywords)]
+(Be carfull when using tools with colorful output)
 ```bash
 pattern = (?P<sub>.+)
 subfinder -d ${scope} # sub1.sample.com -> sub
 findsuber -d ${scope} # sub2.sample.com -> sub
 
-pattern = (?P<url>.+) (?P<status-code>\d+)
-urlfinder  ${sub} # https://sub.sample.com/login 200 -> url status-code
+pattern = (?P<url>(?:\w+)://\S+) \[(?P<status_code>\d*)\] \[(?P<title>[^\]]*)\] \[(?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3})\] \[(?P<tech>[^\]]*)\]
+
+echo ${sub} | ./httpx -nc -silent -sc -title -ip -td # https://sub.sample.com/login 200 -> url status-code
 ```
 2. Insert some scopes (see helps):  
 `luna insert scope --asset google.com`
@@ -184,7 +186,6 @@ I want a standalone binary release from my code,
 - [ ] Label or tag for vulnerabilities   
 (how to add and remove)(vec of Strings)  
 How got this regex `"[a-z]+ (?P<tag>\[[a-z]+\]){1,3}"` for `"url [crit][a][b]"` to captures a and b individually?
-- [ ] Rename to delete for delete a field
-- [x] Merge two file
+- [x] Import file
 - [ ] Number of urls, subs and ... for each program stringify
 - [ ] Update_at updates every time!

@@ -250,7 +250,7 @@ pub fn run() {
         }
 
         Cli::Script(script) => {
-            debug!("{:#?}", script);
+            debug!("{:#?}", script.path);
 
             match script::parse(&script.path) {
                 Ok(script) => {
@@ -273,7 +273,7 @@ pub fn run() {
                 luna.append(file);
                 luna.merge();
                 if let Err(err) = luna.save(json) {
-                    error!("Error while saving: {}", err);
+                    error!("Error while saving in \"{}\": {}", json, err);
                 } else {
                     info!("Saved in \"{}\" successfully.", json);
                 }

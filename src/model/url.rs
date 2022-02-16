@@ -69,18 +69,30 @@ impl Url {
         match v {
             0 => self.url.to_string(),
             1 => format!(
-                "{}
+                "{} [{}]",
+                self.url,
+                self.status_code.as_ref().map_or("", |s| s),
+            ),
+            2 => format!(
+                "{} [{}] [{}]",
+                self.url,
+                self.status_code.as_ref().map_or("", |s| s),
+                self.title.as_ref().map_or("", |s| s),
+            ),
+            3 => format!(
+                "{} [{}]
     title: {}
-    status code: {}
     response: length:{}
     techs: {}
     update: {}
     start: {}
     ",
                 self.url,
-                self.title.as_ref().map_or("", |s| s),
                 self.status_code.as_ref().map_or("", |s| s),
-                self.response.as_ref().map_or(0, |s| s.len()),
+                self.title.as_ref().map_or("", |s| s),
+                self.response
+                    .as_ref()
+                    .map_or("N".to_string(), |s| s.len().to_string()),
                 self.techs.len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
@@ -89,18 +101,17 @@ impl Url {
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
             ),
-            2 => format!(
-                "{}
+            4 => format!(
+                "{} [{}]
     title: {}
-    status code: {}
     responce: {}
     techs: [{}{}
     update: {}
     start: {}
     ",
                 self.url,
-                self.title.as_ref().map_or("", |s| s),
                 self.status_code.as_ref().map_or("", |s| s),
+                self.title.as_ref().map_or("", |s| s),
                 self.response.as_ref().map_or("", |s| s),
                 self.techs
                     .iter()

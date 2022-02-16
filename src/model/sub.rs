@@ -119,7 +119,7 @@ impl Sub {
                 },
                 self.urls
                     .iter()
-                    .map(|s| format!("\n        {}", s.stringify(0)))
+                    .map(|s| format!("\n        {}", s.stringify(1)))
                     .collect::<Vec<String>>()
                     .join(""),
                 if self.urls.is_empty() { "]" } else { "\n    ]" },

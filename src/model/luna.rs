@@ -159,7 +159,11 @@ impl Luna {
         let str = serde_json::to_string(&self)?;
 
         if !Opt::from_args().no_backup && std::path::Path::new(path).exists() {
-            std::fs::copy(path, &format!("{}_{}", Utc::now().to_rfc2822(), path))?;
+            let copy_path = match path.rsplit_once('.') {
+                Some((a, b)) => format!("{}_{}.{}", a, chrono::Local::now().to_rfc2822(), b),
+                None => format!("{}{}", path, Utc::now().to_rfc2822()),
+            };
+            std::fs::copy(path, copy_path)?;
         }
         match std::fs::File::options()
             .write(true)
