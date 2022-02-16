@@ -18,9 +18,13 @@ pub struct Opt {
         global = true,
         help = "Json file's path"
     )]
-    pub json: String,
+    pub input: String,
+    #[structopt(short, long, global = true, help = "Default output is input!")]
+    pub output: Option<String>,
     #[structopt(long, global = true, help = "Save without backup")]
     pub no_backup: bool,
+    #[structopt(short, long, global = true, help = "Number of threads")]
+    pub threads: Option<usize>,
     #[structopt(subcommand)]
     pub cli: Cli,
 }
@@ -201,11 +205,18 @@ pub fn run() {
     debug!("Running...");
 
     let opt = Opt::from_args();
-    let json = &opt.json;
+
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(opt.threads.unwrap_or_default())
+        .build_global()
+        .unwrap();
+
+    let input = &opt.input;
+    let output = opt.output.as_ref().unwrap_or(input);
     if !opt.quiet {
         println!("{}", BANNER.cyan().bold());
     }
-    let mut luna = match Luna::from_file(json) {
+    let mut luna = match Luna::from_file(input) {
         Ok(luna) => {
             info!("Luna loaded successfully.");
             luna
@@ -228,10 +239,10 @@ pub fn run() {
             luna.append(insert);
             luna.merge();
 
-            if let Err(err) = luna.save(json) {
+            if let Err(err) = luna.save(output) {
                 error!("Error while saving: {}", err);
             } else {
-                info!("Saved in \"{}\" successfully.", json);
+                info!("Saved in \"{}\" successfully.", output);
             }
         }
 
@@ -258,10 +269,10 @@ pub fn run() {
                     info!("Scripts Executed.");
                     luna.merge();
 
-                    if let Err(err) = luna.save(json) {
+                    if let Err(err) = luna.save(output) {
                         error!("Error while saving: {}", err);
                     } else {
-                        info!("Saved in \"{}\" successfully.", json);
+                        info!("Saved in \"{}\" successfully.", output);
                     }
                 }
                 Err(err) => error!("Error in parsing file: {}", err),
@@ -272,18 +283,18 @@ pub fn run() {
             Ok(file) => {
                 luna.append(file);
                 luna.merge();
-                if let Err(err) = luna.save(json) {
-                    error!("Error while saving in \"{}\": {}", json, err);
+                if let Err(err) = luna.save(output) {
+                    error!("Error while saving in \"{}\": {}", output, err);
                 } else {
-                    info!("Saved in \"{}\" successfully.", json);
+                    info!("Saved in \"{}\" successfully.", output);
                 }
             }
             Err(err) => error!("Can't import: {}", err),
         },
 
         Cli::Check(check) => {
-            match Luna::from_file(json) {
-                Ok(luna) => println!("{} {}: {}", "[+]".green(), luna.stringify(1), json),
+            match Luna::from_file(input) {
+                Ok(luna) => println!("{} {}: {}", "[+]".green(), luna.stringify(1), input),
                 Err(_) => println!("{} ", "[-]".red()),
             }
 

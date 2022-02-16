@@ -81,18 +81,18 @@ impl Url {
             ),
             3 => format!(
                 "{} [{}]
-    title: {}
-    response: length:{}
-    techs: {}
-    update: {}
-    start: {}
+    Title: {}
+    Response length: {}
+    Techs: {}
+    Update: {}
+    Start: {}
     ",
                 self.url,
                 self.status_code.as_ref().map_or("", |s| s),
                 self.title.as_ref().map_or("", |s| s),
                 self.response
                     .as_ref()
-                    .map_or("N".to_string(), |s| s.len().to_string()),
+                    .map_or("n".to_string(), |s| s.len().to_string()),
                 self.techs.len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
@@ -103,16 +103,18 @@ impl Url {
             ),
             4 => format!(
                 "{} [{}]
-    title: {}
-    responce: {}
-    techs: [{}{}
-    update: {}
-    start: {}
+    Title: {}
+    Response length: {}
+    Techs: [{}{}
+    Update: {}
+    Start: {}
     ",
                 self.url,
                 self.status_code.as_ref().map_or("", |s| s),
                 self.title.as_ref().map_or("", |s| s),
-                self.response.as_ref().map_or("", |s| s),
+                self.response
+                    .as_ref()
+                    .map_or("n".to_string(), |s| s.len().to_string()),
                 self.techs
                     .iter()
                     .map(|s| format!("\n        {}", s.stringify(0)))

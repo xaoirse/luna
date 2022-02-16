@@ -529,10 +529,12 @@ impl From<Filter> for Luna {
         let techs = if tech_is_none {
             vec![]
         } else {
-            vec![Tech {
-                name: f.tech.take().unwrap_or_default(),
-                version: f.tech_version.take(),
-            }]
+            f.tech
+                .take()
+                .unwrap_or_default()
+                .split(',')
+                .map(|t| Tech::from_str(t).unwrap())
+                .collect()
         };
 
         let urls = if url_is_none {

@@ -48,16 +48,17 @@ FLAGS:
     -V, --version      Prints version information
 
 OPTIONS:
-    -j, --json <json>    Json file's path [default: luna.json]
+    -i, --input <input>        Json file's path [default: luna.json]
+    -o, --output <output>      Default output is input!
+    -t, --threads <threads>    Number of threads
 
 SUBCOMMANDS:
     check     
     find      
-    help      Prints this message or the help of the given
-              subcommand(s)
-    import
-    insert
-    luna    
+    help      Prints this message or the help of the given subcommand(s)
+    import    
+    insert    
+    luna      
     report    
     script    
     server    
@@ -173,7 +174,7 @@ I want a standalone binary release from my code,
 - [ ] Script validateor  
 - [ ] Cache system  
 - [ ] Update and delete mechanism  
-- [ ] Limit for parallel requests to prevent rate limit  
+- [x] Limit for parallel requests to prevent rate limit  
 - [ ] Worldlist
 - [ ] Custom inputs for script
 - [ ] Request body for Url
