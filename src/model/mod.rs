@@ -49,7 +49,7 @@ use chrono::{DateTime, Utc};
 
 pub fn check_date(date: &Option<DateTime<Utc>>, days: &Option<i64>) -> bool {
     match (date, days) {
-        (Some(date), Some(d)) => &(Utc::now() - chrono::Duration::days(*d)) > date,
+        (Some(date), Some(d)) => &(Utc::now() - chrono::Duration::days(*d)) < date,
         (_, None) => true,
         _ => false,
     }
