@@ -1,5 +1,4 @@
 use super::*;
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use structopt::StructOpt;
@@ -23,29 +22,25 @@ pub struct Tag {
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
 }
-impl Tag {
-    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a == b {
-            let new = a.update < b.update;
 
-            a.update = a.update.max(b.update);
-            a.start = a.start.min(b.start);
+impl Dedup for Tag {
+    fn same_bucket(b: &mut Self, a: &mut Self) {
+        let new = a.update < b.update;
 
-            merge(&mut a.severity, &mut b.severity, new);
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
 
-            a.values.append(&mut b.values);
-            a.values.par_sort();
-            a.values.dedup();
+        merge(&mut a.severity, &mut b.severity, new);
 
-            true
-        } else {
-            a.values.par_sort();
-            a.values.dedup();
-
-            false
-        }
+        a.values.append(&mut b.values);
+        a.dedup();
     }
+    fn dedup(&mut self) {
+        self.values.dedup();
+    }
+}
 
+impl Tag {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.name.contains_opt(&filter.tag)
             && self.severity.contains_opt(&filter.tag_severity)

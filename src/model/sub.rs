@@ -30,36 +30,27 @@ pub struct Sub {
     pub start: Option<DateTime<Utc>>,
 }
 
-impl Sub {
-    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a == b {
-            let new = a.update < b.update;
+impl Dedup for Sub {
+    fn same_bucket(b: &mut Self, a: &mut Self) {
+        let new = a.update < b.update;
 
-            merge(&mut a.typ, &mut b.typ, new);
+        merge(&mut a.typ, &mut b.typ, new);
 
-            a.update = a.update.max(b.update);
-            a.start = a.start.min(b.start);
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
 
-            a.hosts.append(&mut b.hosts);
-            a.hosts.par_sort();
-            a.hosts.dedup_by(Host::same_bucket);
+        a.hosts.append(&mut b.hosts);
+        a.urls.append(&mut b.urls);
 
-            a.urls.append(&mut b.urls);
-            a.urls.par_sort();
-            a.urls.dedup_by(Url::same_bucket);
-
-            true
-        } else {
-            a.hosts.par_sort();
-            a.hosts.dedup_by(Host::same_bucket);
-
-            a.urls.par_sort();
-            a.urls.dedup_by(Url::same_bucket);
-
-            false
-        }
+        a.dedup();
     }
+    fn dedup(&mut self) {
+        dedup(&mut self.hosts);
+        dedup(&mut self.urls);
+    }
+}
 
+impl Sub {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.asset.contains_opt(&filter.sub)
             && self.typ.contains_opt(&filter.sub_type)
@@ -173,7 +164,7 @@ impl PartialEq for Sub {
                 || self
                     .hosts
                     .par_iter()
-                    .any(|s| other.hosts.par_iter().any(|ss| s == ss))
+                    .any(|h| other.hosts.par_iter().any(|hh| h == hh))
         } else {
             self.asset == other.asset
         }

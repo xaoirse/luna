@@ -1,6 +1,5 @@
 use super::*;
 use chrono::{DateTime, Utc};
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use structopt::StructOpt;
@@ -22,23 +21,21 @@ pub struct Host {
     pub start: Option<DateTime<Utc>>,
 }
 
-impl Host {
-    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a == b {
-            a.update = a.update.max(b.update);
-            a.start = a.start.min(b.start);
+impl Dedup for Host {
+    fn same_bucket(b: &mut Self, a: &mut Self) {
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
 
-            a.services.append(&mut b.services);
-            a.services.dedup_by(Service::same_bucket);
-            true
-        } else {
-            a.services.append(&mut b.services);
-            a.services.dedup_by(Service::same_bucket);
-
-            false
-        }
+        a.services.append(&mut b.services);
+        a.dedup()
     }
 
+    fn dedup(&mut self) {
+        dedup(&mut self.services);
+    }
+}
+
+impl Host {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         filter
             .ip_cidr

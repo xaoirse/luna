@@ -1,6 +1,5 @@
 use super::*;
 use chrono::{DateTime, Utc};
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use structopt::StructOpt;
@@ -47,44 +46,30 @@ pub struct Program {
     pub start: Option<DateTime<Utc>>,
 }
 
-impl Program {
-    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a == b {
-            let new = a.update < b.update;
+impl Dedup for Program {
+    fn same_bucket(b: &mut Self, a: &mut Self) {
+        let new = a.update < b.update;
 
-            merge(&mut a.platform, &mut b.platform, new);
-            merge(&mut a.handle, &mut b.handle, new);
-            merge(&mut a.typ, &mut b.typ, new);
-            merge(&mut a.url, &mut b.url, new);
-            merge(&mut a.icon, &mut b.icon, new);
-            merge(&mut a.bounty, &mut b.bounty, new);
-            merge(&mut a.state, &mut b.state, new);
+        merge(&mut a.platform, &mut b.platform, new);
+        merge(&mut a.handle, &mut b.handle, new);
+        merge(&mut a.typ, &mut b.typ, new);
+        merge(&mut a.url, &mut b.url, new);
+        merge(&mut a.icon, &mut b.icon, new);
+        merge(&mut a.bounty, &mut b.bounty, new);
+        merge(&mut a.state, &mut b.state, new);
 
-            a.update = a.update.max(b.update);
-            a.start = a.start.min(b.start);
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
 
-            a.scopes.append(&mut b.scopes);
-            for i in 0..a.scopes.len() {
-                if a.scopes[i].asset == ScopeType::Empty {
-                    for j in i + 1..a.scopes.len() {
-                        if a.scopes[j].asset != ScopeType::Empty && a.scopes[i] == a.scopes[j] {
-                            a.scopes[i].asset = a.scopes[j].asset.clone();
-                        }
-                    }
-                }
-            }
-            a.scopes.par_sort();
-            a.scopes.dedup_by(Scope::same_bucket);
-
-            true
-        } else {
-            a.scopes.par_sort();
-            a.scopes.dedup_by(Scope::same_bucket);
-
-            false
-        }
+        a.scopes.append(&mut b.scopes);
+        a.dedup();
     }
+    fn dedup(&mut self) {
+        dedup(&mut self.scopes);
+    }
+}
 
+impl Program {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.name.contains_opt(&filter.program)
             && self.platform.contains_opt(&filter.program_platform)
@@ -98,38 +83,6 @@ impl Program {
             && check_date(&self.start, &filter.started_at)
             && (filter.scope_is_none() || self.scopes.par_iter().any(|s| s.matches(filter)))
     }
-
-    /*
-        google
-
-        google - google.com
-
-        google - google.com
-        icon: url
-        platform: hackerone,
-        type: Private,
-        bounty: 500$,
-        state: open,
-        scopes: 51,
-        started at: Sat 6 19 2019
-        updated at: Sat 6 19 2019
-
-        google - google.com
-        icon: url
-        platform: hackerone,
-        type: Private,
-        bounty: 500$,
-        state: open,
-        scopes: [
-            a.com
-            b.com
-            c.com
-        ],
-        started at: Sat 6 19 2019
-        updated at: Sat 6 19 2019
-
-        debug
-    */
 
     pub fn stringify(&self, v: u8) -> String {
         match v {
@@ -269,3 +222,28 @@ impl PartialEq for Program {
 }
 
 impl Eq for Program {}
+
+#[allow(unused_imports)]
+mod test {
+    use super::*;
+    use std::str::FromStr;
+    #[test]
+    fn test_eq() {
+        let a = Program {
+            scopes: vec![Scope {
+                subs: vec![Sub::from_str("1").unwrap(), Sub::from_str("2").unwrap()],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        let b = Program {
+            scopes: vec![Scope {
+                subs: vec![Sub::from_str("3").unwrap(), Sub::from_str("1").unwrap()],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+
+        assert_eq!(a, b)
+    }
+}

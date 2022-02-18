@@ -1,6 +1,5 @@
 use super::*;
 use chrono::{DateTime, Utc};
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::{
@@ -70,30 +69,26 @@ impl EqExt for ScopeType {
     }
 }
 
-impl Scope {
-    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a == b {
-            let new = a.update < b.update;
+impl Dedup for Scope {
+    fn same_bucket(b: &mut Self, a: &mut Self) {
+        let new = a.update < b.update;
 
-            merge(&mut a.bounty, &mut b.bounty, new);
-            merge(&mut a.severity, &mut b.severity, new);
+        merge(&mut a.bounty, &mut b.bounty, new);
+        merge(&mut a.severity, &mut b.severity, new);
 
-            a.update = a.update.max(b.update);
-            a.start = a.start.min(b.start);
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
 
-            a.subs.append(&mut b.subs);
-            a.subs.par_sort();
-            a.subs.dedup_by(Sub::same_bucket);
+        a.subs.append(&mut b.subs);
 
-            true
-        } else {
-            a.subs.par_sort();
-            a.subs.dedup_by(Sub::same_bucket);
-
-            false
-        }
+        a.dedup();
     }
+    fn dedup(&mut self) {
+        dedup(&mut self.subs);
+    }
+}
 
+impl Scope {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.asset.contains_opt(&filter.scope)
             && self.bounty.contains_opt(&filter.scope_bounty)
@@ -208,3 +203,34 @@ impl PartialEq for Scope {
 }
 
 impl Eq for Scope {}
+
+#[allow(unused_imports)]
+mod test {
+    use super::*;
+    use crate::model::url::Url;
+    #[test]
+    fn test_eq() {
+        let a = Scope {
+            subs: vec![Sub {
+                urls: vec![Url::from_str("a").unwrap()],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        let b = Scope {
+            subs: vec![
+                Sub {
+                    urls: vec![Url::from_str("a").unwrap(), Url::from_str("b").unwrap()],
+                    ..Default::default()
+                },
+                Sub {
+                    asset: "b".to_string(),
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(a, b)
+    }
+}

@@ -1,7 +1,6 @@
 use super::*;
 use crate::model::url::Url;
 use chrono::{DateTime, Utc};
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::io::Write;
@@ -37,83 +36,8 @@ impl Luna {
         self.start = self.start.min(other.start);
     }
 
-    pub fn program_name(&self, program: &Program) -> String {
-        self.programs
-            .par_iter()
-            .find_any(|p| !p.name.is_empty() && p == &program)
-            .map_or(String::new(), |p| p.name.clone())
-    }
-
-    pub fn scope_asset(&self, scope: &Scope) -> ScopeType {
-        self.programs
-            .par_iter()
-            .flat_map(|p| &p.scopes)
-            .find_any(|s| s.asset != ScopeType::Empty && s == &scope)
-            .map_or(ScopeType::Empty, |s| s.asset.clone())
-    }
-    pub fn sub_asset(&self, sub: &Sub) -> String {
-        self.programs
-            .par_iter()
-            .flat_map(|p| &p.scopes)
-            .flat_map(|s| &s.subs)
-            .find_any(|s| !s.asset.is_empty() && s == &sub)
-            .map_or(String::new(), |s| s.asset.clone())
-    }
-    pub fn merge(&mut self) {
-        for p in 0..self.programs.len() {
-            if self.programs[p].name.is_empty() {
-                self.programs[p].name = self.program_name(&self.programs[p]);
-            }
-            for s in 0..self.programs[p].scopes.len() {
-                if self.programs[p].scopes[s].asset == ScopeType::Empty {
-                    self.programs[p].scopes[s].asset =
-                        self.scope_asset(&self.programs[p].scopes[s]);
-                }
-                for su in 0..self.programs[p].scopes[s].subs.len() {
-                    if self.programs[p].scopes[s].subs[su].asset.is_empty() {
-                        self.programs[p].scopes[s].subs[su].asset =
-                            self.sub_asset(&self.programs[p].scopes[s].subs[su]);
-                    }
-                }
-            }
-        }
-        if self.programs.len() > 1 {
-            self.programs.par_sort();
-            self.programs.dedup_by(Program::same_bucket);
-        } else if let Some(p) = self.programs.first_mut() {
-            if p.scopes.len() > 1 {
-                p.scopes.par_sort();
-                p.scopes.dedup_by(Scope::same_bucket);
-            } else if let Some(s) = p.scopes.first_mut() {
-                if s.subs.len() > 1 {
-                    s.subs.par_sort();
-                    s.subs.dedup_by(Sub::same_bucket);
-                } else if let Some(s) = s.subs.first_mut() {
-                    if s.urls.len() > 1 {
-                        s.urls.par_sort();
-                        s.urls.dedup_by(Url::same_bucket);
-                    } else if let Some(u) = s.urls.first_mut() {
-                        if u.techs.len() > 1 {
-                            u.techs.par_sort();
-                            u.techs.dedup_by(Tech::same_bucket);
-                        }
-                        if u.tags.len() > 1 {
-                            u.tags.par_sort();
-                            u.tags.dedup_by(Tag::same_bucket);
-                        }
-                    }
-                    if s.hosts.len() > 1 {
-                        s.hosts.par_sort();
-                        s.hosts.dedup_by(Host::same_bucket);
-                    } else if let Some(h) = s.hosts.first_mut() {
-                        if h.services.len() > 1 {
-                            h.services.par_sort();
-                            h.services.dedup_by(Service::same_bucket);
-                        }
-                    }
-                }
-            }
-        }
+    pub fn dedup(&mut self) {
+        dedup(&mut self.programs);
     }
 
     pub fn find(&self, filter: &FilterRegex) -> Vec<String> {

@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 pub mod filter;
 pub mod host;
 pub mod job;
@@ -61,6 +63,38 @@ fn merge<T>(a: &mut Option<T>, b: &mut Option<T>, new: bool) {
         return;
     }
     *a = b.take();
+}
+
+pub fn dedup<T>(v: &mut Vec<T>)
+where
+    T: PartialEq + Dedup,
+{
+    let mut i = v.len();
+
+    if i == 0 {
+        return;
+    }
+    if i == 1 {
+        v[0].dedup();
+        return;
+    }
+
+    while i > 0 {
+        i -= 1;
+
+        if let Some(x) = v[0..i].iter().position(|x| x == &v[i]) {
+            let (a, b) = v.split_at_mut(i);
+            T::same_bucket(&mut b[0], &mut a[x]);
+            v.remove(i);
+        } else {
+            v[i].dedup();
+        }
+    }
+}
+
+pub trait Dedup {
+    fn same_bucket(b: &mut Self, a: &mut Self);
+    fn dedup(&mut self);
 }
 
 #[cfg(test)]

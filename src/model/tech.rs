@@ -19,22 +19,20 @@ pub struct Tech {
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
 }
-impl Tech {
-    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a == b {
-            let new = a.update < b.update;
 
-            a.update = a.update.max(b.update);
-            a.start = a.start.min(b.start);
+impl Dedup for Tech {
+    fn same_bucket(b: &mut Self, a: &mut Self) {
+        let new = a.update < b.update;
 
-            merge(&mut a.version, &mut b.version, new);
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
 
-            true
-        } else {
-            false
-        }
+        merge(&mut a.version, &mut b.version, new);
     }
+    fn dedup(&mut self) {}
+}
 
+impl Tech {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.name.contains_opt(&filter.tech) && self.version.contains_opt(&filter.tech_version)
     }

@@ -1,6 +1,5 @@
 use super::*;
 use chrono::{DateTime, Utc};
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use structopt::StructOpt;
@@ -34,36 +33,29 @@ pub struct Url {
     pub start: Option<DateTime<Utc>>,
 }
 
-impl Url {
-    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a == b {
-            let new = a.update < b.update;
+impl Dedup for Url {
+    fn same_bucket(b: &mut Self, a: &mut Self) {
+        let new = a.update < b.update;
 
-            merge(&mut a.title, &mut b.title, new);
-            merge(&mut a.status_code, &mut b.status_code, new);
-            merge(&mut a.response, &mut b.response, new);
+        merge(&mut a.title, &mut b.title, new);
+        merge(&mut a.status_code, &mut b.status_code, new);
+        merge(&mut a.response, &mut b.response, new);
 
-            a.update = a.update.max(b.update);
-            a.start = a.start.min(b.start);
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
 
-            a.techs.append(&mut b.techs);
-            a.techs.par_sort();
-            a.techs.dedup_by(Tech::same_bucket);
+        a.techs.append(&mut b.techs);
+        a.tags.append(&mut b.tags);
 
-            a.tags.append(&mut b.tags);
-            a.tags.par_sort();
-            a.tags.dedup_by(Tag::same_bucket);
-
-            true
-        } else {
-            a.techs.par_sort();
-            a.techs.dedup_by(Tech::same_bucket);
-
-            a.tags.par_sort();
-            a.tags.dedup_by(Tag::same_bucket);
-            false
-        }
+        a.dedup()
     }
+    fn dedup(&mut self) {
+        dedup(&mut self.techs);
+        dedup(&mut self.tags);
+    }
+}
+
+impl Url {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.url.contains_opt(&filter.url)
             && self.title.contains_opt(&filter.title)

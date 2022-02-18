@@ -18,18 +18,16 @@ pub struct Service {
     pub banner: Option<String>,
 }
 
-impl Service {
-    pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a == b {
-            merge(&mut a.name, &mut b.name, true);
-            merge(&mut a.protocol, &mut b.protocol, true);
-            merge(&mut a.banner, &mut b.banner, true);
-
-            true
-        } else {
-            false
-        }
+impl Dedup for Service {
+    fn same_bucket(b: &mut Self, a: &mut Self) {
+        merge(&mut a.name, &mut b.name, true);
+        merge(&mut a.protocol, &mut b.protocol, true);
+        merge(&mut a.banner, &mut b.banner, true);
     }
+    fn dedup(&mut self) {}
+}
+
+impl Service {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.port.contains_opt(&filter.port)
             && self.name.contains_opt(&filter.service_name)

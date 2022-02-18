@@ -248,7 +248,7 @@ pub fn run() {
 
             let insert: Luna = (*insert).into();
             luna.append(insert);
-            luna.merge();
+            luna.dedup();
 
             if let Err(err) = luna.save(output) {
                 error!("Error while saving: {}", err);
@@ -278,7 +278,7 @@ pub fn run() {
                 Ok(script) => {
                     script.run(&mut luna);
                     info!("Scripts Executed.");
-                    luna.merge();
+                    luna.dedup();
 
                     if let Err(err) = luna.save(output) {
                         error!("Error while saving: {}", err);
@@ -293,7 +293,7 @@ pub fn run() {
         Cli::Import { file } => match Luna::from_file(&file) {
             Ok(file) => {
                 luna.append(file);
-                luna.merge();
+                luna.dedup();
                 if let Err(err) = luna.save(output) {
                     error!("Error while saving in \"{}\": {}", output, err);
                 } else {

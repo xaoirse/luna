@@ -1,7 +1,7 @@
 ## My automation tool
 [XAoirse](https://github.com/xaoirse)
 # Luna 
-(beta version, Under heavy development and tests)
+(preparing for stable version)
 ### **Reconnaissance** tool, Powered by **Rust**, built with 🖤  
 
 
@@ -124,7 +124,6 @@ Example:
 ```bash
 pattern = (?P<sub>.+)
 subfinder -d ${scope} # sub1.sample.com -> sub
-findsuber -d ${scope} # sub2.sample.com -> sub
 
 pattern = (?P<url>(?:\w+)://\S+) \[(?P<status_code>\d*)\] \[(?P<title>[^\]]*)\] \[(?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3})\] \[(?P<tech>[^\]]*)\]
 echo ${sub} | ./httpx -nc -silent -sc -title -ip -td 
@@ -162,7 +161,6 @@ I want a standalone binary release from my code,
 - ...
 
 ## In Progress
-- Wordlist
 - Tests
 - Comments
 
