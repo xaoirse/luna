@@ -127,8 +127,7 @@ subfinder -d ${scope} # sub1.sample.com -> sub
 findsuber -d ${scope} # sub2.sample.com -> sub
 
 pattern = (?P<url>(?:\w+)://\S+) \[(?P<status_code>\d*)\] \[(?P<title>[^\]]*)\] \[(?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3})\] \[(?P<tech>[^\]]*)\]
-
-echo ${sub} | ./httpx -nc -silent -sc -title -ip -td # https://sub.sample.com/login 200 -> url status-code
+echo ${sub} | ./httpx -nc -silent -sc -title -ip -td 
 ```
 2. Insert some scopes (see helps):  
 `luna insert scope --asset google.com`
@@ -190,3 +189,4 @@ How got this regex `"[a-z]+ (?P<tag>\[[a-z]+\]){1,3}"` for `"url [crit][a][b]"` 
 - [x] Import file
 - [ ] Number of urls, subs and ... for each program stringify
 - [ ] Update_at updates every time!
+- [ ] Global search

@@ -1,9 +1,11 @@
-use super::*;
 use chrono::{DateTime, Utc};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use structopt::StructOpt;
+
+use super::*;
+use crate::model::url::Url;
 
 #[derive(Clone, Debug, Serialize, Deserialize, StructOpt)]
 pub struct Sub {
@@ -30,7 +32,7 @@ pub struct Sub {
 
 impl Sub {
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if !a.asset.is_empty() && a.asset == b.asset {
+        if a == b {
             let new = a.update < b.update;
 
             merge(&mut a.typ, &mut b.typ, new);
@@ -65,14 +67,6 @@ impl Sub {
             && check_date(&self.start, &filter.started_at)
             && (filter.host_is_none() || self.hosts.par_iter().any(|h| h.matches(filter)))
             && (filter.url_is_none() || self.urls.par_iter().any(|u| u.matches(filter)))
-    }
-
-    pub fn set_name(&mut self, luna: &Luna) {
-        if let Some(url) = self.urls.first() {
-            self.asset = url.sub_asset();
-        } else if let Some(sub) = self.hosts.par_iter_mut().find_map_any(|h| luna.sub(&h.ip)) {
-            self.asset = sub.asset.clone();
-        }
     }
 
     pub fn stringify(&self, v: u8) -> String {
@@ -172,7 +166,7 @@ impl PartialOrd for Sub {
 
 impl PartialEq for Sub {
     fn eq(&self, other: &Self) -> bool {
-        if self.asset.is_empty() && other.asset.is_empty() {
+        if self.asset.is_empty() || other.asset.is_empty() {
             self.urls
                 .par_iter()
                 .any(|s| other.urls.par_iter().any(|ss| s == ss))

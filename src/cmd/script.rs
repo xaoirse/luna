@@ -75,6 +75,10 @@ impl Data {
                     tech: get("tech"),
                     tech_version: get("tech_version"),
 
+                    tag: get("tag"),
+                    tag_severity: get("tag_severity"),
+                    tag_value: get("tag_value"),
+
                     updated_at: None,
                     started_at: None,
                 };
@@ -289,4 +293,7 @@ fn regex_check(regex: &Regex) -> bool {
                     || names.contains(&"status_code")
                     || names.contains(&"response")))
         && (names.contains(&"tech") || names.contains(&"tech") == names.contains(&"tech_version"))
+        && (names.contains(&"tag")
+            || names.contains(&"tag")
+                == (names.contains(&"tag_severity") || names.contains(&"tag_value")))
 }

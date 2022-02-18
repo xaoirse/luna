@@ -64,8 +64,16 @@ impl Program {
             a.start = a.start.min(b.start);
 
             a.scopes.append(&mut b.scopes);
+            for i in 0..a.scopes.len() {
+                if a.scopes[i].asset == ScopeType::Empty {
+                    for j in i + 1..a.scopes.len() {
+                        if a.scopes[j].asset != ScopeType::Empty && a.scopes[i] == a.scopes[j] {
+                            a.scopes[i].asset = a.scopes[j].asset.clone();
+                        }
+                    }
+                }
+            }
             a.scopes.par_sort();
-
             a.scopes.dedup_by(Scope::same_bucket);
 
             true
@@ -89,20 +97,6 @@ impl Program {
             && check_date(&self.update, &filter.updated_at)
             && check_date(&self.start, &filter.started_at)
             && (filter.scope_is_none() || self.scopes.par_iter().any(|s| s.matches(filter)))
-    }
-
-    pub fn set_name(&mut self, luna: &Luna) {
-        self.scopes.par_iter_mut().for_each(|s| s.set_name(luna));
-
-        if self.name.is_empty() {
-            if let Some(program) = self
-                .scopes
-                .par_iter()
-                .find_map_any(|s| luna.program(&s.asset))
-            {
-                self.name = program.name.clone();
-            }
-        }
     }
 
     /*
@@ -198,7 +192,13 @@ impl Program {
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),
-                if self.scopes.is_empty() {
+                if self
+                    .scopes
+                    .iter()
+                    .filter(|p| p.asset != ScopeType::Empty)
+                    .count()
+                    == 0
+                {
                     "]"
                 } else {
                     "\n    ]"
@@ -258,7 +258,7 @@ impl PartialOrd for Program {
 
 impl PartialEq for Program {
     fn eq(&self, other: &Self) -> bool {
-        if self.name.is_empty() && other.name.is_empty() {
+        if self.name.is_empty() || other.name.is_empty() {
             self.scopes
                 .par_iter()
                 .any(|s| other.scopes.par_iter().any(|ss| s == ss))

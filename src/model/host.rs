@@ -24,7 +24,7 @@ pub struct Host {
 
 impl Host {
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a.ip == b.ip {
+        if a == b {
             a.update = a.update.max(b.update);
             a.start = a.start.min(b.start);
 

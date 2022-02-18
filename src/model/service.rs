@@ -20,7 +20,8 @@ pub struct Service {
 
 impl Service {
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a.name == b.name && a.port == b.port {
+        if a == b {
+            merge(&mut a.name, &mut b.name, true);
             merge(&mut a.protocol, &mut b.protocol, true);
             merge(&mut a.banner, &mut b.banner, true);
 

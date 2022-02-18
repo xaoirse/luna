@@ -9,13 +9,6 @@ use std::{
 };
 use structopt::StructOpt;
 
-macro_rules! regex {
-    ($re:literal $(,)?) => {{
-        static RE: once_cell::sync::OnceCell<regex::Regex> = once_cell::sync::OnceCell::new();
-        RE.get_or_init(|| regex::Regex::new($re).unwrap())
-    }};
-}
-
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
 pub struct Scope {
     #[structopt(short, long)]
@@ -56,11 +49,9 @@ impl Display for ScopeType {
 impl FromStr for ScopeType {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let cidr = regex!(r"(?:\d{1,3}\.){3}\d{1,3}/\d{1,2}");
-
         if s.is_empty() {
             Ok(Self::Empty)
-        } else if cidr.is_match(s) {
+        } else if s.parse::<cidr::IpCidr>().is_ok() {
             Ok(Self::Cidr(s.to_string()))
         } else {
             Ok(Self::Domain(s.to_string()))
@@ -81,7 +72,7 @@ impl EqExt for ScopeType {
 
 impl Scope {
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a.asset != ScopeType::Empty && a.asset == b.asset {
+        if a == b {
             let new = a.update < b.update;
 
             merge(&mut a.bounty, &mut b.bounty, new);
@@ -110,23 +101,6 @@ impl Scope {
             && check_date(&self.update, &filter.updated_at)
             && check_date(&self.start, &filter.started_at)
             && (filter.sub_is_none() || self.subs.par_iter().any(|s| s.matches(filter)))
-    }
-
-    pub fn set_name(&mut self, luna: &Luna) {
-        self.subs
-            .par_iter_mut()
-            .filter(|s| s.asset.is_empty())
-            .for_each(|s| s.set_name(luna));
-
-        if self.asset == ScopeType::Empty {
-            if let Some(scope) = self
-                .subs
-                .par_iter_mut()
-                .find_map_any(|s| luna.scope(&s.asset))
-            {
-                self.asset = scope.asset.clone();
-            }
-        }
     }
 
     pub fn stringify(&self, v: u8) -> String {
@@ -168,7 +142,11 @@ impl Scope {
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),
-                if self.subs.is_empty() { "]" } else { "\n    ]" },
+                if self.subs.iter().filter(|p| !p.asset.is_empty()).count() == 0 {
+                    "]"
+                } else {
+                    "\n    ]"
+                },
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -219,7 +197,7 @@ impl PartialOrd for Scope {
 
 impl PartialEq for Scope {
     fn eq(&self, other: &Self) -> bool {
-        if self.asset == ScopeType::Empty && other.asset == ScopeType::Empty {
+        if self.asset == ScopeType::Empty || other.asset == ScopeType::Empty {
             self.subs
                 .par_iter()
                 .any(|s| other.subs.par_iter().any(|ss| s == ss))

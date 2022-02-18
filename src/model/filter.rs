@@ -67,6 +67,13 @@ pub struct Filter {
     #[structopt(long)]
     pub tech_version: Option<String>,
 
+    #[structopt(long)]
+    pub tag: Option<String>,
+    #[structopt(long)]
+    pub tag_severity: Option<String>,
+    #[structopt(long)]
+    pub tag_value: Option<String>,
+
     #[structopt(long, short, help = "Days ago")]
     pub updated_at: Option<i64>,
 
@@ -76,33 +83,49 @@ pub struct Filter {
 
 impl Filter {
     pub fn scope_is_none(&self) -> bool {
-        self.scope.is_none() && self.scope_bounty.is_none() && self.sub_is_none()
+        self.scope.as_ref().map_or(true, |s| s.is_empty())
+            && self.scope_bounty.as_ref().map_or(true, |s| s.is_empty())
+            && self.sub_is_none()
     }
     pub fn sub_is_none(&self) -> bool {
-        self.sub.is_none() && self.sub_type.is_none() && self.host_is_none() && self.url_is_none()
+        self.sub.as_ref().map_or(true, |s| s.is_empty())
+            && self.sub_type.as_ref().map_or(true, |s| s.is_empty())
+            && self.host_is_none()
+            && self.url_is_none()
     }
 
     pub fn url_is_none(&self) -> bool {
-        self.url.is_none()
-            && self.title.is_none()
-            && self.status_code.is_none()
-            && self.response.is_none()
+        self.url.as_ref().map_or(true, |s| s.is_empty())
+            && self.title.as_ref().map_or(true, |s| s.is_empty())
+            && self.status_code.as_ref().map_or(true, |s| s.is_empty())
+            && self.response.as_ref().map_or(true, |s| s.is_empty())
             && self.tech_is_none()
+            && self.tag_is_none()
     }
 
     pub fn tech_is_none(&self) -> bool {
-        self.tech.is_none() && self.tech_version.is_none()
+        self.tech.as_ref().map_or(true, |s| s.is_empty())
+            && self.tech_version.as_ref().map_or(true, |s| s.is_empty())
+    }
+
+    pub fn tag_is_none(&self) -> bool {
+        self.tag.as_ref().map_or(true, |s| s.is_empty())
+            && self.tag_severity.as_ref().map_or(true, |s| s.is_empty())
+            && self.tag_value.as_ref().map_or(true, |s| s.is_empty())
     }
 
     pub fn host_is_none(&self) -> bool {
-        self.ip.is_none() && self.service_is_none()
+        self.ip.as_ref().map_or(true, |s| s.is_empty()) && self.service_is_none()
     }
 
     pub fn service_is_none(&self) -> bool {
-        self.port.is_none()
-            && self.service_name.is_none()
-            && self.service_protocol.is_none()
-            && self.service_banner.is_none()
+        self.port.as_ref().map_or(true, |s| s.is_empty())
+            && self.service_name.as_ref().map_or(true, |s| s.is_empty())
+            && self
+                .service_protocol
+                .as_ref()
+                .map_or(true, |s| s.is_empty())
+            && self.service_banner.as_ref().map_or(true, |s| s.is_empty())
     }
 }
 
@@ -189,6 +212,10 @@ pub struct FilterRegex {
     pub tech: Option<regex::Regex>,
     pub tech_version: Option<regex::Regex>,
 
+    pub tag: Option<regex::Regex>,
+    pub tag_severity: Option<regex::Regex>,
+    pub tag_value: Option<regex::Regex>,
+
     pub updated_at: Option<i64>,
     pub started_at: Option<i64>,
 }
@@ -216,6 +243,10 @@ impl FilterRegex {
 
     pub fn tech_is_none(&self) -> bool {
         self.tech.is_none() && self.tech_version.is_none()
+    }
+
+    pub fn tag_is_none(&self) -> bool {
+        self.tag.is_none() && self.tag_severity.is_none() && self.tag_value.is_none()
     }
 
     pub fn host_is_none(&self) -> bool {
@@ -311,7 +342,7 @@ impl TryFrom<Filter> for FilterRegex {
             None => None,
         };
         let service_banner = match f.service_banner {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
 
@@ -320,7 +351,7 @@ impl TryFrom<Filter> for FilterRegex {
             None => None,
         };
         let title = match f.title {
-            Some(ref p) => Some(Regex::new(p)?),
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
         };
         let status_code = match f.status_code {
@@ -337,6 +368,19 @@ impl TryFrom<Filter> for FilterRegex {
             None => None,
         };
         let tech_version = match f.tech_version {
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
+            None => None,
+        };
+
+        let tag = match f.tag {
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
+            None => None,
+        };
+        let tag_severity = match f.tag_severity {
+            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
+            None => None,
+        };
+        let tag_value = match f.tag_value {
             Some(ref p) => Some(Regex::new(p)?),
             None => None,
         };
@@ -376,6 +420,10 @@ impl TryFrom<Filter> for FilterRegex {
 
             tech,
             tech_version,
+
+            tag,
+            tag_severity,
+            tag_value,
 
             updated_at: f.updated_at,
             started_at: f.started_at,

@@ -22,6 +22,9 @@ pub struct Url {
     #[structopt(long)]
     pub techs: Vec<Tech>,
 
+    #[structopt(long)]
+    pub tags: Vec<Tag>,
+
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
@@ -33,7 +36,7 @@ pub struct Url {
 
 impl Url {
     pub fn same_bucket(b: &mut Self, a: &mut Self) -> bool {
-        if a.url == b.url {
+        if a == b {
             let new = a.update < b.update;
 
             merge(&mut a.title, &mut b.title, new);
@@ -47,11 +50,17 @@ impl Url {
             a.techs.par_sort();
             a.techs.dedup_by(Tech::same_bucket);
 
+            a.tags.append(&mut b.tags);
+            a.tags.par_sort();
+            a.tags.dedup_by(Tag::same_bucket);
+
             true
         } else {
             a.techs.par_sort();
             a.techs.dedup_by(Tech::same_bucket);
 
+            a.tags.par_sort();
+            a.tags.dedup_by(Tag::same_bucket);
             false
         }
     }
@@ -63,6 +72,7 @@ impl Url {
             && check_date(&self.update, &filter.updated_at)
             && check_date(&self.start, &filter.started_at)
             && (filter.tech_is_none() || self.techs.par_iter().any(|t| t.matches(filter)))
+            && (filter.tag_is_none() || self.tags.par_iter().any(|t| t.matches(filter)))
     }
 
     pub fn stringify(&self, v: u8) -> String {
@@ -84,6 +94,7 @@ impl Url {
     Title: {}
     Response length: {}
     Techs: {}
+    Tags: {}
     Update: {}
     Start: {}
     ",
@@ -94,6 +105,7 @@ impl Url {
                     .as_ref()
                     .map_or("n".to_string(), |s| s.len().to_string()),
                 self.techs.len(),
+                self.tags.len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -106,6 +118,7 @@ impl Url {
     Title: {}
     Response length: {}
     Techs: [{}{}
+    Tags: [{}{}
     Update: {}
     Start: {}
     ",
@@ -117,7 +130,7 @@ impl Url {
                     .map_or("n".to_string(), |s| s.len().to_string()),
                 self.techs
                     .iter()
-                    .map(|s| format!("\n        {}", s.stringify(0)))
+                    .map(|s| format!("\n        {}", s.stringify(1)))
                     .collect::<Vec<String>>()
                     .join(""),
                 if self.techs.is_empty() {
@@ -125,6 +138,12 @@ impl Url {
                 } else {
                     "\n    ]"
                 },
+                self.tags
+                    .iter()
+                    .map(|s| format!("\n        {}", s.stringify(1)))
+                    .collect::<Vec<String>>()
+                    .join(""),
+                if self.tags.is_empty() { "]" } else { "\n    ]" },
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -136,8 +155,8 @@ impl Url {
         }
     }
 
-    pub fn sub_asset(&self) -> String {
-        todo!()
+    pub fn sub_asset(&self) -> Option<String> {
+        self.url.split('/').nth(2).map(|s| s.to_string())
     }
 }
 
@@ -149,6 +168,7 @@ impl Default for Url {
             status_code: None,
             response: None,
             techs: vec![],
+            tags: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),
         }

@@ -1,4 +1,5 @@
 use super::*;
+use crate::model::url::Url;
 use chrono::{DateTime, Utc};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -29,24 +30,90 @@ pub struct Luna {
 
 impl Luna {
     pub fn append(&mut self, mut other: Self) {
-        // Append
         self.counter += other.counter;
         self.programs.append(&mut other.programs);
 
         self.update = self.update.max(other.update);
         self.start = self.start.min(other.start);
     }
-    pub fn merge(&mut self) {
-        // Fill nones
-        let luna_copy = self.clone();
-        self.programs
-            .par_iter_mut()
-            .for_each(|p| p.set_name(&luna_copy));
 
-        // Merge
+    pub fn program_name(&self, program: &Program) -> String {
         self.programs
-            .par_sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-        self.programs.dedup_by(Program::same_bucket);
+            .par_iter()
+            .find_any(|p| !p.name.is_empty() && p == &program)
+            .map_or(String::new(), |p| p.name.clone())
+    }
+
+    pub fn scope_asset(&self, scope: &Scope) -> ScopeType {
+        self.programs
+            .par_iter()
+            .flat_map(|p| &p.scopes)
+            .find_any(|s| s.asset != ScopeType::Empty && s == &scope)
+            .map_or(ScopeType::Empty, |s| s.asset.clone())
+    }
+    pub fn sub_asset(&self, sub: &Sub) -> String {
+        self.programs
+            .par_iter()
+            .flat_map(|p| &p.scopes)
+            .flat_map(|s| &s.subs)
+            .find_any(|s| !s.asset.is_empty() && s == &sub)
+            .map_or(String::new(), |s| s.asset.clone())
+    }
+    pub fn merge(&mut self) {
+        for p in 0..self.programs.len() {
+            if self.programs[p].name.is_empty() {
+                self.programs[p].name = self.program_name(&self.programs[p]);
+            }
+            for s in 0..self.programs[p].scopes.len() {
+                if self.programs[p].scopes[s].asset == ScopeType::Empty {
+                    self.programs[p].scopes[s].asset =
+                        self.scope_asset(&self.programs[p].scopes[s]);
+                }
+                for su in 0..self.programs[p].scopes[s].subs.len() {
+                    if self.programs[p].scopes[s].subs[su].asset.is_empty() {
+                        self.programs[p].scopes[s].subs[su].asset =
+                            self.sub_asset(&self.programs[p].scopes[s].subs[su]);
+                    }
+                }
+            }
+        }
+        if self.programs.len() > 1 {
+            self.programs.par_sort();
+            self.programs.dedup_by(Program::same_bucket);
+        } else if let Some(p) = self.programs.first_mut() {
+            if p.scopes.len() > 1 {
+                p.scopes.par_sort();
+                p.scopes.dedup_by(Scope::same_bucket);
+            } else if let Some(s) = p.scopes.first_mut() {
+                if s.subs.len() > 1 {
+                    s.subs.par_sort();
+                    s.subs.dedup_by(Sub::same_bucket);
+                } else if let Some(s) = s.subs.first_mut() {
+                    if s.urls.len() > 1 {
+                        s.urls.par_sort();
+                        s.urls.dedup_by(Url::same_bucket);
+                    } else if let Some(u) = s.urls.first_mut() {
+                        if u.techs.len() > 1 {
+                            u.techs.par_sort();
+                            u.techs.dedup_by(Tech::same_bucket);
+                        }
+                        if u.tags.len() > 1 {
+                            u.tags.par_sort();
+                            u.tags.dedup_by(Tag::same_bucket);
+                        }
+                    }
+                    if s.hosts.len() > 1 {
+                        s.hosts.par_sort();
+                        s.hosts.dedup_by(Host::same_bucket);
+                    } else if let Some(h) = s.hosts.first_mut() {
+                        if h.services.len() > 1 {
+                            h.services.par_sort();
+                            h.services.dedup_by(Service::same_bucket);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     pub fn find(&self, filter: &FilterRegex) -> Vec<String> {
@@ -130,29 +197,6 @@ impl Luna {
             field,
             ..Default::default()
         })
-    }
-
-    pub fn program(&self, scope: &ScopeType) -> Option<&Program> {
-        self.programs
-            .par_iter()
-            .filter(|p| !p.name.is_empty())
-            .find_any(|p| p.scopes.par_iter().any(|s| &s.asset == scope))
-    }
-
-    pub fn scope(&self, sub: &str) -> Option<&Scope> {
-        self.programs
-            .par_iter()
-            .flat_map(|p| &p.scopes)
-            .filter(|s| s.asset != ScopeType::Empty)
-            .find_any(|s| s.subs.par_iter().any(|s| s.asset == sub))
-    }
-    pub fn sub(&self, ip: &str) -> Option<&Sub> {
-        self.programs
-            .par_iter()
-            .flat_map(|p| &p.scopes)
-            .flat_map(|s| &s.subs)
-            .filter(|s| !s.asset.is_empty())
-            .find_any(|s| s.hosts.par_iter().any(|h| h.ip == ip))
     }
 
     pub fn save(&self, path: &str) -> Result<usize, Errors> {
@@ -240,7 +284,7 @@ impl Luna {
                     .map(|s| format!("\n        {}", s.stringify(1)))
                     .collect::<Vec<String>>()
                     .join(""),
-                if self.programs.is_empty() {
+                if self.programs.iter().filter(|p| !p.name.is_empty()).count() == 0 {
                     "]"
                 } else {
                     "\n    ]"
@@ -365,7 +409,9 @@ impl From<InsertUrl> for Luna {
                 scopes: vec![Scope {
                     asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
                     subs: vec![Sub {
-                        asset: i.sub.unwrap_or_default(),
+                        asset: i
+                            .sub
+                            .unwrap_or_else(|| i.url.sub_asset().unwrap_or_default()),
                         urls: vec![Url {
                             update: Some(Utc::now()),
                             start: Some(Utc::now()),
@@ -457,10 +503,47 @@ impl From<InsertTech> for Luna {
                 scopes: vec![Scope {
                     asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
                     subs: vec![Sub {
-                        asset: i.sub.unwrap_or_default(),
+                        asset: i.sub.unwrap_or_else(|| {
+                            i.url
+                                .split('/')
+                                .nth(2)
+                                .map(|s| s.to_string())
+                                .unwrap_or_default()
+                        }),
                         urls: vec![Url {
                             url: i.url,
                             techs: vec![Tech { ..i.tech }],
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        }
+    }
+}
+
+impl From<InsertTag> for Luna {
+    fn from(i: InsertTag) -> Self {
+        Luna {
+            programs: vec![Program {
+                name: i.program.unwrap_or_default(),
+                scopes: vec![Scope {
+                    asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
+                    subs: vec![Sub {
+                        asset: i.sub.unwrap_or_else(|| {
+                            i.url
+                                .split('/')
+                                .nth(2)
+                                .map(|s| s.to_string())
+                                .unwrap_or_default()
+                        }),
+                        urls: vec![Url {
+                            url: i.url,
+                            tags: vec![Tag { ..i.tag }],
                             ..Default::default()
                         }],
                         ..Default::default()
@@ -512,6 +595,7 @@ impl From<Insert> for Luna {
             Insert::Host(i) => i.into(),
             Insert::Hosts(i) => i.into(),
             Insert::Tech(i) => i.into(),
+            Insert::Tag(i) => i.into(),
             Insert::Service(i) => i.into(),
         }
     }
@@ -520,6 +604,7 @@ impl From<Insert> for Luna {
 impl From<Filter> for Luna {
     fn from(mut f: Filter) -> Self {
         let tech_is_none = f.tech_is_none();
+        let tag_is_none = f.tag_is_none();
         let url_is_none = f.url_is_none();
         let service_is_none = f.service_is_none();
         let host_is_none = f.host_is_none();
@@ -528,13 +613,43 @@ impl From<Filter> for Luna {
 
         let techs = if tech_is_none {
             vec![]
+        } else if let Some(tech) = f.tech {
+            if tech.split(',').count() > 1 {
+                tech.split(',')
+                    .map(|t| Tech::from_str(t).unwrap())
+                    .collect()
+            } else {
+                vec![Tech {
+                    name: tech,
+                    version: f.tech_version,
+                    update: Some(Utc::now()),
+                    start: Some(Utc::now()),
+                }]
+            }
         } else {
-            f.tech
-                .take()
-                .unwrap_or_default()
-                .split(',')
-                .map(|t| Tech::from_str(t).unwrap())
-                .collect()
+            vec![Tech {
+                name: f.tech.unwrap_or_default(),
+                version: f.tech_version,
+                update: Some(Utc::now()),
+                start: Some(Utc::now()),
+            }]
+        };
+
+        let tags = if tag_is_none {
+            vec![]
+        } else {
+            vec![Tag {
+                name: f.tag.unwrap_or_default(),
+                severity: f.tag_severity,
+                values: f
+                    .tag_value
+                    .take()
+                    .unwrap_or_default()
+                    .split(',')
+                    .map(|s| s.to_string())
+                    .collect(),
+                ..Default::default()
+            }]
         };
 
         let urls = if url_is_none {
@@ -546,6 +661,7 @@ impl From<Filter> for Luna {
                 status_code: f.status_code.take(),
                 response: f.response.take(),
                 techs,
+                tags,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
             }]
@@ -577,7 +693,17 @@ impl From<Filter> for Luna {
             vec![]
         } else {
             vec![Sub {
-                asset: f.sub.take().unwrap_or_default(),
+                asset: f.sub.take().unwrap_or_else(|| {
+                    urls.first()
+                        .map(|u| {
+                            u.url
+                                .split('/')
+                                .nth(2)
+                                .map(|s| s.to_string())
+                                .unwrap_or_default()
+                        })
+                        .unwrap_or_default()
+                }),
                 typ: f.sub_type.take(),
                 hosts,
                 urls,

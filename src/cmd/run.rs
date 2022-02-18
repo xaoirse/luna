@@ -4,6 +4,7 @@ use rayon::prelude::*;
 use structopt::StructOpt;
 
 use super::script;
+use crate::model::url::Url;
 use crate::model::*;
 
 #[derive(Debug, StructOpt)]
@@ -66,6 +67,7 @@ pub enum Insert {
     Host(InsertHost),
     Hosts(InsertHosts),
     Tech(InsertTech),
+    Tag(InsertTag),
     Service(InsertService),
 }
 
@@ -157,6 +159,20 @@ pub struct InsertHosts {
 pub struct InsertTech {
     #[structopt(flatten)]
     pub tech: Tech,
+    #[structopt(long)]
+    pub url: String,
+    #[structopt(long)]
+    pub sub: Option<String>,
+    #[structopt(short, long)]
+    pub scope: Option<String>,
+    #[structopt(short, long)]
+    pub program: Option<String>,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct InsertTag {
+    #[structopt(flatten)]
+    pub tag: Tag,
     #[structopt(long)]
     pub url: String,
     #[structopt(long)]
