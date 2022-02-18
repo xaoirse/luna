@@ -9,16 +9,16 @@ use crate::model::url::Url;
 
 #[derive(Clone, Debug, Serialize, Deserialize, StructOpt)]
 pub struct Sub {
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub asset: String,
 
-    #[structopt(short, long, case_insensitive = true)]
+    #[structopt(long, case_insensitive = true)]
     pub typ: Option<String>,
 
-    #[structopt(short = "i", long)]
+    #[structopt(long)]
     pub hosts: Vec<Host>,
 
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub urls: Vec<Url>,
 
     #[structopt(skip)]

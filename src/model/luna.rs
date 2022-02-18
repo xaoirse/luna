@@ -192,9 +192,16 @@ impl Luna {
             Fields::Keyword => todo!(),
         }
     }
-    pub fn find_all(&self, field: Fields) -> Vec<String> {
+    pub fn find_all(
+        &self,
+        field: Fields,
+        updated_at: Option<i64>,
+        started_at: Option<i64>,
+    ) -> Vec<String> {
         self.find(&FilterRegex {
             field,
+            updated_at,
+            started_at,
             ..Default::default()
         })
     }
@@ -249,11 +256,11 @@ impl Luna {
                 self.status,
                 self.counter,
                 self.programs.iter().filter(|p| !p.name.is_empty()).count(),
-                self.find_all(Fields::Domain).len(),
-                self.find_all(Fields::Cidr).len(),
-                self.find_all(Fields::Sub).len(),
-                self.find_all(Fields::IP).len(),
-                self.find_all(Fields::Url).len(),
+                self.find_all(Fields::Domain, None, None).len(),
+                self.find_all(Fields::Cidr, None, None).len(),
+                self.find_all(Fields::Sub, None, None).len(),
+                self.find_all(Fields::IP, None, None).len(),
+                self.find_all(Fields::Url, None, None).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -289,11 +296,11 @@ impl Luna {
                 } else {
                     "\n    ]"
                 },
-                self.find_all(Fields::Domain).len(),
-                self.find_all(Fields::Cidr).len(),
-                self.find_all(Fields::Sub).len(),
-                self.find_all(Fields::IP).len(),
-                self.find_all(Fields::Url).len(),
+                self.find_all(Fields::Domain, None, None).len(),
+                self.find_all(Fields::Cidr, None, None).len(),
+                self.find_all(Fields::Sub, None, None).len(),
+                self.find_all(Fields::IP, None, None).len(),
+                self.find_all(Fields::Url, None, None).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),

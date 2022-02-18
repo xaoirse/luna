@@ -7,7 +7,7 @@ use structopt::StructOpt;
 
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
 pub struct Host {
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub ip: String,
 
     #[structopt(long)]

@@ -11,31 +11,31 @@ use structopt::StructOpt;
 
 #[derive(Debug, Clone, Serialize, Deserialize, StructOpt)]
 pub struct Program {
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub name: String,
 
-    #[structopt(short, long, case_insensitive = true)]
+    #[structopt(long, case_insensitive = true)]
     pub platform: Option<String>,
 
     #[structopt(long)]
     pub handle: Option<String>,
 
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub typ: Option<String>,
 
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub url: Option<String>,
 
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub icon: Option<String>,
 
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub bounty: Option<String>,
 
     #[structopt(long, case_insensitive = true)]
     pub state: Option<String>,
 
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub scopes: Vec<Scope>,
 
     #[structopt(skip)]

@@ -183,7 +183,7 @@ I want a standalone binary release from my code,
 - [x] Find -vvv flags
 - [ ] Remove all clones  
 - [x] No-backup flag
-- [ ] Label or tag for vulnerabilities   
+- [x] Label or tag for vulnerabilities   
 (how to add and remove)(vec of Strings)  
 How got this regex `"[a-z]+ (?P<tag>\[[a-z]+\]){1,3}"` for `"url [crit][a][b]"` to captures a and b individually?
 - [x] Import file

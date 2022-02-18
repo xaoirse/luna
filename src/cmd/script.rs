@@ -4,6 +4,7 @@ use rayon::prelude::*;
 use rayon::{iter::Map, vec::IntoIter};
 use regex::Regex;
 use std::{error, fmt, process::Command};
+use structopt::StructOpt;
 
 #[derive(Debug)]
 pub enum Error {
@@ -148,25 +149,33 @@ impl Script {
     fn execute<'a>(
         &'a self,
         luna: &Luna,
+        updated_at: Option<i64>,
+        started_at: Option<i64>,
     ) -> Map<IntoIter<String>, impl Fn(String) -> Result<Data, Errors> + 'a> {
-        luna.find_all(self.field).into_par_iter().map(|input| {
-            let cmd = self.command.replace(&self.field.substitution(), &input);
-            debug!("Command: {}", cmd);
-            let output = String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
-            debug!("Output: {}", &output);
-            Ok(Data {
-                input,
-                field: self.field,
-                output,
+        luna.find_all(self.field, updated_at, started_at)
+            .into_par_iter()
+            .map(|input| {
+                let cmd = self.command.replace(&self.field.substitution(), &input);
+                debug!("Command: {}", cmd);
+                let output =
+                    String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
+                debug!("Output: {}", &output);
+                Ok(Data {
+                    input,
+                    field: self.field,
+                    output,
+                })
             })
-        })
     }
 }
 
 #[derive(Debug, Default)]
 pub struct Scripts {
     pub scripts: Vec<Script>,
-    // TODO other options
+
+    pub updated_at: Option<i64>,
+
+    pub started_at: Option<i64>,
 }
 
 impl Scripts {
@@ -175,7 +184,7 @@ impl Scripts {
             .into_iter() // No parallel here for preserving order of scripts
             .for_each(|script| {
                 script
-                    .execute(luna)
+                    .execute(luna, self.updated_at, self.started_at)
                     .filter_map(|result| match result {
                         Ok(data) => Some(data),
                         Err(err) => {
@@ -191,71 +200,91 @@ impl Scripts {
     }
 }
 
-#[allow(clippy::blocks_in_if_conditions)]
-pub fn parse(path: &str) -> Result<Scripts, Errors> {
-    let mut scripts = vec![];
-    let mut pattern = String::new();
+#[derive(Debug, StructOpt)]
+pub struct ScriptCli {
+    pub path: String,
 
-    for (n, line) in std::fs::read_to_string(path)?.trim().lines().enumerate() {
-        if line.trim().starts_with("pattern") {
-            pattern = line
-                .split_once("=")
-                .map_or("".to_string(), |p| p.1.trim().to_string())
-        } else if line.trim().chars().next().map_or(false, |c| {
-            c.is_ascii_alphabetic() || '.' == c || '/' == c || '\\' == c
-        }) {
-            if pattern.is_empty() {
-                return Err(Box::new(Error::Pattern(
-                    "Where the fuck is the first pattern?".to_string(),
-                )));
-            }
+    #[structopt(long, short, help = "Days ago")]
+    pub updated_at: Option<i64>,
 
-            let field = if line.contains("${program}") {
-                Fields::Program
-            } else if line.contains("${domain}") {
-                Fields::Domain
-            } else if line.contains("${cidr}") {
-                Fields::Cidr
-            } else if line.contains("${sub}") {
-                Fields::Sub
-            } else if line.contains("${url}") {
-                Fields::Url
-            } else if line.contains("${ip}") {
-                Fields::IP
-            } else if line.contains("${port}") {
-                Fields::Service
-            } else if line.contains("${tech}") {
-                Fields::Tech
-            } else if line.contains("${keyword}") {
-                Fields::Keyword
-            } else {
-                // TODO check if ${invalid}
-                Fields::None
-            };
+    #[structopt(long, short, help = "Days ago")]
+    pub started_at: Option<i64>,
+}
 
-            if let Ok(regex) = regex::Regex::new(&pattern) {
-                if !regex_check(&regex) {
+impl ScriptCli {
+    #[allow(clippy::blocks_in_if_conditions)]
+    pub fn parse(&self) -> Result<Scripts, Errors> {
+        let mut scripts = vec![];
+        let mut pattern = String::new();
+
+        for (n, line) in std::fs::read_to_string(&self.path)?
+            .trim()
+            .lines()
+            .enumerate()
+        {
+            if line.trim().starts_with("pattern") {
+                pattern = line
+                    .split_once("=")
+                    .map_or("".to_string(), |p| p.1.trim().to_string())
+            } else if line.trim().chars().next().map_or(false, |c| {
+                c.is_ascii_alphabetic() || '.' == c || '/' == c || '\\' == c
+            }) {
+                if pattern.is_empty() {
                     return Err(Box::new(Error::Pattern(
-                        format!("line {} pattern \"{}\"  doesn't have necessery names \"program\", \"scope\", \"sub\", \"url\" or \"ip\""
-                            ,n,pattern),
+                        "Where the fuck is the first pattern?".to_string(),
                     )));
                 }
 
-                scripts.push(Script {
-                    regex,
-                    command: line.trim().to_string(),
-                    field,
-                })
-            } else {
-                error!("Fucking pattern: {}", pattern);
-                panic!("Fucking pattern: {}", pattern);
+                let field = if line.contains("${program}") {
+                    Fields::Program
+                } else if line.contains("${domain}") {
+                    Fields::Domain
+                } else if line.contains("${cidr}") {
+                    Fields::Cidr
+                } else if line.contains("${sub}") {
+                    Fields::Sub
+                } else if line.contains("${url}") {
+                    Fields::Url
+                } else if line.contains("${ip}") {
+                    Fields::IP
+                } else if line.contains("${port}") {
+                    Fields::Service
+                } else if line.contains("${tech}") {
+                    Fields::Tech
+                } else if line.contains("${keyword}") {
+                    Fields::Keyword
+                } else {
+                    // TODO check if ${invalid}
+                    Fields::None
+                };
+
+                if let Ok(regex) = regex::Regex::new(&pattern) {
+                    if !regex_check(&regex) {
+                        return Err(Box::new(Error::Pattern(
+                        format!("line {} pattern \"{}\"  doesn't have necessery names \"program\", \"scope\", \"sub\", \"url\" or \"ip\""
+                            ,n,pattern),
+                    )));
+                    }
+
+                    scripts.push(Script {
+                        regex,
+                        command: line.trim().to_string(),
+                        field,
+                    })
+                } else {
+                    error!("Fucking pattern: {}", pattern);
+                    panic!("Fucking pattern: {}", pattern);
+                }
             }
         }
+
+        Ok(Scripts {
+            scripts,
+            started_at: self.started_at,
+            updated_at: self.updated_at,
+        })
     }
-
-    Ok(Scripts { scripts })
 }
-
 fn regex_check(regex: &Regex) -> bool {
     let names: Vec<_> = regex.capture_names().flatten().collect();
 

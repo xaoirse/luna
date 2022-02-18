@@ -14,7 +14,7 @@ pub struct Service {
     #[structopt(long)]
     pub protocol: Option<String>,
 
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub banner: Option<String>,
 }
 

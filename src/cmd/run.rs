@@ -3,7 +3,7 @@ use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use structopt::StructOpt;
 
-use super::script;
+use super::script::ScriptCli;
 use crate::model::url::Url;
 use crate::model::*;
 
@@ -34,7 +34,7 @@ pub struct Opt {
 pub enum Cli {
     Insert(Box<Insert>),
     Find(Box<Filter>),
-    Script(Script),
+    Script(ScriptCli),
     Import { file: String },
     Check(Check),
     Luna(LunaStat),
@@ -198,11 +198,6 @@ pub struct InsertService {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct Script {
-    pub path: String,
-}
-
-#[derive(Debug, StructOpt)]
 pub enum Server {
     Start,
     Check,
@@ -277,9 +272,9 @@ pub fn run() {
         }
 
         Cli::Script(script) => {
-            debug!("{:#?}", script.path);
+            debug!("{:#?}", script);
 
-            match script::parse(&script.path) {
+            match script.parse() {
                 Ok(script) => {
                     script.run(&mut luna);
                     info!("Scripts Executed.");
@@ -315,8 +310,13 @@ pub fn run() {
             }
 
             if let Some(script) = check.script.as_ref() {
-                match script::parse(script) {
-                    Ok(_) => println!("{} Script: {}", "[+]".green(), script),
+                let script = ScriptCli {
+                    path: script.to_string(),
+                    updated_at: None,
+                    started_at: None,
+                };
+                match script.parse() {
+                    Ok(_) => println!("{} Script: {}", "[+]".green(), script.path),
                     Err(err) => println!("{} {}", "[-]".red(), err),
                 }
             } else {

@@ -11,16 +11,16 @@ use structopt::StructOpt;
 
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
 pub struct Scope {
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub asset: ScopeType,
 
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub bounty: Option<String>,
 
     #[structopt(long, case_insensitive = true)]
     pub severity: Option<String>,
 
-    #[structopt(short, long)]
+    #[structopt(long)]
     pub subs: Vec<Sub>,
 
     #[structopt(skip)]
