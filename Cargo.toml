@@ -1,6 +1,6 @@
 [package]
 name = "luna"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["SAoirse: github.com/XAoirse"]
 description = "A Recon Tool"
 readme = "README.md"

@@ -1,13 +1,10 @@
-## My automation tool
-[XAoirse](https://github.com/xaoirse)
 # Luna 
 (preparing for stable version)
 ### **Reconnaissance** tool, Powered by **Rust**, built with 🖤  
 
-
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.4.0
+  / / / / / / |/ / _ |  v0.5.0
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
@@ -34,7 +31,7 @@ See more keys and their definitions [here](https://doc.rust-lang.org/cargo/refer
 # Usage
 
 ```
-luna 0.4.0
+luna 0.5.0
 SA
 The moon rider has arived.
 
@@ -187,3 +184,4 @@ I want a standalone binary release from my code,
 - [x] Number of urls, subs and ... for each program stringify
 - [ ] Update_at updates every time!
 - [ ] Global search
+- [ ] Insert from file

@@ -326,11 +326,9 @@ pub fn run() {
                                 .services
                                 .retain(|t| !t.matches(&filter)),
                             Fields::Keyword => todo!(),
-                            Fields::None => warn!("what are you trying to delete?"),
-                            Fields::Luna => warn!("Stupid! Do you want to delete Luna?"),
+                            Fields::None => error!("what are you trying to delete?"),
+                            Fields::Luna => error!("Stupid! Do you want to delete Luna?"),
                         }
-
-                        info!("One item deleted");
 
                         if let Err(err) = luna.save(output) {
                             error!("Error while saving: {}", err);
@@ -338,9 +336,9 @@ pub fn run() {
                             info!("Saved in \"{}\" successfully.", output);
                         }
                     } else if len == 0 {
-                        error!("No item found!")
+                        warn!("No items found!")
                     } else {
-                        warn!("For security reasons you can't delete multi fields at once")
+                        error!("For security reasons you can't delete multi fields at once!")
                     }
                 }
                 Err(err) => error!("Use fucking correct patterns: {}", err),

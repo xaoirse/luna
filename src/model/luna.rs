@@ -697,9 +697,20 @@ impl From<Filter> for Luna {
 
         let hosts = if host_is_none {
             vec![]
+        } else if let Some(ip) = f.ip.take() {
+            if !ip.contains(',') {
+                vec![Host {
+                    ip,
+                    services,
+                    update: Some(Utc::now()),
+                    start: Some(Utc::now()),
+                }]
+            } else {
+                ip.split(',').map(|s| Host::from_str(s).unwrap()).collect()
+            }
         } else {
             vec![Host {
-                ip: f.ip.take().unwrap_or_default(),
+                ip: String::new(),
                 services,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
