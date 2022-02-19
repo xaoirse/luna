@@ -275,7 +275,60 @@ pub fn run() {
                 Ok(filter) => {
                     let len = luna.find(field, &filter).len();
                     if len == 1 {
-                        luna.programs.retain(|p| !p.matches(&filter));
+                        match field {
+                            Fields::Program => luna.programs.retain(|p| !p.matches(&filter)),
+                            Fields::Domain => luna
+                                .programs(&filter)
+                                .first_mut()
+                                .unwrap()
+                                .scopes
+                                .retain(|p| !p.matches(&filter)),
+                            Fields::Cidr => luna
+                                .programs(&filter)
+                                .first_mut()
+                                .unwrap()
+                                .scopes
+                                .retain(|p| !p.matches(&filter)),
+                            Fields::Sub => luna
+                                .scopes(&filter)
+                                .first_mut()
+                                .unwrap()
+                                .subs
+                                .retain(|s| !s.matches(&filter)),
+                            Fields::Url => luna
+                                .subs(&filter)
+                                .first_mut()
+                                .unwrap()
+                                .urls
+                                .retain(|s| !s.matches(&filter)),
+                            Fields::IP => luna
+                                .subs(&filter)
+                                .first_mut()
+                                .unwrap()
+                                .hosts
+                                .retain(|h| !h.matches(&filter)),
+                            Fields::Tag => luna
+                                .urls(&filter)
+                                .first_mut()
+                                .unwrap()
+                                .tags
+                                .retain(|t| !t.matches(&filter)),
+                            Fields::Tech => luna
+                                .urls(&filter)
+                                .first_mut()
+                                .unwrap()
+                                .techs
+                                .retain(|t| !t.matches(&filter)),
+                            Fields::Service => luna
+                                .hosts(&filter)
+                                .first_mut()
+                                .unwrap()
+                                .services
+                                .retain(|t| !t.matches(&filter)),
+                            Fields::Keyword => todo!(),
+                            Fields::None => warn!("what are you trying to delete?"),
+                            Fields::Luna => warn!("Stupid! Do you want to delete Luna?"),
+                        }
 
                         info!("One item deleted");
 

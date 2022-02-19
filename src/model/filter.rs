@@ -132,6 +132,7 @@ arg_enum! {
     pub enum Fields {
         None,
         Keyword,
+        Tag,
         Tech,
         Service,
         IP,
@@ -163,7 +164,8 @@ impl From<&Fields> for &str {
             Fields::Keyword => "keyword",
             Fields::Service => "port",
             Fields::None => "",
-            Fields::Tech => todo!(),
+            Fields::Tag => "tag",
+            Fields::Tech => "tech",
         }
     }
 }

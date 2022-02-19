@@ -93,6 +93,7 @@ impl Data {
                     Fields::IP => luna.ip = input,
                     Fields::Service => luna.port = input,
                     Fields::Tech => luna.tech = input,
+                    Fields::Tag => luna.tag = input,
                     Fields::Keyword => (),
                     Fields::None => (),
                 }
@@ -242,6 +243,8 @@ impl ScriptCli {
                     Fields::Service
                 } else if line.contains("${tech}") {
                     Fields::Tech
+                } else if line.contains("${tag}") {
+                    Fields::Tag
                 } else if line.contains("${keyword}") {
                     Fields::Keyword
                 } else {

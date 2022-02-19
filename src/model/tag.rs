@@ -48,10 +48,10 @@ impl Tag {
     pub fn matches(&self, filter: &FilterRegex) -> bool {
         self.name.contains_opt(&filter.tag)
             && self.severity.contains_opt(&filter.tag_severity)
-            && self
-                .values
-                .iter()
-                .any(|v| v.contains_opt(&filter.tag_value))
+            && filter
+                .tag_value
+                .as_ref()
+                .map_or(true, |tv| self.values.iter().any(|v| tv.is_match(v)))
     }
 
     pub fn stringify(&self, v: u8) -> String {

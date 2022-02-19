@@ -105,15 +105,104 @@ impl Luna {
                 .filter(|h| h.matches(filter))
                 .map(|h| h.stringify(filter.verbose))
                 .collect(),
-            Fields::None => vec!["".to_string()],
-            Fields::Service => todo!(),
-            Fields::Tech => todo!(),
+            Fields::Service => self
+                .programs
+                .par_iter()
+                .filter(|p| p.matches(filter))
+                .flat_map(|p| &p.scopes)
+                .filter(|s| s.matches(filter))
+                .flat_map(|s| &s.subs)
+                .filter(|s| s.matches(filter))
+                .flat_map(|s| &s.hosts)
+                .filter(|h| h.matches(filter))
+                .flat_map(|h| &h.services)
+                .filter(|s| s.matches(filter))
+                .map(|s| s.stringify(filter.verbose))
+                .collect(),
+            Fields::Tech => self
+                .programs
+                .par_iter()
+                .filter(|p| p.matches(filter))
+                .flat_map(|p| &p.scopes)
+                .filter(|s| s.matches(filter))
+                .flat_map(|s| &s.subs)
+                .filter(|s| s.matches(filter))
+                .flat_map(|s| &s.urls)
+                .filter(|u| u.matches(filter))
+                .flat_map(|u| &u.techs)
+                .filter(|t| t.matches(filter))
+                .map(|t| t.stringify(filter.verbose))
+                .collect(),
+            Fields::Tag => self
+                .programs
+                .par_iter()
+                .filter(|p| p.matches(filter))
+                .flat_map(|p| &p.scopes)
+                .filter(|s| s.matches(filter))
+                .flat_map(|s| &s.subs)
+                .filter(|s| s.matches(filter))
+                .flat_map(|s| &s.urls)
+                .filter(|u| u.matches(filter))
+                .flat_map(|u| &u.tags)
+                .filter(|t| t.matches(filter))
+                .map(|t| t.stringify(filter.verbose))
+                .collect(),
             Fields::Keyword => todo!(),
+            Fields::None => vec!["".to_string()],
         }
     }
-    // pub fn find_all(&self, field: Fields, filter: &FilterRegex) -> Vec<String> {
-    //     self.find(&FilterRegex { field, ..filter })
-    // }
+
+    pub fn programs(&mut self, filter: &FilterRegex) -> Vec<&mut Program> {
+        self.programs
+            .par_iter_mut()
+            .filter(|p| p.matches(filter))
+            .collect()
+    }
+
+    pub fn scopes(&mut self, filter: &FilterRegex) -> Vec<&mut Scope> {
+        self.programs
+            .par_iter_mut()
+            .filter(|p| p.matches(filter))
+            .flat_map(|p| &mut p.scopes)
+            .filter(|s| s.matches(filter))
+            .collect()
+    }
+    pub fn subs(&mut self, filter: &FilterRegex) -> Vec<&mut Sub> {
+        self.programs
+            .par_iter_mut()
+            .filter(|p| p.matches(filter))
+            .flat_map(|p| &mut p.scopes)
+            .filter(|s| s.matches(filter))
+            .flat_map(|s| &mut s.subs)
+            .filter(|s| s.matches(filter))
+            .collect()
+    }
+
+    pub fn urls(&mut self, filter: &FilterRegex) -> Vec<&mut Url> {
+        self.programs
+            .par_iter_mut()
+            .filter(|p| p.matches(filter))
+            .flat_map(|p| &mut p.scopes)
+            .filter(|s| s.matches(filter))
+            .flat_map(|s| &mut s.subs)
+            .filter(|s| s.matches(filter))
+            .flat_map(|s| &mut s.urls)
+            .filter(|u| u.matches(filter))
+            .collect()
+    }
+
+    pub fn hosts(&mut self, filter: &FilterRegex) -> Vec<&mut Host> {
+        self.programs
+            .par_iter_mut()
+            .filter(|p| p.matches(filter))
+            .flat_map(|p| &mut p.scopes)
+            .filter(|s| s.matches(filter))
+            .flat_map(|s| &mut s.subs)
+            .filter(|s| s.matches(filter))
+            .flat_map(|s| &mut s.hosts)
+            .filter(|h| h.matches(filter))
+            .collect()
+    }
 
     pub fn save(&self, path: &str) -> Result<usize, Errors> {
         let str = serde_json::to_string(&self)?;
@@ -157,6 +246,9 @@ impl Luna {
     Subs: {}
     IPs: {}
     URLs: {}
+    Services: {}
+    Techs: {}
+    Tags: {}
     Update: {}
     Start: {}
     ",
@@ -170,6 +262,9 @@ impl Luna {
                 self.find(Fields::Sub, &FilterRegex::default()).len(),
                 self.find(Fields::IP, &FilterRegex::default()).len(),
                 self.find(Fields::Url, &FilterRegex::default()).len(),
+                self.find(Fields::Service, &FilterRegex::default()).len(),
+                self.find(Fields::Tech, &FilterRegex::default()).len(),
+                self.find(Fields::Tag, &FilterRegex::default()).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -187,6 +282,9 @@ impl Luna {
     Subs: {}
     IPs: {}
     URLs: {}
+    Services: {}
+    Techs: {}
+    Tags: {}
     Update: {}
     Start: {}
     ",
@@ -210,6 +308,9 @@ impl Luna {
                 self.find(Fields::Sub, &FilterRegex::default()).len(),
                 self.find(Fields::IP, &FilterRegex::default()).len(),
                 self.find(Fields::Url, &FilterRegex::default()).len(),
+                self.find(Fields::Service, &FilterRegex::default()).len(),
+                self.find(Fields::Tech, &FilterRegex::default()).len(),
+                self.find(Fields::Tag, &FilterRegex::default()).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
