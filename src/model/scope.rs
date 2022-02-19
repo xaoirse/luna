@@ -36,6 +36,12 @@ pub enum ScopeType {
     Cidr(String),
     Empty,
 }
+
+impl Default for ScopeType {
+    fn default() -> Self {
+        Self::Empty
+    }
+}
 impl Display for ScopeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -72,6 +78,10 @@ impl EqExt for ScopeType {
 impl Dedup for Scope {
     fn same_bucket(b: &mut Self, a: &mut Self) {
         let new = a.update < b.update;
+
+        if a.asset == ScopeType::Empty {
+            a.asset = std::mem::take(&mut b.asset);
+        }
 
         merge(&mut a.bounty, &mut b.bounty, new);
         merge(&mut a.severity, &mut b.severity, new);

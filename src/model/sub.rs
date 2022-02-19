@@ -12,7 +12,7 @@ pub struct Sub {
     #[structopt(long)]
     pub asset: String,
 
-    #[structopt(long, case_insensitive = true)]
+    #[structopt(long = "type", case_insensitive = true)]
     pub typ: Option<String>,
 
     #[structopt(long)]
@@ -33,6 +33,10 @@ pub struct Sub {
 impl Dedup for Sub {
     fn same_bucket(b: &mut Self, a: &mut Self) {
         let new = a.update < b.update;
+
+        if a.asset.is_empty() {
+            a.asset = std::mem::take(&mut b.asset);
+        }
 
         merge(&mut a.typ, &mut b.typ, new);
 

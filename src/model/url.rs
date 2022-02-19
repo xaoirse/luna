@@ -37,6 +37,10 @@ impl Dedup for Url {
     fn same_bucket(b: &mut Self, a: &mut Self) {
         let new = a.update < b.update;
 
+        if a.url.is_empty() {
+            a.url = std::mem::take(&mut b.url);
+        }
+
         merge(&mut a.title, &mut b.title, new);
         merge(&mut a.status_code, &mut b.status_code, new);
         merge(&mut a.response, &mut b.response, new);

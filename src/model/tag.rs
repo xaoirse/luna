@@ -27,6 +27,10 @@ impl Dedup for Tag {
     fn same_bucket(b: &mut Self, a: &mut Self) {
         let new = a.update < b.update;
 
+        if a.name.is_empty() {
+            a.name = std::mem::take(&mut b.name);
+        }
+
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 

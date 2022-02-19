@@ -267,7 +267,7 @@ pub fn run() {
                     results.dedup();
                     results.iter().take(find.n).for_each(|r| println!("{}", r));
                 }
-                Err(err) => error!("Use fucking right patterns: {}", err),
+                Err(err) => error!("Use fucking correct patterns: {}", err),
             }
         }
 

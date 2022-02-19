@@ -19,7 +19,7 @@ pub struct Program {
     #[structopt(long)]
     pub handle: Option<String>,
 
-    #[structopt(long)]
+    #[structopt(long = "type", case_insensitive = true)]
     pub typ: Option<String>,
 
     #[structopt(long)]
@@ -49,6 +49,10 @@ pub struct Program {
 impl Dedup for Program {
     fn same_bucket(b: &mut Self, a: &mut Self) {
         let new = a.update < b.update;
+
+        if a.name.is_empty() {
+            a.name = std::mem::take(&mut b.name);
+        }
 
         merge(&mut a.platform, &mut b.platform, new);
         merge(&mut a.handle, &mut b.handle, new);

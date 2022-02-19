@@ -20,6 +20,10 @@ pub struct Service {
 
 impl Dedup for Service {
     fn same_bucket(b: &mut Self, a: &mut Self) {
+        if a.port.is_empty() {
+            a.port = std::mem::take(&mut b.port);
+        }
+
         merge(&mut a.name, &mut b.name, true);
         merge(&mut a.protocol, &mut b.protocol, true);
         merge(&mut a.banner, &mut b.banner, true);

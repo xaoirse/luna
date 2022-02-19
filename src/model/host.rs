@@ -23,6 +23,10 @@ pub struct Host {
 
 impl Dedup for Host {
     fn same_bucket(b: &mut Self, a: &mut Self) {
+        if a.ip.is_empty() {
+            a.ip = std::mem::take(&mut b.ip);
+        }
+
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 
