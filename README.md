@@ -161,6 +161,7 @@ I want a standalone binary release from my code,
 - ...
 
 ## In Progress
+- Enhanece Performance
 - Tests
 - Comments
 
@@ -173,7 +174,7 @@ I want a standalone binary release from my code,
 - [ ] Update and delete mechanism  
 - [x] Limit for parallel requests to prevent rate limit  
 - [ ] Worldlist
-- [ ] Custom inputs for script
+- [x] Custom inputs for script
 - [ ] Request body for Url
 - [ ] Regex test tool (subcommand)
 - [ ] Reduce release size
@@ -182,8 +183,6 @@ I want a standalone binary release from my code,
 - [ ] Remove all clones  
 - [x] No-backup flag
 - [x] Label or tag for vulnerabilities   
-(how to add and remove)(vec of Strings)  
-How got this regex `"[a-z]+ (?P<tag>\[[a-z]+\]){1,3}"` for `"url [crit][a][b]"` to captures a and b individually?
 - [x] Import file
 - [ ] Number of urls, subs and ... for each program stringify
 - [ ] Update_at updates every time!

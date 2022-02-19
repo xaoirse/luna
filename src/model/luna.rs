@@ -40,8 +40,9 @@ impl Luna {
         dedup(&mut self.programs);
     }
 
-    pub fn find(&self, filter: &FilterRegex) -> Vec<String> {
-        match filter.field {
+    pub fn find(&self, field: Fields, filter: &FilterRegex) -> Vec<String> {
+        match field {
+            Fields::Luna => vec![self.stringify(filter.verbose)],
             Fields::Program => self
                 .programs
                 .par_iter()
@@ -116,19 +117,9 @@ impl Luna {
             Fields::Keyword => todo!(),
         }
     }
-    pub fn find_all(
-        &self,
-        field: Fields,
-        updated_at: Option<i64>,
-        started_at: Option<i64>,
-    ) -> Vec<String> {
-        self.find(&FilterRegex {
-            field,
-            updated_at,
-            started_at,
-            ..Default::default()
-        })
-    }
+    // pub fn find_all(&self, field: Fields, filter: &FilterRegex) -> Vec<String> {
+    //     self.find(&FilterRegex { field, ..filter })
+    // }
 
     pub fn save(&self, path: &str) -> Result<usize, Errors> {
         let str = serde_json::to_string(&self)?;
@@ -180,11 +171,11 @@ impl Luna {
                 self.status,
                 self.counter,
                 self.programs.iter().filter(|p| !p.name.is_empty()).count(),
-                self.find_all(Fields::Domain, None, None).len(),
-                self.find_all(Fields::Cidr, None, None).len(),
-                self.find_all(Fields::Sub, None, None).len(),
-                self.find_all(Fields::IP, None, None).len(),
-                self.find_all(Fields::Url, None, None).len(),
+                self.find(Fields::Domain, &FilterRegex::default()).len(),
+                self.find(Fields::Cidr, &FilterRegex::default()).len(),
+                self.find(Fields::Sub, &FilterRegex::default()).len(),
+                self.find(Fields::IP, &FilterRegex::default()).len(),
+                self.find(Fields::Url, &FilterRegex::default()).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -220,11 +211,11 @@ impl Luna {
                 } else {
                     "\n    ]"
                 },
-                self.find_all(Fields::Domain, None, None).len(),
-                self.find_all(Fields::Cidr, None, None).len(),
-                self.find_all(Fields::Sub, None, None).len(),
-                self.find_all(Fields::IP, None, None).len(),
-                self.find_all(Fields::Url, None, None).len(),
+                self.find(Fields::Domain, &FilterRegex::default()).len(),
+                self.find(Fields::Cidr, &FilterRegex::default()).len(),
+                self.find(Fields::Sub, &FilterRegex::default()).len(),
+                self.find(Fields::IP, &FilterRegex::default()).len(),
+                self.find(Fields::Url, &FilterRegex::default()).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),

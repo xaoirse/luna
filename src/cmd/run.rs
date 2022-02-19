@@ -33,14 +33,23 @@ pub struct Opt {
 #[derive(Debug, StructOpt)]
 pub enum Cli {
     Insert(Box<Insert>),
-    Find(Box<Filter>),
-    Script(ScriptCli),
+    Find(Box<FindCli>),
+    Script(Box<ScriptCli>),
     Import { file: String },
     Check(Check),
-    Luna(LunaStat),
+    Stat(LunaStat),
     Test,
     Report,
     Server(Server),
+}
+
+#[derive(Debug, StructOpt)]
+pub struct FindCli {
+    #[structopt(possible_values = &Fields::variants(), case_insensitive = true, help="Case Insensitive")]
+    pub field: Fields,
+
+    #[structopt(flatten)]
+    pub filter: Filter,
 }
 
 #[derive(Debug, StructOpt)]
@@ -259,10 +268,10 @@ pub fn run() {
 
         Cli::Find(find) => {
             debug!("{:#?}", find);
-
-            match (*find).try_into() {
+            let field = find.field;
+            match find.filter.try_into() {
                 Ok(find) => {
-                    let mut results = luna.find(&find);
+                    let mut results = luna.find(field, &find);
                     results.par_sort();
                     results.dedup();
                     results.iter().take(find.n).for_each(|r| println!("{}", r));
@@ -309,21 +318,20 @@ pub fn run() {
                 Err(_) => println!("{} ", "[-]".red()),
             }
 
-            if let Some(script) = check.script.as_ref() {
+            if let Some(script_path) = check.script.as_ref() {
                 let script = ScriptCli {
-                    path: script.to_string(),
-                    updated_at: None,
-                    started_at: None,
+                    path: script_path.to_string(),
+                    filter: Filter::default(),
                 };
                 match script.parse() {
-                    Ok(_) => println!("{} Script: {}", "[+]".green(), script.path),
+                    Ok(_) => println!("{} Script: {}", "[+]".green(), script_path),
                     Err(err) => println!("{} {}", "[-]".red(), err),
                 }
             } else {
                 println!("[ ] No script file detected!")
             }
         }
-        Cli::Luna(s) => println!("{}", luna.stringify(s.verbose)),
+        Cli::Stat(s) => println!("{}", luna.stringify(s.verbose + 2)),
         Cli::Test => todo!(),
         Cli::Report => todo!(),
         Cli::Server(_) => todo!(),

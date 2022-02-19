@@ -1,4 +1,4 @@
-use crate::model::{Errors, Fields, Filter, Luna};
+use crate::model::{Errors, Fields, Filter, FilterRegex, Luna};
 use log::{debug, error, warn};
 use rayon::prelude::*;
 use rayon::{iter::Map, vec::IntoIter};
@@ -41,7 +41,6 @@ impl Data {
                 let get = |key| caps.name(key).map(|v| v.as_str().to_string());
 
                 let mut luna = Filter {
-                    field: self.field,
                     verbose: 0,
                     n: None,
 
@@ -85,6 +84,7 @@ impl Data {
                 };
                 let input = Some(self.input.clone());
                 match self.field {
+                    Fields::Luna => (),
                     Fields::Program => luna.program = input,
                     Fields::Domain => luna.scope = input,
                     Fields::Cidr => luna.scope = input,
@@ -93,7 +93,7 @@ impl Data {
                     Fields::IP => luna.ip = input,
                     Fields::Service => luna.port = input,
                     Fields::Tech => luna.tech = input,
-                    Fields::Keyword => todo!(),
+                    Fields::Keyword => (),
                     Fields::None => (),
                 }
                 debug!("{:#?}", luna);
@@ -149,33 +149,27 @@ impl Script {
     fn execute<'a>(
         &'a self,
         luna: &Luna,
-        updated_at: Option<i64>,
-        started_at: Option<i64>,
+        filter: &FilterRegex,
     ) -> Map<IntoIter<String>, impl Fn(String) -> Result<Data, Errors> + 'a> {
-        luna.find_all(self.field, updated_at, started_at)
-            .into_par_iter()
-            .map(|input| {
-                let cmd = self.command.replace(&self.field.substitution(), &input);
-                debug!("Command: {}", cmd);
-                let output =
-                    String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
-                debug!("Output: {}", &output);
-                Ok(Data {
-                    input,
-                    field: self.field,
-                    output,
-                })
+        luna.find(self.field, filter).into_par_iter().map(|input| {
+            let cmd = self.command.replace(&self.field.substitution(), &input);
+            debug!("Command: {}", cmd);
+            let output = String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
+            debug!("Output: {}", &output);
+            Ok(Data {
+                input,
+                field: self.field,
+                output,
             })
+        })
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Scripts {
     pub scripts: Vec<Script>,
 
-    pub updated_at: Option<i64>,
-
-    pub started_at: Option<i64>,
+    pub filter: FilterRegex,
 }
 
 impl Scripts {
@@ -184,7 +178,7 @@ impl Scripts {
             .into_iter() // No parallel here for preserving order of scripts
             .for_each(|script| {
                 script
-                    .execute(luna, self.updated_at, self.started_at)
+                    .execute(luna, &self.filter)
                     .filter_map(|result| match result {
                         Ok(data) => Some(data),
                         Err(err) => {
@@ -204,16 +198,13 @@ impl Scripts {
 pub struct ScriptCli {
     pub path: String,
 
-    #[structopt(long, short, help = "Days ago")]
-    pub updated_at: Option<i64>,
-
-    #[structopt(long, short, help = "Days ago")]
-    pub started_at: Option<i64>,
+    #[structopt(flatten)]
+    pub filter: Filter,
 }
 
 impl ScriptCli {
     #[allow(clippy::blocks_in_if_conditions)]
-    pub fn parse(&self) -> Result<Scripts, Errors> {
+    pub fn parse(self) -> Result<Scripts, Errors> {
         let mut scripts = vec![];
         let mut pattern = String::new();
 
@@ -278,11 +269,8 @@ impl ScriptCli {
             }
         }
 
-        Ok(Scripts {
-            scripts,
-            started_at: self.started_at,
-            updated_at: self.updated_at,
-        })
+        let filter: FilterRegex = self.filter.try_into()?;
+        Ok(Scripts { scripts, filter })
     }
 }
 fn regex_check(regex: &Regex) -> bool {

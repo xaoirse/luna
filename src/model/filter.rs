@@ -5,8 +5,6 @@ use super::*;
 
 #[derive(Debug, StructOpt, Default)]
 pub struct Filter {
-    #[structopt(possible_values = &Fields::variants(), case_insensitive = true, help="Case Insensitive")]
-    pub field: Fields,
     #[structopt(short, long, parse(from_occurrences))]
     pub verbose: u8,
     #[structopt(short, help = "Number of Results")]
@@ -142,6 +140,7 @@ arg_enum! {
         Cidr,
         Domain,
         Program,
+        Luna,
     }
 }
 
@@ -154,6 +153,7 @@ impl Default for Fields {
 impl From<&Fields> for &str {
     fn from(f: &Fields) -> Self {
         match f {
+            Fields::Luna => "luna",
             Fields::Program => "program",
             Fields::Domain => "domain",
             Fields::Cidr => "cidr",
@@ -175,9 +175,8 @@ impl Fields {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct FilterRegex {
-    pub field: Fields,
     pub verbose: u8,
     pub n: usize,
 
@@ -220,6 +219,7 @@ pub struct FilterRegex {
     pub started_at: Option<i64>,
 }
 
+#[derive(Debug)]
 pub enum IpCidr {
     Ip(std::net::IpAddr),
     Cidr(cidr::IpCidr),
@@ -386,7 +386,6 @@ impl TryFrom<Filter> for FilterRegex {
         };
 
         Ok(Self {
-            field: f.field,
             verbose: f.verbose,
             n: f.n.unwrap_or(std::usize::MAX),
 
