@@ -33,6 +33,7 @@ pub struct Opt {
 #[derive(Debug, StructOpt)]
 pub enum Cli {
     Insert(Box<Insert>),
+    Remove(Box<FindCli>),
     Find(Box<FindCli>),
     Script(Box<ScriptCli>),
     Import { file: String },
@@ -263,6 +264,33 @@ pub fn run() {
                 error!("Error while saving: {}", err);
             } else {
                 info!("Saved in \"{}\" successfully.", output);
+            }
+        }
+
+        Cli::Remove(find) => {
+            debug!("{:#?}", find);
+            let field = find.field;
+
+            match find.filter.clone().try_into() {
+                Ok(filter) => {
+                    let len = luna.find(field, &filter).len();
+                    if len == 1 {
+                        luna.programs.retain(|p| !p.matches(&filter));
+
+                        info!("One item deleted");
+
+                        if let Err(err) = luna.save(output) {
+                            error!("Error while saving: {}", err);
+                        } else {
+                            info!("Saved in \"{}\" successfully.", output);
+                        }
+                    } else if len == 0 {
+                        error!("No item found!")
+                    } else {
+                        warn!("For security reasons you can't delete multi fields at once")
+                    }
+                }
+                Err(err) => error!("Use fucking correct patterns: {}", err),
             }
         }
 

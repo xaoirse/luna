@@ -3,7 +3,7 @@ use structopt::StructOpt;
 
 use super::*;
 
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, StructOpt, Default, Clone)]
 pub struct Filter {
     #[structopt(short, long, parse(from_occurrences))]
     pub verbose: u8,

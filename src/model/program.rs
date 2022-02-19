@@ -101,6 +101,9 @@ impl Program {
     icon: {}
     state: {}
     scopes: {}
+    subs: {}
+    urls: {}
+    hosts: {}
     update: {}
     start: {}
     ",
@@ -115,6 +118,17 @@ impl Program {
                 self.scopes
                     .iter()
                     .filter(|p| p.asset != ScopeType::Empty)
+                    .count(),
+                self.scopes.iter().flat_map(|s| &s.subs).count(),
+                self.scopes
+                    .iter()
+                    .flat_map(|s| &s.subs)
+                    .flat_map(|s| &s.urls)
+                    .count(),
+                self.scopes
+                    .iter()
+                    .flat_map(|s| &s.subs)
+                    .flat_map(|s| &s.hosts)
                     .count(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
@@ -132,6 +146,9 @@ impl Program {
     icon: {}
     state: {}
     scopes: [{}{}
+    subs: {}
+    urls: {}
+    hosts: {}
     update: {}
     start: {}
     ",
@@ -160,6 +177,17 @@ impl Program {
                 } else {
                     "\n    ]"
                 },
+                self.scopes.iter().flat_map(|s| &s.subs).count(),
+                self.scopes
+                    .iter()
+                    .flat_map(|s| &s.subs)
+                    .flat_map(|s| &s.urls)
+                    .count(),
+                self.scopes
+                    .iter()
+                    .flat_map(|s| &s.subs)
+                    .flat_map(|s| &s.hosts)
+                    .count(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),

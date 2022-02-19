@@ -116,6 +116,8 @@ impl Scope {
     bounty: {}
     severity: {}
     subs: {}
+    urls: {}
+    hosts: {}
     update: {}
     start: {}
     ",
@@ -123,6 +125,8 @@ impl Scope {
                 self.bounty.as_ref().map_or("", |s| s),
                 self.severity.as_ref().map_or("", |s| s),
                 self.subs.iter().filter(|p| !p.asset.is_empty()).count(),
+                self.subs.iter().flat_map(|s| &s.urls).count(),
+                self.subs.iter().flat_map(|s| &s.hosts).count(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -135,6 +139,8 @@ impl Scope {
     bounty: {},
     severity: {}
     subs: [{}{}
+    urls: {}
+    hosts: {}
     update: {}
     start: {}
     ",
@@ -152,6 +158,8 @@ impl Scope {
                 } else {
                     "\n    ]"
                 },
+                self.subs.iter().flat_map(|s| &s.urls).count(),
+                self.subs.iter().flat_map(|s| &s.hosts).count(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),

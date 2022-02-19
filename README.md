@@ -57,11 +57,11 @@ SUBCOMMANDS:
     find      
     help      Prints this message or the help of the given subcommand(s)
     import    
-    insert    
-    luna      
+    insert          
     report    
     script    
     server    
+    stat
     test      
 ```
 ## Features
@@ -171,7 +171,7 @@ I want a standalone binary release from my code,
 - [ ] Report system  
 - [ ] Script validateor  
 - [ ] Cache system  
-- [ ] Update and delete mechanism  
+- [x] Update and delete mechanism  
 - [x] Limit for parallel requests to prevent rate limit  
 - [ ] Worldlist
 - [x] Custom inputs for script
@@ -184,6 +184,6 @@ I want a standalone binary release from my code,
 - [x] No-backup flag
 - [x] Label or tag for vulnerabilities   
 - [x] Import file
-- [ ] Number of urls, subs and ... for each program stringify
+- [x] Number of urls, subs and ... for each program stringify
 - [ ] Update_at updates every time!
 - [ ] Global search
