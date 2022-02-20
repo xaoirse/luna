@@ -692,6 +692,8 @@ impl From<Filter> for Luna {
                 name: f.service_name.take(),
                 banner: f.service_banner.take(),
                 protocol: f.service_protocol.take(),
+                update: Some(Utc::now()),
+                start: Some(Utc::now()),
             }]
         };
 

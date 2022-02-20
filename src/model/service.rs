@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use structopt::StructOpt;
 
-#[derive(Default, Debug, Serialize, Deserialize, StructOpt, Clone)]
+#[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
 pub struct Service {
     #[structopt(long)]
     pub port: String,
@@ -16,17 +16,30 @@ pub struct Service {
 
     #[structopt(long)]
     pub banner: Option<String>,
+
+    #[structopt(skip)]
+    #[serde(with = "utc_rfc2822")]
+    pub update: Option<DateTime<Utc>>,
+
+    #[structopt(skip)]
+    #[serde(with = "utc_rfc2822")]
+    pub start: Option<DateTime<Utc>>,
 }
 
 impl Dedup for Service {
     fn same_bucket(b: &mut Self, a: &mut Self) {
+        let new = a.update < b.update;
+
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
+
         if a.port.is_empty() {
             a.port = std::mem::take(&mut b.port);
         }
 
-        merge(&mut a.name, &mut b.name, true);
-        merge(&mut a.protocol, &mut b.protocol, true);
-        merge(&mut a.banner, &mut b.banner, true);
+        merge(&mut a.name, &mut b.name, new);
+        merge(&mut a.protocol, &mut b.protocol, new);
+        merge(&mut a.banner, &mut b.banner, new);
     }
     fn dedup(&mut self) {}
 }
@@ -44,19 +57,39 @@ impl Service {
             0 => self.port.clone(),
             1 => format!(
                 "{} - {}
-    protocol: {}
-    banner: {}
+    Protocol: {}
+    Banner: {}
+    Update: {}
+    Start: {}
     ",
                 self.port,
                 self.name.as_ref().map_or("", |s| s),
                 self.protocol.as_ref().map_or("", |s| s),
                 self.banner.as_ref().map_or("", |s| s),
+                self.update.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
+                self.start.map_or("".to_string(), |s| s
+                    .with_timezone(&chrono::Local::now().timezone())
+                    .to_rfc2822()),
             ),
             _ => format!("{:#?}", self),
         }
     }
 }
 
+impl Default for Service {
+    fn default() -> Self {
+        Self {
+            port: String::new(),
+            name: None,
+            protocol: None,
+            banner: None,
+            update: Some(Utc::now()),
+            start: Some(Utc::now()),
+        }
+    }
+}
 impl std::str::FromStr for Service {
     type Err = std::str::Utf8Error;
 
