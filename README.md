@@ -20,8 +20,8 @@ Luna can run any bunch of bash scripts in **Parallel**, collect results, save th
 ### Linux portable binary:
 For building statically linked rust binary [read this link](https://blog.davidvassallo.me/2021/06/10/lessons-learned-building-statically-linked-rust-binaries-openssl/) and [here](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes)
 
-`RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-s' cargo build --target x86_64-unknown-linux-musl --release`
-
+minimum size:  
+`RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-s -C panic=abort -C opt-level=z' cargo build --target x86_64-unknown-linux-musl --release`
 
 `-s`, `--strip-all` Omit all symbol information from the output file.
 

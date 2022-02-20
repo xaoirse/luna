@@ -178,7 +178,7 @@ impl Scripts {
         self.scripts
             .into_iter() // No parallel here for preserving order of scripts
             .for_each(|script| {
-                script
+                let mut l = script
                     .execute(luna, &self.filter)
                     .filter_map(|result| match result {
                         Ok(data) => Some(data),
@@ -190,7 +190,12 @@ impl Scripts {
                     .flat_map(|data| data.parse(&script.regex))
                     .collect::<Vec<Luna>>() // This should run parallel here
                     .into_iter()
-                    .for_each(|l| luna.append(l));
+                    .fold(Luna::default(), |mut init, l| {
+                        init.append(l);
+                        init
+                    });
+                l.dedup();
+                luna.append(l);
                 luna.dedup();
             });
     }
