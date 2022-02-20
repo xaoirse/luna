@@ -190,7 +190,8 @@ impl Scripts {
                     .flat_map(|data| data.parse(&script.regex))
                     .collect::<Vec<Luna>>() // This should run parallel here
                     .into_iter()
-                    .for_each(|l| luna.append(l))
+                    .for_each(|l| luna.append(l));
+                luna.dedup();
             });
     }
 }
