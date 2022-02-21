@@ -66,10 +66,9 @@ impl Dedup for Program {
         a.start = a.start.min(b.start);
 
         a.scopes.append(&mut b.scopes);
-        a.dedup();
     }
-    fn dedup(&mut self) {
-        dedup(&mut self.scopes);
+    fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.scopes, term);
     }
 }
 

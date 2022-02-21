@@ -1,3 +1,6 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
 use rayon::prelude::*;
 
 pub mod filter;
@@ -65,17 +68,21 @@ fn merge<T>(a: &mut Option<T>, b: &mut Option<T>, new: bool) {
     *a = b.take();
 }
 
-pub fn dedup<T>(v: &mut Vec<T>)
+pub fn dedup<T>(v: &mut Vec<T>, term: Arc<AtomicBool>)
 where
     T: PartialEq + Dedup,
 {
+    if term.load(Ordering::Relaxed) {
+        return;
+    }
+
     let mut i = v.len();
 
     if i == 0 {
         return;
     }
     if i == 1 {
-        v[0].dedup();
+        v[0].dedup(term);
         return;
     }
 
@@ -85,16 +92,17 @@ where
         if let Some(x) = v[0..i].iter().position(|x| x == &v[i]) {
             let (a, b) = v.split_at_mut(i);
             T::same_bucket(&mut b[0], &mut a[x]);
+            v[x].dedup(term.clone());
             v.remove(i);
         } else {
-            v[i].dedup();
+            v[i].dedup(term.clone());
         }
     }
 }
 
 pub trait Dedup {
     fn same_bucket(b: &mut Self, a: &mut Self);
-    fn dedup(&mut self);
+    fn dedup(&mut self, term: Arc<AtomicBool>);
 }
 
 #[cfg(test)]

@@ -37,9 +37,8 @@ impl Dedup for Tag {
         merge(&mut a.severity, &mut b.severity, new);
 
         a.values.append(&mut b.values);
-        a.dedup();
     }
-    fn dedup(&mut self) {
+    fn dedup(&mut self, _term: Arc<AtomicBool>) {
         self.values.dedup();
     }
 }

@@ -1,6 +1,8 @@
 use colored::Colorize;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use structopt::StructOpt;
 
 use super::script::ScriptCli;
@@ -223,6 +225,15 @@ static BANNER: &str = r"
 ";
 
 pub fn run() {
+    let term = Arc::new(AtomicBool::new(false));
+    match signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&term)) {
+        Ok(s) => info!("Luna has Graceful shutdown :) , SigId: {:#?}", s),
+        Err(err) => {
+            error!("Error in making signal-hook : {}", err);
+            warn!("Luna will continue without Graceful shutdown");
+        }
+    }
+
     debug!("Running...");
 
     let opt = Opt::from_args();
@@ -232,25 +243,10 @@ pub fn run() {
         .build_global()
         .unwrap();
 
-    let input = &opt.input;
-    let output = opt.output.as_ref().unwrap_or(input);
     if !opt.quiet {
         println!("{}", BANNER.cyan().bold());
     }
-    let mut luna = match Luna::from_file(input) {
-        Ok(luna) => {
-            info!("Luna loaded successfully.");
-            luna
-        }
-        Err(err) => {
-            if err.to_string() == "No such file or directory (os error 2)" {
-                warn!("Can't load Luna from file! New filw will be generated.")
-            } else {
-                error!("Can't load Luna from file!: {}", err);
-            }
-            Luna::default()
-        }
-    };
+    let mut luna = Luna::from_args();
 
     match opt.cli {
         Cli::Insert(insert) => {
@@ -258,13 +254,8 @@ pub fn run() {
 
             let insert: Luna = (*insert).into();
             luna.append(insert);
-            luna.dedup();
-
-            if let Err(err) = luna.save(output) {
-                error!("Error while saving: {}", err);
-            } else {
-                info!("Saved in \"{}\" successfully.", output);
-            }
+            luna.dedup(term);
+            luna.save();
         }
 
         Cli::Remove(find) => {
@@ -273,72 +264,8 @@ pub fn run() {
 
             match find.filter.clone().try_into() {
                 Ok(filter) => {
-                    let len = luna.find(field, &filter).len();
-                    if len == 1 {
-                        match field {
-                            Fields::Program => luna.programs.retain(|p| !p.matches(&filter)),
-                            Fields::Domain => luna
-                                .programs(&filter)
-                                .first_mut()
-                                .unwrap()
-                                .scopes
-                                .retain(|p| !p.matches(&filter)),
-                            Fields::Cidr => luna
-                                .programs(&filter)
-                                .first_mut()
-                                .unwrap()
-                                .scopes
-                                .retain(|p| !p.matches(&filter)),
-                            Fields::Sub => luna
-                                .scopes(&filter)
-                                .first_mut()
-                                .unwrap()
-                                .subs
-                                .retain(|s| !s.matches(&filter)),
-                            Fields::Url => luna
-                                .subs(&filter)
-                                .first_mut()
-                                .unwrap()
-                                .urls
-                                .retain(|s| !s.matches(&filter)),
-                            Fields::IP => luna
-                                .subs(&filter)
-                                .first_mut()
-                                .unwrap()
-                                .hosts
-                                .retain(|h| !h.matches(&filter)),
-                            Fields::Tag => luna
-                                .urls(&filter)
-                                .first_mut()
-                                .unwrap()
-                                .tags
-                                .retain(|t| !t.matches(&filter)),
-                            Fields::Tech => luna
-                                .urls(&filter)
-                                .first_mut()
-                                .unwrap()
-                                .techs
-                                .retain(|t| !t.matches(&filter)),
-                            Fields::Service => luna
-                                .hosts(&filter)
-                                .first_mut()
-                                .unwrap()
-                                .services
-                                .retain(|t| !t.matches(&filter)),
-                            Fields::Keyword => todo!(),
-                            Fields::None => error!("what are you trying to delete?"),
-                            Fields::Luna => error!("Stupid! Do you want to delete Luna?"),
-                        }
-
-                        if let Err(err) = luna.save(output) {
-                            error!("Error while saving: {}", err);
-                        } else {
-                            info!("Saved in \"{}\" successfully.", output);
-                        }
-                    } else if len == 0 {
-                        warn!("No items found!")
-                    } else {
-                        error!("For security reasons you can't delete multi fields at once!")
+                    if luna.remove(field, &filter) {
+                        luna.save();
                     }
                 }
                 Err(err) => error!("Use fucking correct patterns: {}", err),
@@ -364,15 +291,8 @@ pub fn run() {
 
             match script.parse() {
                 Ok(script) => {
-                    script.run(&mut luna);
+                    script.run(&mut luna, term);
                     info!("Scripts Executed.");
-                    luna.dedup();
-
-                    if let Err(err) = luna.save(output) {
-                        error!("Error while saving: {}", err);
-                    } else {
-                        info!("Saved in \"{}\" successfully.", output);
-                    }
                 }
                 Err(err) => error!("Error in parsing file: {}", err),
             }
@@ -381,20 +301,18 @@ pub fn run() {
         Cli::Import { file } => match Luna::from_file(&file) {
             Ok(file) => {
                 luna.append(file);
-                luna.dedup();
-                if let Err(err) = luna.save(output) {
-                    error!("Error while saving in \"{}\": {}", output, err);
-                } else {
-                    info!("Saved in \"{}\" successfully.", output);
-                }
+                luna.dedup(term);
+                luna.save();
             }
             Err(err) => error!("Can't import: {}", err),
         },
 
         Cli::Check(check) => {
+            let input = &opt.input;
+
             match Luna::from_file(input) {
                 Ok(luna) => println!("{} {}: {}", "[+]".green(), luna.stringify(1), input),
-                Err(_) => println!("{} ", "[-]".red()),
+                Err(err) => println!("{} Error in loading luna: {}", "[-]".red(), err),
             }
 
             if let Some(script_path) = check.script.as_ref() {

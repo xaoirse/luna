@@ -21,7 +21,7 @@ Luna can run any bunch of bash scripts in **Parallel**, collect results, save th
 For building statically linked rust binary [read this link](https://blog.davidvassallo.me/2021/06/10/lessons-learned-building-statically-linked-rust-binaries-openssl/) and [here](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes)
 
 minimum size:  
-`RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-s -C panic=abort -C opt-level=z' cargo build --target x86_64-unknown-linux-musl --release`
+`RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-s -C panic=abort -C opt-level=z' cargo build --target x86_64-unknown-linux-musl --release` + UPX
 
 `-s`, `--strip-all` Omit all symbol information from the output file.
 
@@ -172,7 +172,7 @@ I want a standalone binary release from my code,
 - [x] Limit for parallel requests to prevent rate limit  
 - [ ] Worldlist
 - [x] Custom inputs for script
-- [ ] Request body for Url
+- [ ] Save bash file scripts in json or each field? jom model
 - [ ] Regex test tool (subcommand)
 - [ ] Reduce release size
 - [x] Filter by date
@@ -185,3 +185,6 @@ I want a standalone binary release from my code,
 - [ ] Update_at updates every time!
 - [ ] Global search
 - [ ] Insert from file
+- [x] Graceful shutdown
+- [ ] Pause and Resume (OMG!)
+- [ ] Progress bar

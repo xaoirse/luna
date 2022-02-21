@@ -90,11 +90,9 @@ impl Dedup for Scope {
         a.start = a.start.min(b.start);
 
         a.subs.append(&mut b.subs);
-
-        a.dedup();
     }
-    fn dedup(&mut self) {
-        dedup(&mut self.subs);
+    fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.subs, term);
     }
 }
 

@@ -31,11 +31,10 @@ impl Dedup for Host {
         a.start = a.start.min(b.start);
 
         a.services.append(&mut b.services);
-        a.dedup()
     }
 
-    fn dedup(&mut self) {
-        dedup(&mut self.services);
+    fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.services, term);
     }
 }
 

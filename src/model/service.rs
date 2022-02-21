@@ -41,7 +41,7 @@ impl Dedup for Service {
         merge(&mut a.protocol, &mut b.protocol, new);
         merge(&mut a.banner, &mut b.banner, new);
     }
-    fn dedup(&mut self) {}
+    fn dedup(&mut self, _term: Arc<AtomicBool>) {}
 }
 
 impl Service {

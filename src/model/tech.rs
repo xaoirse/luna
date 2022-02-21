@@ -33,7 +33,7 @@ impl Dedup for Tech {
 
         merge(&mut a.version, &mut b.version, new);
     }
-    fn dedup(&mut self) {}
+    fn dedup(&mut self, _term: Arc<AtomicBool>) {}
 }
 
 impl Tech {

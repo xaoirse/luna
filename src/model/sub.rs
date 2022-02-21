@@ -45,12 +45,10 @@ impl Dedup for Sub {
 
         a.hosts.append(&mut b.hosts);
         a.urls.append(&mut b.urls);
-
-        a.dedup();
     }
-    fn dedup(&mut self) {
-        dedup(&mut self.hosts);
-        dedup(&mut self.urls);
+    fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.hosts, term.clone());
+        dedup(&mut self.urls, term);
     }
 }
 

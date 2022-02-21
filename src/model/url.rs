@@ -50,12 +50,10 @@ impl Dedup for Url {
 
         a.techs.append(&mut b.techs);
         a.tags.append(&mut b.tags);
-
-        a.dedup()
     }
-    fn dedup(&mut self) {
-        dedup(&mut self.techs);
-        dedup(&mut self.tags);
+    fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.techs, term.clone());
+        dedup(&mut self.tags, term);
     }
 }
 

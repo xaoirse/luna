@@ -1,6 +1,7 @@
 use super::*;
 use crate::model::url::Url;
 use chrono::{DateTime, Utc};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::io::Write;
@@ -36,8 +37,8 @@ impl Luna {
         self.start = self.start.min(other.start);
     }
 
-    pub fn dedup(&mut self) {
-        dedup(&mut self.programs);
+    pub fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.programs, term);
     }
 
     pub fn find(&self, field: Fields, filter: &FilterRegex) -> Vec<String> {
@@ -204,7 +205,7 @@ impl Luna {
             .collect()
     }
 
-    pub fn save(&self, path: &str) -> Result<usize, Errors> {
+    fn save_as(&self, path: &str) -> Result<usize, Errors> {
         let str = serde_json::to_string(&self)?;
 
         if !Opt::from_args().no_backup && std::path::Path::new(path).exists() {
@@ -227,9 +228,105 @@ impl Luna {
         }
     }
 
+    pub fn save(&self) {
+        let opt = Opt::from_args();
+        let output = opt.output.as_ref().unwrap_or(&opt.input);
+
+        if let Err(err) = self.save_as(output) {
+            error!("Error while saving: {}", err);
+        } else {
+            info!("Saved in \"{}\" successfully.", output);
+        }
+    }
+
     pub fn from_file(path: &str) -> Result<Self, Errors> {
         let file = std::fs::read_to_string(path)?;
         Ok(serde_json::from_str(&file)?)
+    }
+    pub fn from_args() -> Luna {
+        let opt = Opt::from_args();
+
+        match Luna::from_file(&opt.input) {
+            Ok(luna) => {
+                info!("Luna loaded successfully.");
+                luna
+            }
+            Err(err) => {
+                if err.to_string() == "No such file or directory (os error 2)" {
+                    warn!("Can't load Luna from file! New filw will be generated.")
+                } else {
+                    error!("Can't load Luna from file!: {}", err);
+                }
+                Luna::default()
+            }
+        }
+    }
+
+    pub fn remove(&mut self, field: Fields, filter: &FilterRegex) -> bool {
+        let len = self.find(field, filter).len();
+        if len == 1 {
+            match field {
+                Fields::Program => self.programs.retain(|p| !p.matches(filter)),
+                Fields::Domain => self
+                    .programs(filter)
+                    .first_mut()
+                    .unwrap()
+                    .scopes
+                    .retain(|p| !p.matches(filter)),
+                Fields::Cidr => self
+                    .programs(filter)
+                    .first_mut()
+                    .unwrap()
+                    .scopes
+                    .retain(|p| !p.matches(filter)),
+                Fields::Sub => self
+                    .scopes(filter)
+                    .first_mut()
+                    .unwrap()
+                    .subs
+                    .retain(|s| !s.matches(filter)),
+                Fields::Url => self
+                    .subs(filter)
+                    .first_mut()
+                    .unwrap()
+                    .urls
+                    .retain(|s| !s.matches(filter)),
+                Fields::IP => self
+                    .subs(filter)
+                    .first_mut()
+                    .unwrap()
+                    .hosts
+                    .retain(|h| !h.matches(filter)),
+                Fields::Tag => self
+                    .urls(filter)
+                    .first_mut()
+                    .unwrap()
+                    .tags
+                    .retain(|t| !t.matches(filter)),
+                Fields::Tech => self
+                    .urls(filter)
+                    .first_mut()
+                    .unwrap()
+                    .techs
+                    .retain(|t| !t.matches(filter)),
+                Fields::Service => self
+                    .hosts(filter)
+                    .first_mut()
+                    .unwrap()
+                    .services
+                    .retain(|t| !t.matches(filter)),
+                Fields::Keyword => todo!(),
+                Fields::None => error!("what are you trying to delete?"),
+                Fields::Luna => error!("Stupid! Do you want to delete Luna?"),
+            }
+
+            return true;
+        } else if len == 0 {
+            warn!("No items found!")
+        } else {
+            error!("For security reasons you can't delete multi fields at once!")
+        }
+        false
     }
 
     pub fn stringify(&self, v: u8) -> String {

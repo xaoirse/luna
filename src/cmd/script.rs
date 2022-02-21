@@ -3,6 +3,8 @@ use log::{debug, error, warn};
 use rayon::prelude::*;
 use rayon::{iter::Map, vec::IntoIter};
 use regex::Regex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::{error, fmt, process::Command};
 use structopt::StructOpt;
 
@@ -151,18 +153,25 @@ impl Script {
         &'a self,
         luna: &Luna,
         filter: &FilterRegex,
+        term: Arc<AtomicBool>,
     ) -> Map<IntoIter<String>, impl Fn(String) -> Result<Data, Errors> + 'a> {
-        luna.find(self.field, filter).into_par_iter().map(|input| {
-            let cmd = self.command.replace(&self.field.substitution(), &input);
-            debug!("Command: {}", cmd);
-            let output = String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
-            debug!("Output: {}", &output);
-            Ok(Data {
-                input,
-                field: self.field,
-                output,
+        luna.find(self.field, filter)
+            .into_par_iter()
+            .map(move |input| {
+                if term.load(Ordering::Relaxed) {
+                    return Err("term".into());
+                }
+                let cmd = self.command.replace(&self.field.substitution(), &input);
+                debug!("Command: {}", cmd);
+                let output =
+                    String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
+                debug!("Output: {}", &output);
+                Ok(Data {
+                    input,
+                    field: self.field,
+                    output,
+                })
             })
-        })
     }
 }
 
@@ -174,16 +183,23 @@ pub struct Scripts {
 }
 
 impl Scripts {
-    pub fn run(self, luna: &mut Luna) {
+    pub fn run(self, luna: &mut Luna, term: Arc<AtomicBool>) {
         self.scripts
             .into_iter() // No parallel here for preserving order of scripts
             .for_each(|script| {
+                if term.load(Ordering::Relaxed) {
+                    return;
+                }
                 let mut l = script
-                    .execute(luna, &self.filter)
+                    .execute(luna, &self.filter, term.clone())
                     .filter_map(|result| match result {
                         Ok(data) => Some(data),
                         Err(err) => {
-                            error!("Error in executing: {}", err);
+                            if err.to_string() == "term" {
+                                warn!("command aborted");
+                            } else {
+                                error!("Error in executing: {}", err);
+                            }
                             None
                         }
                     })
@@ -194,10 +210,11 @@ impl Scripts {
                         init.append(l);
                         init
                     });
-                l.dedup();
+                l.dedup(term.clone());
                 luna.append(l);
-                luna.dedup();
-            });
+                luna.dedup(term.clone());
+                luna.save();
+            })
     }
 }
 
