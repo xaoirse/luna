@@ -1,6 +1,5 @@
 use super::*;
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use structopt::StructOpt;
 
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
@@ -98,18 +97,6 @@ impl std::str::FromStr for Service {
             port: s.to_string(),
             ..Default::default()
         })
-    }
-}
-
-impl Ord for Service {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.port.cmp(&other.port)
-    }
-}
-
-impl PartialOrd for Service {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 

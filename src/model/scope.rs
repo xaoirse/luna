@@ -1,7 +1,6 @@
 use super::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use std::{
     fmt::{self, Display},
     str::FromStr,
@@ -191,18 +190,6 @@ impl std::str::FromStr for Scope {
             asset: ScopeType::from_str(s).unwrap(),
             ..Default::default()
         })
-    }
-}
-
-impl Ord for Scope {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.asset.cmp(&other.asset)
-    }
-}
-
-impl PartialOrd for Scope {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 

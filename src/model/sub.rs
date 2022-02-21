@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use structopt::StructOpt;
 
 use super::*;
@@ -142,18 +141,6 @@ impl std::str::FromStr for Sub {
             asset: s.to_string(),
             ..Default::default()
         })
-    }
-}
-
-impl Ord for Sub {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.asset.cmp(&other.asset)
-    }
-}
-
-impl PartialOrd for Sub {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 

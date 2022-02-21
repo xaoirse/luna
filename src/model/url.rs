@@ -1,7 +1,6 @@
 use super::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use structopt::StructOpt;
 
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
@@ -177,18 +176,6 @@ impl std::str::FromStr for Url {
             url: s.to_string(),
             ..Default::default()
         })
-    }
-}
-
-impl Ord for Url {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.url.cmp(&other.url)
-    }
-}
-
-impl PartialOrd for Url {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 

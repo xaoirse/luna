@@ -1,7 +1,6 @@
 use super::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use structopt::StructOpt;
 
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
@@ -123,18 +122,6 @@ impl std::str::FromStr for Host {
             ip: s.parse()?,
             ..Default::default()
         })
-    }
-}
-
-impl Ord for Host {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.ip.cmp(&other.ip)
-    }
-}
-
-impl PartialOrd for Host {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 

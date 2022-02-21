@@ -1,12 +1,7 @@
 use super::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use structopt::StructOpt;
-
-// I was doubt in Program type but this is matter
-// that every scopes are in only one program?
-// or one scope can be in multi programs?
 
 #[derive(Debug, Clone, Serialize, Deserialize, StructOpt)]
 pub struct Program {
@@ -225,18 +220,6 @@ impl std::str::FromStr for Program {
             name: s.to_string(),
             ..Default::default()
         })
-    }
-}
-
-impl Ord for Program {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.name.to_lowercase().cmp(&other.name.to_lowercase())
-    }
-}
-
-impl PartialOrd for Program {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 

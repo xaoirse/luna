@@ -93,7 +93,7 @@ where
             let (a, b) = v.split_at_mut(i);
             T::same_bucket(&mut b[0], &mut a[x]);
             v[x].dedup(term.clone());
-            v.remove(i);
+            v.swap_remove(i);
         } else {
             v[i].dedup(term.clone());
         }
@@ -163,4 +163,25 @@ mod test {
         assert!(!None.contains_opt(&Some(regex::Regex::new("gf").unwrap())));
         assert!(None.contains_opt(&None));
     }
+
+    // #[test]
+    // fn test_dedup() {
+    //     struct Num {
+    //         val: i32,
+    //         rep: Vec<num>,
+    //     }
+    //     impl Dedup for num {
+    //         fn same_bucket(b: &mut Self, a: &mut Self) {
+    //             a.rep.append(b.rep);
+    //         }
+    //         fn dedup(&mut self, _term: Arc<AtomicBool>) {}
+    //     }
+    //     let term = Arc::new(AtomicBool::new(false));
+    //     let mut vec = vec![Num{
+    //         val:1
+    //     }];
+
+    //     dedup(&mut vec, term);
+    //     assert_eq!(vec, vec![9, 4, 5, 6, 2, 1, 7])
+    // }
 }

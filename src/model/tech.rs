@@ -1,6 +1,5 @@
 use super::*;
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use structopt::StructOpt;
 
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
@@ -83,18 +82,6 @@ impl std::str::FromStr for Tech {
             name: s.to_string(),
             ..Default::default()
         })
-    }
-}
-
-impl Ord for Tech {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.name.to_lowercase().cmp(&other.name.to_lowercase())
-    }
-}
-
-impl PartialOrd for Tech {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 
