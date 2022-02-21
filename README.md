@@ -187,4 +187,4 @@ I want a standalone binary release from my code,
 - [ ] Insert from file
 - [x] Graceful shutdown
 - [ ] Pause and Resume (OMG!)
-- [ ] Progress bar
+- [x] Progress bar

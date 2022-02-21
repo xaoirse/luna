@@ -1,4 +1,5 @@
 use crate::model::{Errors, Fields, Filter, FilterRegex, Luna};
+use indicatif::{ParallelProgressIterator, ProgressStyle};
 use log::{debug, error, warn};
 use rayon::prelude::*;
 use rayon::{iter::Map, vec::IntoIter};
@@ -190,8 +191,14 @@ impl Scripts {
                 if term.load(Ordering::Relaxed) {
                     return;
                 }
+                let ps = ProgressStyle::default_bar()
+                    .template(
+                        "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/cyan}] {pos}/{len} ({eta})",
+                    )
+                    .progress_chars("▓█░");
                 let mut l = script
                     .execute(luna, &self.filter, term.clone())
+                    .progress_with_style(ps)
                     .filter_map(|result| match result {
                         Ok(data) => Some(data),
                         Err(err) => {

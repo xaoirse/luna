@@ -247,6 +247,8 @@ pub fn run() {
         println!("{}", BANNER.cyan().bold());
     }
     let mut luna = Luna::from_args();
+    luna.dedup(term.clone());
+    luna.save();
 
     match opt.cli {
         Cli::Insert(insert) => {
@@ -311,7 +313,11 @@ pub fn run() {
             let input = &opt.input;
 
             match Luna::from_file(input) {
-                Ok(luna) => println!("{} {}: {}", "[+]".green(), luna.stringify(1), input),
+                Ok(mut luna) => {
+                    luna.dedup(term);
+                    println!("{} {}: {}", "[+]".green(), luna.stringify(1), input);
+                    luna.save();
+                }
                 Err(err) => println!("{} Error in loading luna: {}", "[-]".red(), err),
             }
 
