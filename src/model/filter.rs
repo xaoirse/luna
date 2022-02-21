@@ -241,6 +241,7 @@ impl FilterRegex {
             && self.status_code.is_none()
             && self.response.is_none()
             && self.tech_is_none()
+            && self.tag_is_none()
     }
 
     pub fn tech_is_none(&self) -> bool {
