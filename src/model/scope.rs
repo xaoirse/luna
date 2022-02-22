@@ -28,6 +28,9 @@ pub struct Scope {
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
+
+    #[structopt(skip)]
+    pub dedup: bool,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum ScopeType {
@@ -89,9 +92,14 @@ impl Dedup for Scope {
         a.start = a.start.min(b.start);
 
         a.subs.append(&mut b.subs);
+        a.dedup = false;
     }
     fn dedup(&mut self, term: Arc<AtomicBool>) {
+        if self.dedup {
+            return;
+        }
         dedup(&mut self.subs, term);
+        self.dedup = true;
     }
 }
 
@@ -178,6 +186,7 @@ impl Default for Scope {
             subs: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),
+            dedup: false,
         }
     }
 }

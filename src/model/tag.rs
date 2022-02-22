@@ -20,6 +20,9 @@ pub struct Tag {
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
+
+    #[structopt(skip)]
+    pub dedup: bool,
 }
 
 impl Dedup for Tag {
@@ -36,9 +39,14 @@ impl Dedup for Tag {
         merge(&mut a.severity, &mut b.severity, new);
 
         a.values.append(&mut b.values);
+        a.dedup = false;
     }
     fn dedup(&mut self, _term: Arc<AtomicBool>) {
+        if self.dedup {
+            return;
+        }
         self.values.dedup();
+        self.dedup = true;
     }
 }
 
@@ -99,6 +107,7 @@ impl Default for Tag {
             values: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),
+            dedup: false,
         }
     }
 }

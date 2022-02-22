@@ -247,8 +247,6 @@ pub fn run() {
         println!("{}", BANNER.cyan().bold());
     }
     let mut luna = Luna::from_args();
-    luna.dedup(term.clone());
-    luna.save();
 
     match opt.cli {
         Cli::Insert(insert) => {
@@ -293,6 +291,7 @@ pub fn run() {
 
             match script.parse() {
                 Ok(script) => {
+                    luna.dedup(term.clone());
                     script.run(&mut luna, term);
                     info!("Scripts Executed.");
                 }

@@ -27,6 +27,9 @@ pub struct Sub {
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
+
+    #[structopt(skip)]
+    pub dedup: bool,
 }
 
 impl Dedup for Sub {
@@ -44,10 +47,15 @@ impl Dedup for Sub {
 
         a.hosts.append(&mut b.hosts);
         a.urls.append(&mut b.urls);
+        a.dedup = false;
     }
     fn dedup(&mut self, term: Arc<AtomicBool>) {
+        if self.dedup {
+            return;
+        }
         dedup(&mut self.hosts, term.clone());
         dedup(&mut self.urls, term);
+        self.dedup = true;
     }
 }
 
@@ -130,6 +138,7 @@ impl Default for Sub {
             urls: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),
+            dedup: false,
         }
     }
 }

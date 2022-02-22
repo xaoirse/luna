@@ -12,33 +12,47 @@ use structopt::StructOpt;
 pub struct Luna {
     #[structopt(short, long)]
     pub name: String,
+
     #[structopt(short, long)]
     pub status: String,
+
     #[structopt(short, long)]
     pub version: String,
+
     #[structopt(skip)]
     pub counter: i64,
+
     #[structopt(short, long)]
     pub programs: Vec<Program>,
+
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
+
     #[structopt(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
+
+    #[structopt(skip)]
+    dedup: bool,
 }
 
 impl Luna {
     pub fn append(&mut self, mut other: Self) {
         self.counter += other.counter;
         self.programs.append(&mut other.programs);
+        self.dedup = false;
 
         self.update = self.update.max(other.update);
         self.start = self.start.min(other.start);
     }
 
     pub fn dedup(&mut self, term: Arc<AtomicBool>) {
+        if self.dedup {
+            return;
+        }
         dedup(&mut self.programs, term);
+        self.dedup = true;
     }
 
     pub fn find(&self, field: Fields, filter: &FilterRegex) -> Vec<String> {
@@ -211,7 +225,7 @@ impl Luna {
         if !Opt::from_args().no_backup && std::path::Path::new(path).exists() {
             let copy_path = match path.rsplit_once('.') {
                 Some((a, b)) => format!("{}_{}.{}", a, chrono::Local::now().to_rfc2822(), b),
-                None => format!("{}{}", path, Utc::now().to_rfc2822()),
+                None => format!("{}_{}", path, Utc::now().to_rfc2822()),
             };
             std::fs::copy(path, copy_path)?;
         }
@@ -432,6 +446,7 @@ impl Default for Luna {
             status: "The moon rider has arrived.".to_string(),
             update: Some(Utc::now()),
             start: Some(Utc::now()),
+            dedup: false,
         }
     }
 }
@@ -778,6 +793,7 @@ impl From<Filter> for Luna {
                 tags,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
+                dedup: false,
             }]
         };
 
@@ -803,6 +819,7 @@ impl From<Filter> for Luna {
                     services,
                     update: Some(Utc::now()),
                     start: Some(Utc::now()),
+                    dedup: false,
                 }]
             } else {
                 ip.split(',').map(|s| Host::from_str(s).unwrap()).collect()
@@ -813,6 +830,7 @@ impl From<Filter> for Luna {
                 services,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
+                dedup: false,
             }]
         };
 
@@ -836,6 +854,7 @@ impl From<Filter> for Luna {
                 urls,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
+                dedup: false,
             }]
         };
 
@@ -849,6 +868,7 @@ impl From<Filter> for Luna {
                 subs,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
+                dedup: false,
             }]
         };
 
@@ -865,6 +885,7 @@ impl From<Filter> for Luna {
                 scopes,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
+                dedup: false,
             }],
             ..Default::default()
         }
