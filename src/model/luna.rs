@@ -345,7 +345,7 @@ impl Luna {
     pub fn stringify(&self, v: u8) -> String {
         match v {
             0 => self.name.to_string(),
-            1 => format!("{} {} ", self.name, self.version),
+            1 => format!("{} {}", self.name, self.version),
             2 => format!(
                 "{}  {}
     Status: {}

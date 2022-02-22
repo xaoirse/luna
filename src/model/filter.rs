@@ -72,10 +72,10 @@ pub struct Filter {
     #[structopt(long)]
     pub tag_value: Option<String>,
 
-    #[structopt(long, short, help = "Days ago")]
+    #[structopt(long, short, help = "Hours ago")]
     pub updated_at: Option<i64>,
 
-    #[structopt(long, short, help = "Days ago")]
+    #[structopt(long, short, help = "Hours ago")]
     pub started_at: Option<i64>,
 }
 

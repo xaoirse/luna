@@ -53,9 +53,9 @@ impl EqExt for String {
 
 use chrono::{DateTime, Utc};
 
-pub fn check_date(date: &Option<DateTime<Utc>>, days: &Option<i64>) -> bool {
-    match (date, days) {
-        (Some(date), Some(d)) => &(Utc::now() - chrono::Duration::days(*d)) < date,
+pub fn check_date(date: &Option<DateTime<Utc>>, hours: &Option<i64>) -> bool {
+    match (date, hours) {
+        (Some(date), Some(h)) => &(Utc::now() - chrono::Duration::hours(*h)) < date,
         (_, None) => true,
         _ => false,
     }
