@@ -45,6 +45,7 @@ impl Dedup for Tag {
         if self.dedup {
             return;
         }
+        self.values.par_sort();
         self.values.dedup();
         self.dedup = true;
     }

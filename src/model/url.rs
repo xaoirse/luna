@@ -58,9 +58,7 @@ impl Dedup for Url {
         if self.dedup {
             return;
         }
-        dedup(&mut self.techs, term.clone());
-        dedup(&mut self.tags, term);
-        self.dedup = true;
+        self.dedup = dedup(&mut self.techs, term.clone()) && dedup(&mut self.tags, term);
     }
 }
 

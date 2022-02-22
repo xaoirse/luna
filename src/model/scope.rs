@@ -98,8 +98,7 @@ impl Dedup for Scope {
         if self.dedup {
             return;
         }
-        dedup(&mut self.subs, term);
-        self.dedup = true;
+        self.dedup = dedup(&mut self.subs, term);
     }
 }
 

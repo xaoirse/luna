@@ -70,8 +70,7 @@ impl Dedup for Program {
         if self.dedup {
             return;
         }
-        dedup(&mut self.scopes, term);
-        self.dedup = true
+        self.dedup = dedup(&mut self.scopes, term);
     }
 }
 

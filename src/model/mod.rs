@@ -68,22 +68,22 @@ fn merge<T>(a: &mut Option<T>, b: &mut Option<T>, new: bool) {
     *a = b.take();
 }
 
-pub fn dedup<T>(v: &mut Vec<T>, term: Arc<AtomicBool>)
+pub fn dedup<T>(v: &mut Vec<T>, term: Arc<AtomicBool>) -> bool
 where
     T: PartialEq + Dedup,
 {
-    if term.load(Ordering::Relaxed) {
-        return;
-    }
-
     let mut i = v.len();
 
     if i == 0 {
-        return;
+        return true;
     }
     if i == 1 {
         v[0].dedup(term);
-        return;
+        return true;
+    }
+
+    if term.load(Ordering::Relaxed) {
+        return false;
     }
 
     while i > 0 {
@@ -98,6 +98,7 @@ where
             v[i].dedup(term.clone());
         }
     }
+    true
 }
 
 pub trait Dedup {

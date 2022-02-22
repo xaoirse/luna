@@ -53,9 +53,7 @@ impl Dedup for Sub {
         if self.dedup {
             return;
         }
-        dedup(&mut self.hosts, term.clone());
-        dedup(&mut self.urls, term);
-        self.dedup = true;
+        self.dedup = dedup(&mut self.hosts, term.clone()) && dedup(&mut self.urls, term)
     }
 }
 

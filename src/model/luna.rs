@@ -34,7 +34,7 @@ pub struct Luna {
     pub start: Option<DateTime<Utc>>,
 
     #[structopt(skip)]
-    dedup: bool,
+    pub dedup: bool,
 }
 
 impl Luna {
@@ -51,8 +51,7 @@ impl Luna {
         if self.dedup {
             return;
         }
-        dedup(&mut self.programs, term);
-        self.dedup = true;
+        self.dedup = dedup(&mut self.programs, term);
     }
 
     pub fn find(&self, field: Fields, filter: &FilterRegex) -> Vec<String> {

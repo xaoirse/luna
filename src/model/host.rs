@@ -40,8 +40,7 @@ impl Dedup for Host {
         if self.dedup {
             return;
         }
-        dedup(&mut self.services, term);
-        self.dedup = true;
+        self.dedup = dedup(&mut self.services, term);
     }
 }
 
