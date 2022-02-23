@@ -776,7 +776,9 @@ impl From<Filter> for Luna {
                     .split(',')
                     .map(|s| s.to_string())
                     .collect(),
-                ..Default::default()
+                dedup: false,
+                update: Some(Utc::now()),
+                start: Some(Utc::now()),
             }]
         };
 

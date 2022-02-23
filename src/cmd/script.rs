@@ -290,11 +290,13 @@ impl ScriptCli {
                     )));
                     }
 
-                    scripts.push(Script {
+                    let script = Script {
                         regex,
                         command: line.trim().to_string(),
                         field,
-                    })
+                    };
+                    debug!("{:#?}", script);
+                    scripts.push(script)
                 } else {
                     error!("Fucking pattern: {}", pattern);
                     panic!("Fucking pattern: {}", pattern);
