@@ -52,9 +52,12 @@ impl Dedup for Tag {
 }
 
 impl Tag {
-    pub fn matches(&self, filter: &FilterRegex) -> bool {
+    pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.name.contains_opt(&filter.tag)
             && self.severity.contains_opt(&filter.tag_severity)
+            && (!date
+                || (check_date(&self.update, &filter.updated_at)
+                    && check_date(&self.start, &filter.started_at)))
             && filter
                 .tag_value
                 .as_ref()

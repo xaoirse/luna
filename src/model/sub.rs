@@ -58,13 +58,14 @@ impl Dedup for Sub {
 }
 
 impl Sub {
-    pub fn matches(&self, filter: &FilterRegex) -> bool {
+    pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.asset.contains_opt(&filter.sub)
             && self.typ.contains_opt(&filter.sub_type)
-            && check_date(&self.update, &filter.updated_at)
-            && check_date(&self.start, &filter.started_at)
-            && (filter.host_is_none() || self.hosts.par_iter().any(|h| h.matches(filter)))
-            && (filter.url_is_none() || self.urls.par_iter().any(|u| u.matches(filter)))
+            && (!date
+                || (check_date(&self.update, &filter.updated_at)
+                    && check_date(&self.start, &filter.started_at)))
+            && (filter.host_is_none() || self.hosts.par_iter().any(|h| h.matches(filter, false)))
+            && (filter.url_is_none() || self.urls.par_iter().any(|u| u.matches(filter, false)))
     }
 
     pub fn stringify(&self, v: u8) -> String {

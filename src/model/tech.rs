@@ -36,8 +36,12 @@ impl Dedup for Tech {
 }
 
 impl Tech {
-    pub fn matches(&self, filter: &FilterRegex) -> bool {
-        self.name.contains_opt(&filter.tech) && self.version.contains_opt(&filter.tech_version)
+    pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
+        self.name.contains_opt(&filter.tech)
+            && self.version.contains_opt(&filter.tech_version)
+            && (!date
+                || (check_date(&self.update, &filter.updated_at)
+                    && check_date(&self.start, &filter.started_at)))
     }
 
     pub fn stringify(&self, v: u8) -> String {

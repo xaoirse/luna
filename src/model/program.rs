@@ -75,7 +75,7 @@ impl Dedup for Program {
 }
 
 impl Program {
-    pub fn matches(&self, filter: &FilterRegex) -> bool {
+    pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.name.contains_opt(&filter.program)
             && self.platform.contains_opt(&filter.program_platform)
             && self.handle.contains_opt(&filter.program_handle)
@@ -84,9 +84,10 @@ impl Program {
             && self.icon.contains_opt(&filter.program_icon)
             && self.bounty.contains_opt(&filter.program_bounty)
             && self.state.contains_opt(&filter.program_state)
-            && check_date(&self.update, &filter.updated_at)
-            && check_date(&self.start, &filter.started_at)
-            && (filter.scope_is_none() || self.scopes.par_iter().any(|s| s.matches(filter)))
+            && (!date
+                || (check_date(&self.update, &filter.updated_at)
+                    && check_date(&self.start, &filter.started_at)))
+            && (filter.scope_is_none() || self.scopes.par_iter().any(|s| s.matches(filter, false)))
     }
 
     pub fn stringify(&self, v: u8) -> String {

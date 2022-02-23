@@ -60,15 +60,15 @@ impl Luna {
             Fields::Program => self
                 .programs
                 .par_iter()
-                .filter(|p| p.matches(filter))
+                .filter(|p| p.matches(filter, true))
                 .map(|p| p.stringify(filter.verbose))
                 .collect(),
             Fields::Domain => self
                 .programs
                 .par_iter()
-                .filter(|p| p.matches(filter))
+                .filter(|p| p.matches(filter, false))
                 .flat_map(|p| &p.scopes)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, true))
                 .filter_map(|s| match &s.asset {
                     ScopeType::Domain(_) => Some(s.stringify(filter.verbose)),
                     _ => None,
@@ -77,9 +77,9 @@ impl Luna {
             Fields::Cidr => self
                 .programs
                 .par_iter()
-                .filter(|p| p.matches(filter))
+                .filter(|p| p.matches(filter, false))
                 .flat_map(|p| &p.scopes)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, true))
                 .filter_map(|s| match &s.asset {
                     ScopeType::Cidr(_) => Some(s.stringify(filter.verbose)),
                     _ => None,
@@ -88,77 +88,77 @@ impl Luna {
             Fields::Sub => self
                 .programs
                 .par_iter()
-                .filter(|p| p.matches(filter))
+                .filter(|p| p.matches(filter, false))
                 .flat_map(|p| &p.scopes)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.subs)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, true))
                 .map(|s| s.stringify(filter.verbose))
                 .collect(),
             Fields::Url => self
                 .programs
                 .par_iter()
-                .filter(|p| p.matches(filter))
+                .filter(|p| p.matches(filter, false))
                 .flat_map(|p| &p.scopes)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.subs)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.urls)
-                .filter(|u| u.matches(filter))
+                .filter(|u| u.matches(filter, true))
                 .map(|u| u.stringify(filter.verbose))
                 .collect(),
             Fields::IP => self
                 .programs
                 .par_iter()
-                .filter(|p| p.matches(filter))
+                .filter(|p| p.matches(filter, false))
                 .flat_map(|p| &p.scopes)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.subs)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.hosts)
-                .filter(|h| h.matches(filter))
+                .filter(|h| h.matches(filter, true))
                 .map(|h| h.stringify(filter.verbose))
                 .collect(),
             Fields::Service => self
                 .programs
                 .par_iter()
-                .filter(|p| p.matches(filter))
+                .filter(|p| p.matches(filter, false))
                 .flat_map(|p| &p.scopes)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.subs)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.hosts)
-                .filter(|h| h.matches(filter))
+                .filter(|h| h.matches(filter, false))
                 .flat_map(|h| &h.services)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, true))
                 .map(|s| s.stringify(filter.verbose))
                 .collect(),
             Fields::Tech => self
                 .programs
                 .par_iter()
-                .filter(|p| p.matches(filter))
+                .filter(|p| p.matches(filter, false))
                 .flat_map(|p| &p.scopes)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.subs)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.urls)
-                .filter(|u| u.matches(filter))
+                .filter(|u| u.matches(filter, false))
                 .flat_map(|u| &u.techs)
-                .filter(|t| t.matches(filter))
+                .filter(|t| t.matches(filter, true))
                 .map(|t| t.stringify(filter.verbose))
                 .collect(),
             Fields::Tag => self
                 .programs
                 .par_iter()
-                .filter(|p| p.matches(filter))
+                .filter(|p| p.matches(filter, false))
                 .flat_map(|p| &p.scopes)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.subs)
-                .filter(|s| s.matches(filter))
+                .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.urls)
-                .filter(|u| u.matches(filter))
+                .filter(|u| u.matches(filter, false))
                 .flat_map(|u| &u.tags)
-                .filter(|t| t.matches(filter))
+                .filter(|t| t.matches(filter, true))
                 .map(|t| t.stringify(filter.verbose))
                 .collect(),
             Fields::Keyword => todo!(),
@@ -169,52 +169,52 @@ impl Luna {
     pub fn programs(&mut self, filter: &FilterRegex) -> Vec<&mut Program> {
         self.programs
             .par_iter_mut()
-            .filter(|p| p.matches(filter))
+            .filter(|p| p.matches(filter, true))
             .collect()
     }
 
     pub fn scopes(&mut self, filter: &FilterRegex) -> Vec<&mut Scope> {
         self.programs
             .par_iter_mut()
-            .filter(|p| p.matches(filter))
+            .filter(|p| p.matches(filter, false))
             .flat_map(|p| &mut p.scopes)
-            .filter(|s| s.matches(filter))
+            .filter(|s| s.matches(filter, true))
             .collect()
     }
     pub fn subs(&mut self, filter: &FilterRegex) -> Vec<&mut Sub> {
         self.programs
             .par_iter_mut()
-            .filter(|p| p.matches(filter))
+            .filter(|p| p.matches(filter, false))
             .flat_map(|p| &mut p.scopes)
-            .filter(|s| s.matches(filter))
+            .filter(|s| s.matches(filter, false))
             .flat_map(|s| &mut s.subs)
-            .filter(|s| s.matches(filter))
+            .filter(|s| s.matches(filter, true))
             .collect()
     }
 
     pub fn urls(&mut self, filter: &FilterRegex) -> Vec<&mut Url> {
         self.programs
             .par_iter_mut()
-            .filter(|p| p.matches(filter))
+            .filter(|p| p.matches(filter, false))
             .flat_map(|p| &mut p.scopes)
-            .filter(|s| s.matches(filter))
+            .filter(|s| s.matches(filter, false))
             .flat_map(|s| &mut s.subs)
-            .filter(|s| s.matches(filter))
+            .filter(|s| s.matches(filter, false))
             .flat_map(|s| &mut s.urls)
-            .filter(|u| u.matches(filter))
+            .filter(|u| u.matches(filter, true))
             .collect()
     }
 
     pub fn hosts(&mut self, filter: &FilterRegex) -> Vec<&mut Host> {
         self.programs
             .par_iter_mut()
-            .filter(|p| p.matches(filter))
+            .filter(|p| p.matches(filter, false))
             .flat_map(|p| &mut p.scopes)
-            .filter(|s| s.matches(filter))
+            .filter(|s| s.matches(filter, false))
             .flat_map(|s| &mut s.subs)
-            .filter(|s| s.matches(filter))
+            .filter(|s| s.matches(filter, false))
             .flat_map(|s| &mut s.hosts)
-            .filter(|h| h.matches(filter))
+            .filter(|h| h.matches(filter, true))
             .collect()
     }
 
@@ -279,55 +279,55 @@ impl Luna {
         let len = self.find(field, filter).len();
         if len == 1 {
             match field {
-                Fields::Program => self.programs.retain(|p| !p.matches(filter)),
+                Fields::Program => self.programs.retain(|p| !p.matches(filter, true)),
                 Fields::Domain => self
                     .programs(filter)
                     .first_mut()
                     .unwrap()
                     .scopes
-                    .retain(|p| !p.matches(filter)),
+                    .retain(|p| !p.matches(filter, true)),
                 Fields::Cidr => self
                     .programs(filter)
                     .first_mut()
                     .unwrap()
                     .scopes
-                    .retain(|p| !p.matches(filter)),
+                    .retain(|p| !p.matches(filter, true)),
                 Fields::Sub => self
                     .scopes(filter)
                     .first_mut()
                     .unwrap()
                     .subs
-                    .retain(|s| !s.matches(filter)),
+                    .retain(|s| !s.matches(filter, true)),
                 Fields::Url => self
                     .subs(filter)
                     .first_mut()
                     .unwrap()
                     .urls
-                    .retain(|s| !s.matches(filter)),
+                    .retain(|s| !s.matches(filter, true)),
                 Fields::IP => self
                     .subs(filter)
                     .first_mut()
                     .unwrap()
                     .hosts
-                    .retain(|h| !h.matches(filter)),
+                    .retain(|h| !h.matches(filter, true)),
                 Fields::Tag => self
                     .urls(filter)
                     .first_mut()
                     .unwrap()
                     .tags
-                    .retain(|t| !t.matches(filter)),
+                    .retain(|t| !t.matches(filter, true)),
                 Fields::Tech => self
                     .urls(filter)
                     .first_mut()
                     .unwrap()
                     .techs
-                    .retain(|t| !t.matches(filter)),
+                    .retain(|t| !t.matches(filter, true)),
                 Fields::Service => self
                     .hosts(filter)
                     .first_mut()
                     .unwrap()
                     .services
-                    .retain(|t| !t.matches(filter)),
+                    .retain(|t| !t.matches(filter, true)),
                 Fields::Keyword => todo!(),
                 Fields::None => error!("what are you trying to delete?"),
                 Fields::Luna => error!("Stupid! Do you want to delete Luna?"),

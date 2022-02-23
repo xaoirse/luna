@@ -44,11 +44,14 @@ impl Dedup for Service {
 }
 
 impl Service {
-    pub fn matches(&self, filter: &FilterRegex) -> bool {
+    pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.port.contains_opt(&filter.port)
             && self.name.contains_opt(&filter.service_name)
             && self.protocol.contains_opt(&filter.service_protocol)
             && self.banner.contains_opt(&filter.service_banner)
+            && (!date
+                || (check_date(&self.update, &filter.updated_at)
+                    && check_date(&self.start, &filter.started_at)))
     }
 
     pub fn stringify(&self, v: u8) -> String {

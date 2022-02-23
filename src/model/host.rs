@@ -45,7 +45,7 @@ impl Dedup for Host {
 }
 
 impl Host {
-    pub fn matches(&self, filter: &FilterRegex) -> bool {
+    pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         filter
             .ip_cidr
             .as_ref()
@@ -59,9 +59,11 @@ impl Host {
                     .parse::<std::net::IpAddr>()
                     .map_or(false, |i| ip == &i),
             })
-            && check_date(&self.update, &filter.updated_at)
-            && check_date(&self.start, &filter.started_at)
-            && (filter.service_is_none() || self.services.par_iter().any(|s| s.matches(filter)))
+            && (!date
+                || (check_date(&self.update, &filter.updated_at)
+                    && check_date(&self.start, &filter.started_at)))
+            && (filter.service_is_none()
+                || self.services.par_iter().any(|s| s.matches(filter, false)))
     }
 
     pub fn stringify(&self, v: u8) -> String {

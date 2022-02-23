@@ -63,15 +63,16 @@ impl Dedup for Url {
 }
 
 impl Url {
-    pub fn matches(&self, filter: &FilterRegex) -> bool {
+    pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.url.contains_opt(&filter.url)
             && self.title.contains_opt(&filter.title)
             && self.response.contains_opt(&filter.response)
             && self.status_code.contains_opt(&filter.status_code)
-            && check_date(&self.update, &filter.updated_at)
-            && check_date(&self.start, &filter.started_at)
-            && (filter.tech_is_none() || self.techs.par_iter().any(|t| t.matches(filter)))
-            && (filter.tag_is_none() || self.tags.par_iter().any(|t| t.matches(filter)))
+            && (!date
+                || (check_date(&self.update, &filter.updated_at)
+                    && check_date(&self.start, &filter.started_at)))
+            && (filter.tech_is_none() || self.techs.par_iter().any(|t| t.matches(filter, false)))
+            && (filter.tag_is_none() || self.tags.par_iter().any(|t| t.matches(filter, false)))
     }
 
     pub fn stringify(&self, v: u8) -> String {

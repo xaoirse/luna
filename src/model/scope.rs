@@ -103,13 +103,14 @@ impl Dedup for Scope {
 }
 
 impl Scope {
-    pub fn matches(&self, filter: &FilterRegex) -> bool {
+    pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.asset.contains_opt(&filter.scope)
             && self.bounty.contains_opt(&filter.scope_bounty)
             && self.severity.contains_opt(&filter.scope_severity)
-            && check_date(&self.update, &filter.updated_at)
-            && check_date(&self.start, &filter.started_at)
-            && (filter.sub_is_none() || self.subs.par_iter().any(|s| s.matches(filter)))
+            && (!date
+                || (check_date(&self.update, &filter.updated_at)
+                    && check_date(&self.start, &filter.started_at)))
+            && (filter.sub_is_none() || self.subs.par_iter().any(|s| s.matches(filter, false)))
     }
 
     pub fn stringify(&self, v: u8) -> String {
