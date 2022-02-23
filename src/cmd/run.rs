@@ -41,7 +41,7 @@ pub enum Cli {
     Import { file: String },
     Check(Check),
     Stat(LunaStat),
-    Test,
+    Test { n: i32 },
     Report,
     Server(Server),
 }
@@ -334,7 +334,7 @@ pub fn run() {
             }
         }
         Cli::Stat(s) => println!("{}", luna.stringify(s.verbose + 2)),
-        Cli::Test => todo!(),
+        Cli::Test { n } => Luna::test_run(n),
         Cli::Report => todo!(),
         Cli::Server(_) => todo!(),
     }

@@ -892,3 +892,41 @@ impl From<Filter> for Luna {
         }
     }
 }
+
+impl Luna {
+    pub fn test_run(n: i32) {
+        let mut luna = Luna::default();
+
+        for i in 0..n {
+            let l = Luna {
+                programs: vec![Program {
+                    scopes: vec![Scope {
+                        asset: ScopeType::Domain("test".to_string()),
+                        subs: vec![Sub {
+                            asset: format!("{}", i),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            };
+            luna.append(l);
+        }
+        println!("Appended!");
+        let term = Arc::new(AtomicBool::new(false));
+        luna.dedup(term);
+        println!(
+            "{}",
+            luna.programs
+                .first()
+                .unwrap()
+                .scopes
+                .first()
+                .unwrap()
+                .subs
+                .len()
+        );
+    }
+}

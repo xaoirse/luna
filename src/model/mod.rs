@@ -70,20 +70,19 @@ fn merge<T>(a: &mut Option<T>, b: &mut Option<T>, new: bool) {
 
 pub fn dedup<T>(v: &mut Vec<T>, term: Arc<AtomicBool>) -> bool
 where
-    T: PartialEq + Dedup,
+    T: PartialEq + Dedup + std::fmt::Debug,
 {
     let mut i = v.len();
 
     if i == 0 {
         return true;
     }
+    if term.load(Ordering::Relaxed) {
+        return false;
+    }
     if i == 1 {
         v[0].dedup(term);
         return true;
-    }
-
-    if term.load(Ordering::Relaxed) {
-        return false;
     }
 
     while i > 0 {
