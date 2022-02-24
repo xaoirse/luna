@@ -1,6 +1,6 @@
 [package]
 name = "luna"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["SAoirse: github.com/XAoirse"]
 description = "A Recon Tool"
 readme = "README.md"
@@ -23,4 +23,3 @@ rayon = "1.5"
 cidr = "0.2.1"
 signal-hook = "*"
 indicatif = {version = "0.17.0-rc.4", features = ["rayon"]}
-

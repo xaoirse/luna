@@ -202,9 +202,9 @@ pub enum Server {
     Status,
 }
 
-static BANNER: &str = r"
+const BANNER: &str = r"
    __  __  ___  _____ 
-  / / / / / / |/ / _ |    
+  / / / / / / |/ / _ |  
  / /_/ /_/ /    / __ |    
 /____|____/_/|_/_/ |_|  SA
 ";

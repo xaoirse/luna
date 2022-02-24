@@ -932,6 +932,6 @@ impl Luna {
         println!("Dedupping...!");
         let term = Arc::new(AtomicBool::new(false));
         luna.dedup(term);
-        luna.save();
+        luna.save_as("test.json").unwrap();
     }
 }
