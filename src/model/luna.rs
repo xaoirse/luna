@@ -51,6 +51,99 @@ impl Luna {
         if self.dedup {
             return;
         }
+
+        //////////////
+        ///// Hosts
+        /////////////////////
+        let mut hosts: Vec<&mut Host> = self
+            .programs
+            .iter_mut()
+            .flat_map(|p| &mut p.scopes)
+            .flat_map(|s| &mut s.subs)
+            .flat_map(|s| &mut s.hosts)
+            .collect();
+
+        hosts.par_sort();
+        for i in (1..hosts.len()).rev() {
+            if hosts[i] == hosts[i - 1] {
+                let (a, b) = hosts.split_at_mut(i);
+                Host::same_bucket(b[0], a[i - 1]);
+                b[0].ip = String::new();
+            }
+        }
+
+        //////////////
+        ///// Urls
+        /////////////////////
+        let mut urls: Vec<&mut Url> = self
+            .programs
+            .iter_mut()
+            .flat_map(|p| &mut p.scopes)
+            .flat_map(|s| &mut s.subs)
+            .flat_map(|s| &mut s.urls)
+            .collect();
+
+        urls.par_sort();
+        for i in (1..urls.len()).rev() {
+            if urls[i] == urls[i - 1] {
+                let (a, b) = urls.split_at_mut(i);
+                Url::same_bucket(b[0], a[i - 1]);
+                b[0].url = String::new();
+            }
+        }
+
+        //////////////
+        ///// Subs
+        /////////////////////
+        let mut subs: Vec<&mut Sub> = self
+            .programs
+            .iter_mut()
+            .flat_map(|p| &mut p.scopes)
+            .flat_map(|s| &mut s.subs)
+            .collect();
+
+        subs.par_sort();
+        for i in (1..subs.len()).rev() {
+            if subs[i] == subs[i - 1] {
+                let (a, b) = subs.split_at_mut(i);
+                Sub::same_bucket(b[0], a[i - 1]);
+                b[0].asset = String::new();
+            }
+        }
+
+        //////////////
+        ///// Scopes
+        /////////////////////
+        let mut scopes: Vec<&mut Scope> = self
+            .programs
+            .iter_mut()
+            .flat_map(|p| &mut p.scopes)
+            .collect();
+
+        scopes.par_sort();
+        for i in (1..scopes.len()).rev() {
+            if scopes[i] == scopes[i - 1] {
+                let (a, b) = scopes.split_at_mut(i);
+                Scope::same_bucket(b[0], a[i - 1]);
+                b[0].asset = ScopeType::Empty;
+            }
+        }
+
+        //////////////
+        ///// Programs
+        /////////////////////
+        self.programs.par_sort();
+        for i in (1..self.programs.len()).rev() {
+            if self.programs[i] == self.programs[i - 1] {
+                let (a, b) = self.programs.split_at_mut(i);
+                Program::same_bucket(&mut b[0], &mut a[i - 1]);
+                b[0].name = String::new();
+            }
+        }
+
+        //////////////
+        ///// Dedup
+        /////////////////////
         self.dedup = dedup(&mut self.programs, term);
     }
 
@@ -900,10 +993,14 @@ impl Luna {
         for i in 0..n {
             let l = Luna {
                 programs: vec![Program {
+                    name: "S".to_string(),
                     scopes: vec![Scope {
                         asset: ScopeType::Domain("test".to_string()),
                         subs: vec![Sub {
-                            asset: format!("{}", i),
+                            urls: vec![Url {
+                                url: format!("{}", i),
+                                ..Default::default()
+                            }],
                             ..Default::default()
                         }],
                         ..Default::default()
@@ -914,19 +1011,9 @@ impl Luna {
             };
             luna.append(l);
         }
-        println!("Appended!");
+        println!("Dedupping...!");
         let term = Arc::new(AtomicBool::new(false));
         luna.dedup(term);
-        println!(
-            "{}",
-            luna.programs
-                .first()
-                .unwrap()
-                .scopes
-                .first()
-                .unwrap()
-                .subs
-                .len()
-        );
+        luna.save();
     }
 }

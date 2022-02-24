@@ -98,7 +98,11 @@ impl Dedup for Scope {
         if self.dedup {
             return;
         }
+
         self.dedup = dedup(&mut self.subs, term);
+    }
+    fn is_empty(&self) -> bool {
+        self.asset == ScopeType::Empty && self.subs.is_empty()
     }
 }
 
@@ -199,6 +203,18 @@ impl std::str::FromStr for Scope {
             asset: ScopeType::from_str(s).unwrap(),
             ..Default::default()
         })
+    }
+}
+
+impl Ord for Scope {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.asset.cmp(&other.asset)
+    }
+}
+
+impl PartialOrd for Scope {
+    fn partial_cmp(&self, other: &Self) -> std::option::Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 

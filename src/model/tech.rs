@@ -33,6 +33,9 @@ impl Dedup for Tech {
         merge(&mut a.version, &mut b.version, new);
     }
     fn dedup(&mut self, _term: Arc<AtomicBool>) {}
+    fn is_empty(&self) -> bool {
+        self.name.is_empty()
+    }
 }
 
 impl Tech {

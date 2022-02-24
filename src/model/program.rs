@@ -70,7 +70,11 @@ impl Dedup for Program {
         if self.dedup {
             return;
         }
+
         self.dedup = dedup(&mut self.scopes, term);
+    }
+    fn is_empty(&self) -> bool {
+        self.name.is_empty() && self.scopes.is_empty()
     }
 }
 
@@ -229,6 +233,18 @@ impl std::str::FromStr for Program {
             name: s.to_string(),
             ..Default::default()
         })
+    }
+}
+
+impl Ord for Program {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.name.cmp(&other.name)
+    }
+}
+
+impl PartialOrd for Program {
+    fn partial_cmp(&self, other: &Self) -> std::option::Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 

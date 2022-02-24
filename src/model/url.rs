@@ -60,6 +60,9 @@ impl Dedup for Url {
         }
         self.dedup = dedup(&mut self.techs, term.clone()) && dedup(&mut self.tags, term);
     }
+    fn is_empty(&self) -> bool {
+        self.url.is_empty()
+    }
 }
 
 impl Url {
@@ -184,6 +187,17 @@ impl std::str::FromStr for Url {
             url: s.to_string(),
             ..Default::default()
         })
+    }
+}
+impl Ord for Url {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.url.cmp(&other.url)
+    }
+}
+
+impl PartialOrd for Url {
+    fn partial_cmp(&self, other: &Self) -> std::option::Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 

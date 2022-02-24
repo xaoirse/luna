@@ -188,3 +188,4 @@ I want a standalone binary release from my code,
 - [x] Graceful shutdown
 - [ ] Pause and Resume (OMG!)
 - [x] Progress bar
+- [ ] Remove tech

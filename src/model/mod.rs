@@ -70,25 +70,19 @@ fn merge<T>(a: &mut Option<T>, b: &mut Option<T>, new: bool) {
 
 pub fn dedup<T>(v: &mut Vec<T>, term: Arc<AtomicBool>) -> bool
 where
-    T: PartialEq + Dedup + std::fmt::Debug,
+    T: PartialEq + Dedup,
 {
     let mut i = v.len();
 
-    if i == 0 {
-        return true;
-    }
-    if term.load(Ordering::Relaxed) {
-        return false;
-    }
-    if i == 1 {
-        v[0].dedup(term);
-        return true;
-    }
-
     while i > 0 {
+        if term.load(Ordering::Relaxed) {
+            return false;
+        }
         i -= 1;
 
-        if let Some(x) = v[0..i].iter().position(|x| x == &v[i]) {
+        if v[i].is_empty() {
+            v.swap_remove(i);
+        } else if let Some(x) = v[0..i].iter().position(|x| x == &v[i]) {
             let (a, b) = v.split_at_mut(i);
             T::same_bucket(&mut b[0], &mut a[x]);
             v[x].dedup(term.clone());
@@ -103,6 +97,7 @@ where
 pub trait Dedup {
     fn same_bucket(b: &mut Self, a: &mut Self);
     fn dedup(&mut self, term: Arc<AtomicBool>);
+    fn is_empty(&self) -> bool;
 }
 
 #[cfg(test)]

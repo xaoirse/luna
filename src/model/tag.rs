@@ -49,6 +49,9 @@ impl Dedup for Tag {
         self.values.dedup();
         self.dedup = true;
     }
+    fn is_empty(&self) -> bool {
+        self.name.is_empty()
+    }
 }
 
 impl Tag {

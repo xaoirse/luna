@@ -42,6 +42,9 @@ impl Dedup for Host {
         }
         self.dedup = dedup(&mut self.services, term);
     }
+    fn is_empty(&self) -> bool {
+        self.ip.is_empty()
+    }
 }
 
 impl Host {
@@ -132,6 +135,18 @@ impl std::str::FromStr for Host {
             ip: s.parse()?,
             ..Default::default()
         })
+    }
+}
+
+impl Ord for Host {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.ip.cmp(&other.ip)
+    }
+}
+
+impl PartialOrd for Host {
+    fn partial_cmp(&self, other: &Self) -> std::option::Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 

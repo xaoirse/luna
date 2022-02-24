@@ -53,7 +53,12 @@ impl Dedup for Sub {
         if self.dedup {
             return;
         }
+
         self.dedup = dedup(&mut self.hosts, term.clone()) && dedup(&mut self.urls, term)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.asset.is_empty() && self.urls.is_empty() && self.hosts.is_empty()
     }
 }
 
@@ -149,6 +154,18 @@ impl std::str::FromStr for Sub {
             asset: s.to_string(),
             ..Default::default()
         })
+    }
+}
+
+impl Ord for Sub {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.asset.cmp(&other.asset)
+    }
+}
+
+impl PartialOrd for Sub {
+    fn partial_cmp(&self, other: &Self) -> std::option::Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
