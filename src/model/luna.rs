@@ -226,20 +226,6 @@ impl Luna {
                 .filter(|s| s.matches(filter, true))
                 .map(|s| s.stringify(filter.verbose))
                 .collect(),
-            Fields::Tech => self
-                .programs
-                .par_iter()
-                .filter(|p| p.matches(filter, false))
-                .flat_map(|p| &p.scopes)
-                .filter(|s| s.matches(filter, false))
-                .flat_map(|s| &s.subs)
-                .filter(|s| s.matches(filter, false))
-                .flat_map(|s| &s.urls)
-                .filter(|u| u.matches(filter, false))
-                .flat_map(|u| &u.techs)
-                .filter(|t| t.matches(filter, true))
-                .map(|t| t.stringify(filter.verbose))
-                .collect(),
             Fields::Tag => self
                 .programs
                 .par_iter()
@@ -409,12 +395,6 @@ impl Luna {
                     .unwrap()
                     .tags
                     .retain(|t| !t.matches(filter, true)),
-                Fields::Tech => self
-                    .urls(filter)
-                    .first_mut()
-                    .unwrap()
-                    .techs
-                    .retain(|t| !t.matches(filter, true)),
                 Fields::Service => self
                     .hosts(filter)
                     .first_mut()
@@ -450,7 +430,6 @@ impl Luna {
     IPs: {}
     URLs: {}
     Services: {}
-    Techs: {}
     Tags: {}
     Update: {}
     Start: {}
@@ -466,7 +445,6 @@ impl Luna {
                 self.find(Fields::IP, &FilterRegex::default()).len(),
                 self.find(Fields::Url, &FilterRegex::default()).len(),
                 self.find(Fields::Service, &FilterRegex::default()).len(),
-                self.find(Fields::Tech, &FilterRegex::default()).len(),
                 self.find(Fields::Tag, &FilterRegex::default()).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
@@ -486,7 +464,6 @@ impl Luna {
     IPs: {}
     URLs: {}
     Services: {}
-    Techs: {}
     Tags: {}
     Update: {}
     Start: {}
@@ -512,7 +489,6 @@ impl Luna {
                 self.find(Fields::IP, &FilterRegex::default()).len(),
                 self.find(Fields::Url, &FilterRegex::default()).len(),
                 self.find(Fields::Service, &FilterRegex::default()).len(),
-                self.find(Fields::Tech, &FilterRegex::default()).len(),
                 self.find(Fields::Tag, &FilterRegex::default()).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
@@ -716,37 +692,6 @@ impl From<InsertHosts> for Luna {
     }
 }
 
-impl From<InsertTech> for Luna {
-    fn from(i: InsertTech) -> Self {
-        Luna {
-            programs: vec![Program {
-                name: i.program.unwrap_or_default(),
-                scopes: vec![Scope {
-                    asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
-                    subs: vec![Sub {
-                        asset: i.sub.unwrap_or_else(|| {
-                            i.url
-                                .split('/')
-                                .nth(2)
-                                .map(|s| s.to_string())
-                                .unwrap_or_default()
-                        }),
-                        urls: vec![Url {
-                            url: i.url,
-                            techs: vec![Tech { ..i.tech }],
-                            ..Default::default()
-                        }],
-                        ..Default::default()
-                    }],
-                    ..Default::default()
-                }],
-                ..Default::default()
-            }],
-            ..Default::default()
-        }
-    }
-}
-
 impl From<InsertTag> for Luna {
     fn from(i: InsertTag) -> Self {
         Luna {
@@ -815,7 +760,6 @@ impl From<Insert> for Luna {
             Insert::Urls(i) => i.into(),
             Insert::Host(i) => i.into(),
             Insert::Hosts(i) => i.into(),
-            Insert::Tech(i) => i.into(),
             Insert::Tag(i) => i.into(),
             Insert::Service(i) => i.into(),
         }
@@ -824,37 +768,12 @@ impl From<Insert> for Luna {
 
 impl From<Filter> for Luna {
     fn from(mut f: Filter) -> Self {
-        let tech_is_none = f.tech_is_none();
         let tag_is_none = f.tag_is_none();
         let url_is_none = f.url_is_none();
         let service_is_none = f.service_is_none();
         let host_is_none = f.host_is_none();
         let sub_is_none = f.sub_is_none();
         let scope_is_none = f.scope_is_none();
-
-        let techs = if tech_is_none {
-            vec![]
-        } else if let Some(tech) = f.tech {
-            if tech.split(',').count() > 1 {
-                tech.split(',')
-                    .map(|t| Tech::from_str(t).unwrap())
-                    .collect()
-            } else {
-                vec![Tech {
-                    name: tech,
-                    version: f.tech_version,
-                    update: Some(Utc::now()),
-                    start: Some(Utc::now()),
-                }]
-            }
-        } else {
-            vec![Tech {
-                name: f.tech.unwrap_or_default(),
-                version: f.tech_version,
-                update: Some(Utc::now()),
-                start: Some(Utc::now()),
-            }]
-        };
 
         let tags = if tag_is_none {
             vec![]
@@ -883,7 +802,6 @@ impl From<Filter> for Luna {
                 title: f.title.take(),
                 status_code: f.status_code.take(),
                 response: f.response.take(),
-                techs,
                 tags,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),

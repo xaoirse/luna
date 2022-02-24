@@ -18,9 +18,6 @@ pub struct Url {
     pub response: Option<String>,
 
     #[structopt(long)]
-    pub techs: Vec<Tech>,
-
-    #[structopt(long)]
     pub tags: Vec<Tag>,
 
     #[structopt(skip)]
@@ -50,7 +47,6 @@ impl Dedup for Url {
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 
-        a.techs.append(&mut b.techs);
         a.tags.append(&mut b.tags);
         a.dedup = false;
     }
@@ -58,7 +54,7 @@ impl Dedup for Url {
         if self.dedup {
             return;
         }
-        self.dedup = dedup(&mut self.techs, term.clone()) && dedup(&mut self.tags, term);
+        self.dedup = dedup(&mut self.tags, term);
     }
     fn is_empty(&self) -> bool {
         self.url.is_empty()
@@ -74,7 +70,6 @@ impl Url {
             && (!date
                 || (check_date(&self.update, &filter.updated_at)
                     && check_date(&self.start, &filter.started_at)))
-            && (filter.tech_is_none() || self.techs.par_iter().any(|t| t.matches(filter, false)))
             && (filter.tag_is_none() || self.tags.par_iter().any(|t| t.matches(filter, false)))
     }
 
@@ -96,7 +91,6 @@ impl Url {
                 "{} [{}]
     Title: {}
     Response length: {}
-    Techs: {}
     Tags: {}
     Update: {}
     Start: {}
@@ -107,7 +101,6 @@ impl Url {
                 self.response
                     .as_ref()
                     .map_or("n".to_string(), |s| s.len().to_string()),
-                self.techs.len(),
                 self.tags.len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
@@ -120,7 +113,6 @@ impl Url {
                 "{} [{}]
     Title: {}
     Response length: {}
-    Techs: [{}{}
     Tags: [{}{}
     Update: {}
     Start: {}
@@ -131,16 +123,6 @@ impl Url {
                 self.response
                     .as_ref()
                     .map_or("n".to_string(), |s| s.len().to_string()),
-                self.techs
-                    .iter()
-                    .map(|s| format!("\n        {}", s.stringify(1)))
-                    .collect::<Vec<String>>()
-                    .join(""),
-                if self.techs.is_empty() {
-                    "]"
-                } else {
-                    "\n    ]"
-                },
                 self.tags
                     .iter()
                     .map(|s| format!("\n        {}", s.stringify(1)))
@@ -170,7 +152,6 @@ impl Default for Url {
             title: None,
             status_code: None,
             response: None,
-            techs: vec![],
             tags: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),

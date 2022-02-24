@@ -78,7 +78,6 @@ pub enum Insert {
     Urls(InsertUrls),
     Host(InsertHost),
     Hosts(InsertHosts),
-    Tech(InsertTech),
     Tag(InsertTag),
     Service(InsertService),
 }
@@ -159,20 +158,6 @@ pub struct InsertHost {
 #[derive(Debug, StructOpt)]
 pub struct InsertHosts {
     pub hosts: Vec<Host>,
-    #[structopt(long)]
-    pub sub: Option<String>,
-    #[structopt(short, long)]
-    pub scope: Option<String>,
-    #[structopt(short, long)]
-    pub program: Option<String>,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct InsertTech {
-    #[structopt(flatten)]
-    pub tech: Tech,
-    #[structopt(long)]
-    pub url: String,
     #[structopt(long)]
     pub sub: Option<String>,
     #[structopt(short, long)]

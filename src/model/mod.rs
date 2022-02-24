@@ -12,7 +12,6 @@ pub mod scope;
 pub mod service;
 pub mod sub;
 pub mod tag;
-pub mod tech;
 pub mod url;
 pub mod utc_rfc2822;
 
@@ -27,7 +26,6 @@ pub use scope::ScopeType;
 pub use service::Service;
 pub use sub::Sub;
 pub use tag::Tag;
-pub use tech::Tech;
 
 pub type Errors = Box<dyn std::error::Error + Sync + Send>;
 

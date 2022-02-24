@@ -61,11 +61,6 @@ pub struct Filter {
     pub response: Option<String>,
 
     #[structopt(long)]
-    pub tech: Option<String>,
-    #[structopt(long)]
-    pub tech_version: Option<String>,
-
-    #[structopt(long)]
     pub tag: Option<String>,
     #[structopt(long)]
     pub tag_severity: Option<String>,
@@ -97,13 +92,7 @@ impl Filter {
             && self.title.as_ref().map_or(true, |s| s.is_empty())
             && self.status_code.as_ref().map_or(true, |s| s.is_empty())
             && self.response.as_ref().map_or(true, |s| s.is_empty())
-            && self.tech_is_none()
             && self.tag_is_none()
-    }
-
-    pub fn tech_is_none(&self) -> bool {
-        self.tech.as_ref().map_or(true, |s| s.is_empty())
-            && self.tech_version.as_ref().map_or(true, |s| s.is_empty())
     }
 
     pub fn tag_is_none(&self) -> bool {
@@ -133,7 +122,6 @@ arg_enum! {
         None,
         Keyword,
         Tag,
-        Tech,
         Service,
         IP,
         Url,
@@ -165,7 +153,6 @@ impl From<&Fields> for &str {
             Fields::Service => "port",
             Fields::None => "",
             Fields::Tag => "tag",
-            Fields::Tech => "tech",
         }
     }
 }
@@ -210,9 +197,6 @@ pub struct FilterRegex {
     pub status_code: Option<regex::Regex>,
     pub response: Option<regex::Regex>,
 
-    pub tech: Option<regex::Regex>,
-    pub tech_version: Option<regex::Regex>,
-
     pub tag: Option<regex::Regex>,
     pub tag_severity: Option<regex::Regex>,
     pub tag_value: Option<regex::Regex>,
@@ -240,12 +224,7 @@ impl FilterRegex {
             && self.title.is_none()
             && self.status_code.is_none()
             && self.response.is_none()
-            && self.tech_is_none()
             && self.tag_is_none()
-    }
-
-    pub fn tech_is_none(&self) -> bool {
-        self.tech.is_none() && self.tech_version.is_none()
     }
 
     pub fn tag_is_none(&self) -> bool {
@@ -366,15 +345,6 @@ impl TryFrom<Filter> for FilterRegex {
             None => None,
         };
 
-        let tech = match f.tech {
-            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
-            None => None,
-        };
-        let tech_version = match f.tech_version {
-            Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
-            None => None,
-        };
-
         let tag = match f.tag {
             Some(ref p) => Some(Regex::new(&format!("(?i){}", p))?),
             None => None,
@@ -419,9 +389,6 @@ impl TryFrom<Filter> for FilterRegex {
             title,
             status_code,
             response,
-
-            tech,
-            tech_version,
 
             tag,
             tag_severity,

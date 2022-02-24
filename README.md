@@ -105,8 +105,9 @@ Example:
     - status_code
     - response
 
-- tech
-    - tech_version
+- tag
+    - tag-severity
+    - tag-value
 
 Example:
 - `(?P<response>.+)`  
@@ -188,4 +189,4 @@ I want a standalone binary release from my code,
 - [x] Graceful shutdown
 - [ ] Pause and Resume (OMG!)
 - [x] Progress bar
-- [ ] Remove tech
+- [x] Remove tech

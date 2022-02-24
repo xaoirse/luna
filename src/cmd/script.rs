@@ -75,9 +75,6 @@ impl Data {
                     status_code: get("status_code"),
                     response: get("response"),
 
-                    tech: get("tech"),
-                    tech_version: get("tech_version"),
-
                     tag: get("tag"),
                     tag_severity: get("tag_severity"),
                     tag_value: get("tag_value"),
@@ -95,7 +92,6 @@ impl Data {
                     Fields::Url => luna.url = input,
                     Fields::IP => luna.ip = input,
                     Fields::Service => luna.port = input,
-                    Fields::Tech => luna.tech = input,
                     Fields::Tag => luna.tag = input,
                     Fields::Keyword => (),
                     Fields::None => (),
@@ -271,8 +267,6 @@ impl ScriptCli {
                     Fields::IP
                 } else if line.contains("${port}") {
                     Fields::Service
-                } else if line.contains("${tech}") {
-                    Fields::Tech
                 } else if line.contains("${tag}") {
                     Fields::Tag
                 } else if line.contains("${keyword}") {
@@ -344,7 +338,6 @@ fn regex_check(regex: &Regex) -> bool {
                 == (names.contains(&"title")
                     || names.contains(&"status_code")
                     || names.contains(&"response")))
-        && (names.contains(&"tech") || names.contains(&"tech") == names.contains(&"tech_version"))
         && (names.contains(&"tag")
             || names.contains(&"tag")
                 == (names.contains(&"tag_severity") || names.contains(&"tag_value")))
