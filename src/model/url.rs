@@ -172,7 +172,7 @@ impl std::str::FromStr for Url {
 }
 impl Ord for Url {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.url.cmp(&other.url)
+        other.url.cmp(&self.url)
     }
 }
 
@@ -184,7 +184,7 @@ impl PartialOrd for Url {
 
 impl PartialEq for Url {
     fn eq(&self, other: &Self) -> bool {
-        self.url == other.url
+        other.url.contains(&self.url) || self.url.contains(&other.url)
     }
 }
 
