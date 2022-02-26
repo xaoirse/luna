@@ -179,7 +179,20 @@ impl Luna {
                 .flat_map(|p| &p.scopes)
                 .filter(|s| s.matches(filter, true))
                 .filter_map(|s| match &s.asset {
-                    ScopeType::Cidr(_) => Some(s.stringify(filter.verbose)),
+                    ScopeType::Cidr(d) => {
+                        if filter.verbose == 3 {
+                            Some(
+                                d.parse::<cidr::IpCidr>()
+                                    .unwrap()
+                                    .iter()
+                                    .map(|c| c.address().to_string())
+                                    .collect::<Vec<String>>()
+                                    .join("\n"),
+                            )
+                        } else {
+                            Some(s.stringify(filter.verbose))
+                        }
+                    }
                     _ => None,
                 })
                 .collect(),
