@@ -69,6 +69,7 @@ impl Luna {
                 let (a, b) = hosts.split_at_mut(i);
                 Host::same_bucket(b[0], a[i - 1]);
                 b[0].ip = String::new();
+                hosts[i - 1].dedup = false;
             }
         }
 
@@ -89,6 +90,7 @@ impl Luna {
                 let (a, b) = urls.split_at_mut(i);
                 Url::same_bucket(b[0], a[i - 1]);
                 b[0].url = String::new();
+                urls[i - 1].dedup = false;
             }
         }
 
@@ -113,6 +115,7 @@ impl Luna {
                 let (a, b) = subs.split_at_mut(i);
                 Sub::same_bucket(b[0], a[i - 1]);
                 b[0].asset = String::new();
+                subs[i - 1].dedup = false;
             }
         }
 
@@ -131,6 +134,7 @@ impl Luna {
                 let (a, b) = scopes.split_at_mut(i);
                 Scope::same_bucket(b[0], a[i - 1]);
                 b[0].asset = ScopeType::Empty;
+                scopes[i - 1].dedup = false;
             }
         }
 
@@ -143,9 +147,11 @@ impl Luna {
                 let (a, b) = self.programs.split_at_mut(i);
                 Program::same_bucket(&mut b[0], &mut a[i - 1]);
                 b[0].name = String::new();
+                self.programs[i - 1].dedup = false;
             }
         }
 
+        self.dedup = false;
         //////////////
         ///// Dedup
         /////////////////////
