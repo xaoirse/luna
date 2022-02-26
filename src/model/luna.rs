@@ -99,7 +99,12 @@ impl Luna {
             .programs
             .iter_mut()
             .flat_map(|p| &mut p.scopes)
-            .flat_map(|s| &mut s.subs)
+            .flat_map(|s| {
+                if let ScopeType::Domain(d) = &s.asset {
+                    s.subs.retain(|sub| sub.asset.contains(d));
+                }
+                &mut s.subs
+            })
             .collect();
 
         subs.par_sort();
@@ -872,6 +877,28 @@ impl From<Filter> for Luna {
 
         let scopes = if scope_is_none {
             vec![]
+        } else if let (Some(scope), Some(sub)) = (f.scope.as_ref(), subs.first()) {
+            if sub.asset.contains(scope) {
+                vec![Scope {
+                    asset: ScopeType::Domain(scope.to_string()),
+                    severity: f.scope_severity,
+                    bounty: f.scope_bounty,
+                    subs,
+                    update: Some(Utc::now()),
+                    start: Some(Utc::now()),
+                    dedup: false,
+                }]
+            } else {
+                vec![Scope {
+                    asset: ScopeType::Empty,
+                    severity: f.scope_severity,
+                    bounty: f.scope_bounty,
+                    subs,
+                    update: Some(Utc::now()),
+                    start: Some(Utc::now()),
+                    dedup: false,
+                }]
+            }
         } else {
             vec![Scope {
                 asset: ScopeType::from_str(&f.scope.unwrap_or_default()).unwrap(),

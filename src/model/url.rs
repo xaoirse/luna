@@ -1,8 +1,8 @@
 use super::*;
+use ::url as urlib;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
-
 #[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
 pub struct Url {
     #[structopt(long)]
@@ -184,8 +184,131 @@ impl PartialOrd for Url {
 
 impl PartialEq for Url {
     fn eq(&self, other: &Self) -> bool {
-        other.url.contains(&self.url) || self.url.contains(&other.url)
+        other.url.contains(&self.url) || self.url.contains(&other.url) || {
+            let a = urlib::Url::parse(&other.url);
+            let b = urlib::Url::parse(&self.url);
+
+            match (a, b) {
+                (Ok(a), Ok(b)) => {
+                    let aa = a.path_segments();
+                    let bb = b.path_segments();
+
+                    a[..urlib::Position::BeforePath] == b[..urlib::Position::BeforePath]
+                        && {
+                            let mut a = a.query_pairs().map(|(k, _)| k).collect::<Vec<_>>();
+                            let mut b = b.query_pairs().map(|(k, _)| k).collect::<Vec<_>>();
+                            a.sort();
+                            b.sort();
+                            a == b
+                        }
+                        && match (aa, bb) {
+                            (Some(a), Some(b)) => {
+                                let n = a
+                                    .zip(b)
+                                    .fold(0, |init, (a, b)| if a == b { init } else { init + 1 });
+                                n < 2
+                            }
+                            _ => false,
+                        }
+                }
+                _ => false,
+            }
+        }
     }
 }
 
 impl Eq for Url {}
+
+mod test {
+
+    #[test]
+    fn test_eq() {
+        use super::Url;
+        use std::str::FromStr;
+
+        assert_ne!(
+            Url::from_str("https://a.com"),
+            Url::from_str("https://b.com")
+        );
+        assert_eq!(
+            Url::from_str("https://a.com/"),
+            Url::from_str("https://a.com")
+        );
+        assert_eq!(
+            Url::from_str("https://a.com/a/b?mia=love"),
+            Url::from_str("https://a.com/a")
+        );
+        assert_eq!(
+            Url::from_str("https://a.com/a/b/c/"),
+            Url::from_str("https://a.com/a/d/c")
+        );
+        assert_ne!(
+            Url::from_str("https://a.com/a/b/c/"),
+            Url::from_str("https://a.com/a/d/e")
+        );
+        assert_eq!(
+            Url::from_str("https://a.com/a/"),
+            Url::from_str("https://a.com/a/d/e")
+        );
+    }
+
+    #[test]
+    fn test_sort() {
+        use super::*;
+
+        use std::str::FromStr;
+
+        let mut arr = vec![
+            Url::from_str("https://a.com").unwrap(),
+            Url::from_str("https://b.com").unwrap(),
+            Url::from_str("https://a.com/").unwrap(),
+            Url::from_str("https://a.com").unwrap(),
+            Url::from_str("https://a.com/a/b?mia=love").unwrap(),
+            Url::from_str("https://a.com/a").unwrap(),
+            Url::from_str("https://a.com/a/b/c/").unwrap(),
+            Url::from_str("https://a.com/a/d/c").unwrap(),
+            Url::from_str("https://a.com/a/b/c/").unwrap(),
+            Url::from_str("https://a.com/a/d/e").unwrap(),
+            Url::from_str("https://a.com/a/").unwrap(),
+            Url::from_str("https://a.com/a/d/e").unwrap(),
+        ];
+        arr.sort();
+        arr.dedup();
+        assert_eq!(
+            arr,
+            vec![
+                Url::from_str("https://b.com").unwrap(),
+                Url::from_str("https://a.com/a/d/e").unwrap(),
+                Url::from_str("https://a.com/a/b?mia=love").unwrap(),
+                Url::from_str("https://a.com/a/b/c/").unwrap(),
+            ]
+        );
+
+        let mut arr = vec![
+            Url::from_str("https://b.com").unwrap(),
+            Url::from_str("https://a.com/").unwrap(),
+            Url::from_str("https://a.com/a/b?mia=love").unwrap(),
+            Url::from_str("https://a.com/a").unwrap(),
+            Url::from_str("https://a.com/a/d/c").unwrap(),
+            Url::from_str("https://a.com/a/b/c/").unwrap(),
+            Url::from_str("https://a.com/a/d/e").unwrap(),
+            Url::from_str("https://a.com/a/b/e").unwrap(),
+            Url::from_str("https://a.com").unwrap(),
+            Url::from_str("https://a.com/a/").unwrap(),
+            Url::from_str("https://a.com/a/d/e").unwrap(),
+            Url::from_str("https://a.com").unwrap(),
+            Url::from_str("https://a.com/a/b/c/").unwrap(),
+        ];
+        arr.sort();
+        arr.dedup();
+        assert_eq!(
+            arr,
+            vec![
+                Url::from_str("https://b.com").unwrap(),
+                Url::from_str("https://a.com/a/d/e").unwrap(),
+                Url::from_str("https://a.com/a/b?mia=love").unwrap(),
+                Url::from_str("https://a.com/a/b/c/").unwrap(),
+            ]
+        )
+    }
+}

@@ -190,3 +190,4 @@ I want a standalone binary release from my code,
 - [ ] Pause and Resume (OMG!)
 - [x] Progress bar
 - [x] Remove tech
+- [ ] cidr subcommand
