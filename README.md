@@ -31,7 +31,7 @@ See more keys and their definitions [here](https://doc.rust-lang.org/cargo/refer
 # Usage
 
 ```
-luna 0.5.0
+luna 0.6.0
 SA
 The moon rider has arived.
 
@@ -54,12 +54,13 @@ SUBCOMMANDS:
     find      
     help      Prints this message or the help of the given subcommand(s)
     import    
-    insert          
+    insert    
+    remove    
     report    
     script    
     server    
-    stat
-    test      
+    stat      
+    test        
 ```
 ## Features
 ### <a name="available-keywords"> </a>Available keywords:
@@ -190,3 +191,4 @@ I want a standalone binary release from my code,
 - [ ] Pause and Resume (OMG!)
 - [x] Progress bar
 - [x] Remove tech
+- [ ] Update dependencies

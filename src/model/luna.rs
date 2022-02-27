@@ -48,10 +48,6 @@ impl Luna {
     }
 
     pub fn dedup(&mut self, term: Arc<AtomicBool>) {
-        if self.dedup {
-            return;
-        }
-
         //////////////
         ///// Hosts
         /////////////////////
