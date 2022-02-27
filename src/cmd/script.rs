@@ -4,30 +4,10 @@ use log::{debug, error, warn};
 use rayon::prelude::*;
 use rayon::{iter::Map, vec::IntoIter};
 use regex::Regex;
+use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::{error, fmt, process::Command};
 use structopt::StructOpt;
-
-#[derive(Debug)]
-pub enum Error {
-    Pattern(String),
-}
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Pattern(msg) => write!(f, "{}", msg),
-        }
-    }
-}
-
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        match self {
-            Self::Pattern(msg) => msg,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct Data {
@@ -140,6 +120,7 @@ impl Data {
 
 #[derive(Debug)]
 pub struct Script {
+    pub cd: String,
     pub regex: Regex,
     pub command: String,
     pub field: Fields,
@@ -160,8 +141,15 @@ impl Script {
                 }
                 let cmd = self.command.replace(&self.field.substitution(), &input);
                 debug!("Command: {}", cmd);
-                let output =
-                    String::from_utf8(Command::new("sh").arg("-c").arg(cmd).output()?.stdout)?;
+                let output = String::from_utf8(
+                    Command::new("sh")
+                        .current_dir(&self.cd)
+                        .arg("-c")
+                        .arg("cd")
+                        .arg(cmd)
+                        .output()?
+                        .stdout,
+                )?;
                 debug!("Output: {}", &output);
                 Ok(Data {
                     input,
@@ -248,9 +236,7 @@ impl ScriptCli {
                 c.is_ascii_alphabetic() || '.' == c || '/' == c || '\\' == c
             }) {
                 if pattern.is_empty() {
-                    return Err(Box::new(Error::Pattern(
-                        "Where the fuck is the first pattern?".to_string(),
-                    )));
+                    return Err("Where the fuck is the first pattern?".into());
                 }
 
                 let field = if line.contains("${program}") {
@@ -278,13 +264,24 @@ impl ScriptCli {
 
                 if let Ok(regex) = regex::Regex::new(&pattern) {
                     if !regex_check(&regex) {
-                        return Err(Box::new(Error::Pattern(
+                        return Err(
                         format!("line {} pattern \"{}\"  doesn't have necessery names \"program\", \"scope\", \"sub\", \"url\" or \"ip\""
-                            ,n,pattern),
-                    )));
+                            ,n,pattern).into(),
+                    );
+                    }
+
+                    let mut cd = std::path::Path::new(&self.path)
+                        .parent()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_string();
+                    if cd.is_empty() {
+                        cd = ".".to_string()
                     }
 
                     let script = Script {
+                        cd,
                         regex,
                         command: line.trim().to_string(),
                         field,
