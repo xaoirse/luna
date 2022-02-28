@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 
 use super::*;
-use crate::model::url::Url;
 
 #[derive(Clone, Debug, Serialize, Deserialize, StructOpt)]
 pub struct Sub {

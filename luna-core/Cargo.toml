@@ -1,0 +1,15 @@
+[package]
+name = "luna-core"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+log = "0.4"
+env_logger = "0.8.4"
+signal-hook = "*"
+structopt = "0.3"
+rayon = "1.5"
+colored = "2"
+
+model = { path = "../model" }

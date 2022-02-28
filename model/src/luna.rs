@@ -1,5 +1,4 @@
 use super::*;
-use crate::model::url::Url;
 use chrono::{DateTime, Utc};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};

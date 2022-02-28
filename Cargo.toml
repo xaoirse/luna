@@ -1,11 +1,24 @@
 [package]
 name = "luna"
 version = "0.6.0"
-authors = ["SAoirse: github.com/XAoirse"]
+authors = ["SAoirse: https://github.com/XAoirse"]
 description = "A Recon Tool"
 readme = "README.md"
 edition = "2021"
 
+[workspace]
+members = [
+    "model",
+    "luna-core"
+]
+
+[[bin]]
+path = "luna-core/src/main.rs"
+name = "luna-core"
+
+[lib]
+name = "model"
+path = "model/src/lib.rs"
 
 [dependencies]
 # https://docs.rs/openssl/0.10.36/openssl/#vendored
@@ -24,3 +37,4 @@ cidr = "0.2.1"
 signal-hook = "*"
 indicatif = {version = "0.17.0-rc.5", features = ["rayon"]}
 url = "2.2.2"
+

@@ -1,0 +1,19 @@
+[package]
+name = "model"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4"
+env_logger = "0.8.4"
+chrono = "0.4"
+clap = { version = "2.33.3", features = ["suggestions", "color","wrap_help" ] }
+regex = "1.5.4"
+serde = { version = "1.0", features = ["derive"] }
+structopt = "0.3"
+serde_json = "1.0.68"
+rayon = "1.5"
+cidr = "0.2.1"
+indicatif = {version = "0.17.0-rc.5", features = ["rayon"]}
+url = "2.2.2"
+

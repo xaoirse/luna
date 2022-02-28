@@ -235,7 +235,7 @@ impl Eq for Scope {}
 #[allow(unused_imports)]
 mod test {
     use super::*;
-    use crate::model::url::Url;
+
     #[test]
     fn test_eq() {
         let a = Scope {

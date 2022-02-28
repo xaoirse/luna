@@ -306,6 +306,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "luna-core"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "env_logger",
+ "log",
+ "model",
+ "rayon",
+ "signal-hook",
+ "structopt",
+]
+
+[[package]]
 name = "matches"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -324,6 +337,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "model"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "cidr",
+ "clap",
+ "env_logger",
+ "indicatif",
+ "log",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "structopt",
+ "url",
 ]
 
 [[package]]

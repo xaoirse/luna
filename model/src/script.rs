@@ -1,4 +1,3 @@
-use crate::model::{Errors, Fields, Filter, FilterRegex, Luna};
 use indicatif::{ParallelProgressIterator, ProgressBar, ProgressFinish, ProgressStyle};
 use log::{debug, error, warn};
 use rayon::prelude::*;
@@ -7,6 +6,8 @@ use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use structopt::StructOpt;
+
+use super::*;
 
 #[derive(Debug)]
 pub struct Data {
