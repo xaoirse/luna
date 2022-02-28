@@ -4,7 +4,7 @@
 
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.6.0
+  / / / / / / |/ / _ |  v0.7.0
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
@@ -192,3 +192,5 @@ I want a standalone binary release from my code,
 - [x] Progress bar
 - [x] Remove tech
 - [ ] Update dependencies
+- [ ] benchmarks
+- [ ] Tests

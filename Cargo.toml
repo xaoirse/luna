@@ -1,6 +1,6 @@
 [package]
 name = "luna"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["SAoirse: https://github.com/XAoirse"]
 description = "A Recon Tool"
 readme = "README.md"
@@ -21,8 +21,7 @@ name = "model"
 path = "model/src/lib.rs"
 
 [dependencies]
-# https://docs.rs/openssl/0.10.36/openssl/#vendored
-openssl = { version = "*", features = ["vendored"] }
+openssl = { version = "*", features = ["vendored"] } # https://docs.rs/openssl/0.10.36/openssl/#vendored
 log = "0.4"
 env_logger = "0.8.4"
 colored = "2"
@@ -38,3 +37,13 @@ signal-hook = "*"
 indicatif = {version = "0.17.0-rc.5", features = ["rayon"]}
 url = "2.2.2"
 
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "benchmarks"
+harness = false
+
+[[test]]
+name = "integration"
+path = "tests/integration_tests.rs"
