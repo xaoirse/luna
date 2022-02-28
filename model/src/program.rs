@@ -1,46 +1,46 @@
 use super::*;
 use chrono::{DateTime, Utc};
+use clap::Parser;
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
 
-#[derive(Debug, Clone, Serialize, Deserialize, StructOpt)]
+#[derive(Debug, Clone, Serialize, Deserialize, Parser)]
 pub struct Program {
-    #[structopt(long)]
+    #[clap(long)]
     pub name: String,
 
-    #[structopt(long, case_insensitive = true)]
+    #[clap(long, ignore_case = true)]
     pub platform: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub handle: Option<String>,
 
-    #[structopt(long = "type", case_insensitive = true)]
+    #[clap(long = "type", ignore_case = true)]
     pub typ: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub url: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub icon: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub bounty: Option<String>,
 
-    #[structopt(long, case_insensitive = true)]
+    #[clap(long, ignore_case = true)]
     pub state: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub scopes: Vec<Scope>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     pub dedup: bool,
 }
 

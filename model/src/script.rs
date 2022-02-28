@@ -1,3 +1,4 @@
+use clap::Parser;
 use indicatif::{ParallelProgressIterator, ProgressBar, ProgressFinish, ProgressStyle};
 use log::{debug, error, warn};
 use rayon::prelude::*;
@@ -5,7 +6,6 @@ use regex::Regex;
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use structopt::StructOpt;
 
 use super::*;
 
@@ -215,11 +215,11 @@ impl Scripts {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ScriptCli {
     pub path: String,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub filter: Filter,
 }
 

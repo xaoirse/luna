@@ -32,7 +32,7 @@ fn dedup(n: i32) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("dedup", |b| b.iter(|| dedup(black_box(200))));
+    c.bench_function("dedup", |b| b.iter(|| dedup(black_box(2000))));
 }
 
 criterion_group!(benches, criterion_benchmark);

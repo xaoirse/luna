@@ -1,27 +1,27 @@
 use super::*;
+use clap::Parser;
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
 
-#[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
+#[derive(Debug, Serialize, Deserialize, Parser, Clone)]
 pub struct Tag {
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub name: String,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub severity: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub values: Vec<String>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     pub dedup: bool,
 }
 

@@ -1,76 +1,76 @@
-use clap::arg_enum;
-use structopt::StructOpt;
+use clap::ArgEnum;
+use clap::Parser;
 
 use super::*;
 
-#[derive(Debug, StructOpt, Default, Clone)]
+#[derive(Debug, Parser, Default, Clone)]
 pub struct Filter {
-    #[structopt(short, long, parse(from_occurrences))]
+    #[clap(short, long, parse(from_occurrences))]
     pub verbose: u8,
-    #[structopt(short, help = "Number of Results")]
+    #[clap(short, help = "Number of Results")]
     pub n: Option<usize>,
 
-    #[structopt(long, short)]
+    #[clap(long, short)]
     pub program: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub program_platform: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub program_handle: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub program_type: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub program_url: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub program_icon: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub program_bounty: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub program_state: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub scope: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub scope_bounty: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub scope_severity: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub sub: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub sub_type: Option<String>,
 
-    #[structopt(long, name = "Ip or Cidr")]
+    #[clap(long, name = "Ip or Cidr")]
     pub ip: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub port: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub service_name: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub service_protocol: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub service_banner: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub url: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub title: Option<String>,
-    #[structopt(long, short = "c")]
+    #[clap(long, short = 'c')]
     pub status_code: Option<String>,
-    #[structopt(long, short = "r")]
+    #[clap(long, short = 'r')]
     pub response: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub tag: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub tag_severity: Option<String>,
-    #[structopt(long)]
+    #[clap(long)]
     pub tag_value: Option<String>,
 
-    #[structopt(long, short, help = "Hours ago")]
+    #[clap(long, short, help = "Hours ago")]
     pub updated_at: Option<i64>,
 
-    #[structopt(long, short, help = "Hours ago")]
+    #[clap(long, short, help = "Hours ago")]
     pub started_at: Option<i64>,
 }
 
@@ -116,21 +116,19 @@ impl Filter {
     }
 }
 
-arg_enum! {
-    #[derive(Debug, Clone,Copy)]
-    pub enum Fields {
-        None,
-        Keyword,
-        Tag,
-        Service,
-        IP,
-        Url,
-        Sub,
-        Cidr,
-        Domain,
-        Program,
-        Luna,
-    }
+#[derive(Debug, Clone, Copy, ArgEnum)]
+pub enum Fields {
+    None,
+    Keyword,
+    Tag,
+    Service,
+    IP,
+    Url,
+    Sub,
+    Cidr,
+    Domain,
+    Program,
+    Luna,
 }
 
 impl Default for Fields {

@@ -2,11 +2,11 @@
 // Developed by SAoirse
 // xaoirse.github.com
 
+use clap::Parser;
 use colored::*;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use std::sync::{atomic::AtomicBool, Arc};
-use structopt::StructOpt;
 
 use model::*;
 
@@ -36,7 +36,7 @@ pub fn run() {
 
     debug!("Running...");
 
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     rayon::ThreadPoolBuilder::new()
         .num_threads(opt.threads.unwrap_or_default())
@@ -46,7 +46,7 @@ pub fn run() {
     if !opt.quiet {
         println!("{}", BANNER.cyan().bold());
     }
-    let mut luna = Luna::from_args();
+    let mut luna = Luna::parse();
 
     match opt.cli {
         Cli::Insert(insert) => {

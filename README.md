@@ -1,6 +1,6 @@
 # Luna 
 (preparing for stable version)
-### **Reconnaissance** tool, Powered by **Rust**, built with 🖤  
+### **Reconnaissance** tool, Powered by **Rust**, built with 💖  
 
 ```
    __  __  ___  _____ 
@@ -21,7 +21,7 @@ Luna can run any bunch of bash scripts in **Parallel**, collect results, save th
 For building statically linked rust binary [read this link](https://blog.davidvassallo.me/2021/06/10/lessons-learned-building-statically-linked-rust-binaries-openssl/) and [here](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes)
 
 minimum size:  
-`RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-s -C panic=abort -C opt-level=z' cargo build --target x86_64-unknown-linux-musl --release` + UPX
+`RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-s -C panic=abort -C codegen-units=1' cargo build --target x86_64-unknown-linux-musl --release` + UPX
 
 `-s`, `--strip-all` Omit all symbol information from the output file.
 
@@ -31,7 +31,7 @@ See more keys and their definitions [here](https://doc.rust-lang.org/cargo/refer
 # Usage
 
 ```
-luna 0.6.0
+luna 0.7.0
 SA
 The moon rider has arived.
 
@@ -138,8 +138,8 @@ echo ${sub} | ./httpx -nc -silent -sc -title -ip -td
 
 
 # Built With
-- [**StructOpt**](https://github.com/TeXitoi/structopt)
-: Parse command line arguments by defining a struct. It combines clap with custom derive.
+- [**Clap**](https://github.com/clap-rs/clap)
+: Command Line Argument Parser for Rust.
 - [**Rayon**](https://github.com/rayon-rs/rayon): A data-parallelism library for Rust.
 - [**Regex**](https://github.com/rust-lang/regex
 ): A library for parsing, compiling, and executing regular expressions.
@@ -192,5 +192,6 @@ I want a standalone binary release from my code,
 - [x] Progress bar
 - [x] Remove tech
 - [ ] Update dependencies
-- [ ] benchmarks
+- [ ] Benchmarks
 - [ ] Tests
+- [ ] Cow

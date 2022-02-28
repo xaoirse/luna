@@ -1,35 +1,35 @@
 use super::*;
 use chrono::{DateTime, Utc};
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
     str::FromStr,
 };
-use structopt::StructOpt;
 
-#[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
+#[derive(Debug, Serialize, Deserialize, Parser, Clone)]
 pub struct Scope {
-    #[structopt(long)]
+    #[clap(long)]
     pub asset: ScopeType,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub bounty: Option<String>,
 
-    #[structopt(long, case_insensitive = true)]
+    #[clap(long, ignore_case = true)]
     pub severity: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub subs: Vec<Sub>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     pub dedup: bool,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone)]

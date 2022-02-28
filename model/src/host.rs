@@ -1,25 +1,25 @@
 use super::*;
 use chrono::{DateTime, Utc};
+use clap::Parser;
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
 
-#[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
+#[derive(Debug, Serialize, Deserialize, Parser, Clone)]
 pub struct Host {
-    #[structopt(long)]
+    #[clap(long)]
     pub ip: String,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub services: Vec<Service>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     pub dedup: bool,
 }
 

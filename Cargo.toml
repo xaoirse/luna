@@ -26,10 +26,9 @@ log = "0.4"
 env_logger = "0.8.4"
 colored = "2"
 chrono = "0.4"
-clap = { version = "2.33.3", features = ["suggestions", "color","wrap_help" ] }
+clap = { version = "3.1", features = ["derive","suggestions", "color","wrap_help" ] }
 regex = "1.5.4"
 serde = { version = "1.0", features = ["derive"] }
-structopt = "0.3"
 serde_json = "1.0.68"
 rayon = "1.5"
 cidr = "0.2.1"

@@ -1,33 +1,33 @@
 use chrono::{DateTime, Utc};
+use clap::Parser;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
 
 use super::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize, StructOpt)]
+#[derive(Clone, Debug, Serialize, Deserialize, Parser)]
 pub struct Sub {
-    #[structopt(long)]
+    #[clap(long)]
     pub asset: String,
 
-    #[structopt(long = "type", case_insensitive = true)]
+    #[clap(long = "type", ignore_case = true)]
     pub typ: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub hosts: Vec<Host>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub urls: Vec<Url>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     pub dedup: bool,
 }
 

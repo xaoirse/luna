@@ -1,34 +1,34 @@
 use super::*;
 use ::url as urlib;
 use chrono::{DateTime, Utc};
+use clap::Parser;
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
-#[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
+#[derive(Debug, Serialize, Deserialize, Parser, Clone)]
 pub struct Url {
-    #[structopt(long)]
+    #[clap(long)]
     pub url: String,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub title: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub status_code: Option<String>,
 
-    #[structopt(long, short)]
+    #[clap(long, short)]
     pub response: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub tags: Vec<Tag>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     pub dedup: bool,
 }
 

@@ -1,38 +1,38 @@
 use super::*;
 use chrono::{DateTime, Utc};
+use clap::Parser;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::io::Write;
 use std::str::FromStr;
-use structopt::StructOpt;
 
-#[derive(Debug, Clone, StructOpt, Serialize, Deserialize)]
+#[derive(Debug, Clone, Parser, Serialize, Deserialize)]
 pub struct Luna {
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub name: String,
 
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub status: String,
 
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub version: String,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     pub counter: i64,
 
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub programs: Vec<Program>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     pub dedup: bool,
 }
 
@@ -319,7 +319,7 @@ impl Luna {
     fn save_as(&self, path: &str) -> Result<usize, Errors> {
         let str = serde_json::to_string(&self)?;
 
-        if !Opt::from_args().no_backup && std::path::Path::new(path).exists() {
+        if !Opt::parse().no_backup && std::path::Path::new(path).exists() {
             let copy_path = match path.rsplit_once('.') {
                 Some((a, b)) => format!("{}_{}.{}", a, chrono::Local::now().to_rfc2822(), b),
                 None => format!("{}_{}", path, Utc::now().to_rfc2822()),
@@ -340,7 +340,7 @@ impl Luna {
     }
 
     pub fn save(&self) {
-        let opt = Opt::from_args();
+        let opt = Opt::parse();
         let output = opt.output.as_ref().unwrap_or(&opt.input);
 
         if let Err(err) = self.save_as(output) {
@@ -354,8 +354,8 @@ impl Luna {
         let file = std::fs::read_to_string(path)?;
         Ok(serde_json::from_str(&file)?)
     }
-    pub fn from_args() -> Luna {
-        let opt = Opt::from_args();
+    pub fn parse() -> Luna {
+        let opt = Opt::parse();
 
         match Luna::from_file(&opt.input) {
             Ok(luna) => {

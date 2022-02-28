@@ -1,26 +1,26 @@
 use super::*;
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
+use clap::Parser;
 
-#[derive(Debug, Serialize, Deserialize, StructOpt, Clone)]
+#[derive(Debug, Serialize, Deserialize, Parser, Clone)]
 pub struct Service {
-    #[structopt(long)]
+    #[clap(long)]
     pub port: String,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub name: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub protocol: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub banner: Option<String>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub update: Option<DateTime<Utc>>,
 
-    #[structopt(skip)]
+    #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
 }
