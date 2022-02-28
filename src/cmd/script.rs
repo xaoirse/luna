@@ -1,8 +1,7 @@
 use crate::model::{Errors, Fields, Filter, FilterRegex, Luna};
-use indicatif::{ParallelProgressIterator, ProgressStyle};
+use indicatif::{ParallelProgressIterator, ProgressBar, ProgressFinish, ProgressStyle};
 use log::{debug, error, warn};
 use rayon::prelude::*;
-use rayon::{iter::Map, vec::IntoIter};
 use regex::Regex;
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -127,35 +126,66 @@ pub struct Script {
 }
 
 impl Script {
-    fn execute<'a>(
-        &'a self,
-        luna: &Luna,
-        filter: &FilterRegex,
-        term: Arc<AtomicBool>,
-    ) -> Map<IntoIter<String>, impl Fn(String) -> Result<Data, Errors> + 'a> {
-        luna.find(self.field, filter)
+    fn execute<'a>(&'a self, luna: &Luna, filter: &FilterRegex, term: Arc<AtomicBool>) -> Luna {
+        let elements = luna.find(self.field, filter);
+
+        let ps = ProgressStyle::default_bar()
+                    .template(
+                        "{spinner:.green} {wide_msg}\n[{elapsed_precise}] [{wide_bar:.cyan/cyan}] {pos}/{len} ({eta})",
+                    ).unwrap()
+                    .progress_chars("▓█░");
+        let of = ProgressFinish::WithMessage(self.command.clone().into());
+        let pb = ProgressBar::new(elements.len() as u64);
+        pb.set_style(ps);
+        // pb.enable_steady_tick(std::time::Duration::from_millis(500));
+        pb.clone().with_finish(of);
+
+        elements
             .into_par_iter()
+            .progress_with(pb.clone())
             .map(move |input| {
                 if term.load(Ordering::Relaxed) {
-                    return Err("term".into());
+                    return Err("Terminated!".into());
                 }
+
                 let cmd = self.command.replace(&self.field.substitution(), &input);
-                debug!("Command: {}", cmd);
+
+                pb.set_message(cmd.clone());
+
                 let output = String::from_utf8(
                     Command::new("sh")
                         .current_dir(&self.cd)
                         .arg("-c")
-                        .arg("cd")
-                        .arg(cmd)
+                        .arg(cmd.clone())
                         .output()?
                         .stdout,
                 )?;
-                debug!("Output: {}", &output);
+
+                debug!("Command: {}\nOutput: {}", cmd, &output);
+
                 Ok(Data {
                     input,
                     field: self.field,
                     output,
                 })
+            })
+            .filter_map(|result: Result<Data, Errors>| match result {
+                Ok(data) => Some(data),
+                Err(err) => {
+                    if err.to_string() == "term" {
+                        warn!("command aborted");
+                    } else {
+                        error!("Error in executing: {}", err);
+                    }
+                    None
+                }
+            })
+            .flat_map(|data| data.parse(&self.regex))
+            .collect::<Vec<Luna>>() // This should run parallel here
+            .into_iter()
+            .fold(Luna::default(), |mut init, l| {
+                init.append(l);
+                init
             })
     }
 }
@@ -175,32 +205,7 @@ impl Scripts {
                 if term.load(Ordering::Relaxed) {
                     return;
                 }
-                let ps = ProgressStyle::default_bar()
-                    .template(
-                        "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/cyan}] {pos}/{len} ({eta})",
-                    )
-                    .progress_chars("▓█░");
-                let mut l = script
-                    .execute(luna, &self.filter, term.clone())
-                    .progress_with_style(ps)
-                    .filter_map(|result| match result {
-                        Ok(data) => Some(data),
-                        Err(err) => {
-                            if err.to_string() == "term" {
-                                warn!("command aborted");
-                            } else {
-                                error!("Error in executing: {}", err);
-                            }
-                            None
-                        }
-                    })
-                    .flat_map(|data| data.parse(&script.regex))
-                    .collect::<Vec<Luna>>() // This should run parallel here
-                    .into_iter()
-                    .fold(Luna::default(), |mut init, l| {
-                        init.append(l);
-                        init
-                    });
+                let mut l = script.execute(luna, &self.filter, term.clone());
                 l.dedup(term.clone());
                 luna.append(l);
                 luna.dedup(term.clone());
@@ -221,22 +226,23 @@ impl ScriptCli {
     #[allow(clippy::blocks_in_if_conditions)]
     pub fn parse(self) -> Result<Scripts, Errors> {
         let mut scripts = vec![];
-        let mut pattern = String::new();
+        let mut regex = String::new();
+        let regex_pat = Regex::new(r"(?:^#\s)*regex\s*=")?;
 
         for (n, line) in std::fs::read_to_string(&self.path)?
             .trim()
             .lines()
             .enumerate()
         {
-            if line.trim().starts_with("pattern") {
-                pattern = line
+            if regex_pat.is_match(line) {
+                regex = line
                     .split_once("=")
                     .map_or("".to_string(), |p| p.1.trim().to_string())
             } else if line.trim().chars().next().map_or(false, |c| {
                 c.is_ascii_alphabetic() || '.' == c || '/' == c || '\\' == c
             }) {
-                if pattern.is_empty() {
-                    return Err("Where the fuck is the first pattern?".into());
+                if regex.is_empty() {
+                    return Err("Where the fuck is the first regex?".into());
                 }
 
                 let field = if line.contains("${program}") {
@@ -262,11 +268,11 @@ impl ScriptCli {
                     Fields::None
                 };
 
-                if let Ok(regex) = regex::Regex::new(&pattern) {
+                if let Ok(regex) = regex::Regex::new(&regex) {
                     if !regex_check(&regex) {
                         return Err(
-                        format!("line {} pattern \"{}\"  doesn't have necessery names \"program\", \"scope\", \"sub\", \"url\" or \"ip\""
-                            ,n,pattern).into(),
+                        format!("line {} regex \"{}\"  doesn't have necessery names \"program\", \"scope\", \"sub\", \"url\" or \"ip\""
+                            ,n,regex).into(),
                     );
                     }
 
@@ -289,8 +295,8 @@ impl ScriptCli {
                     debug!("{:#?}", script);
                     scripts.push(script)
                 } else {
-                    error!("Fucking pattern: {}", pattern);
-                    panic!("Fucking pattern: {}", pattern);
+                    error!("Fucking regex: {}", regex);
+                    panic!("Fucking regex: {}", regex);
                 }
             }
         }

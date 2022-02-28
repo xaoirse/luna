@@ -113,18 +113,18 @@ Example:
 Example:
 - `(?P<response>.+)`  
 
-[Test your patterns](https://rustexp.lpil.uk/)
+[Test your regex](https://rustexp.lpil.uk/)
 
 # Simple Using
 1. Create script file like `script.sh`:  
-( pattern for parsing results [see this](#regex-names) )  
+( regex for parsing results [see this](#regex-names) )  
 [ commands [see this](#available-keywords)]
 (Be carfull when using tools with colorful output)
 ```bash
-pattern = (?P<sub>.+)
+regex = (?P<sub>.+)
 subfinder -d ${scope} # sub1.sample.com -> sub
 
-pattern = (?P<url>(?:\w+)://\S+) \[(?P<status_code>\d*)\] \[(?P<title>[^\]]*)\] \[(?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3})\] \[(?P<tech>[^\]]*)\]
+regex = (?P<url>(?:\w+)://\S+) \[(?P<status_code>\d*)\] \[(?P<title>[^\]]*)\] \[(?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3})\] \[(?P<tech>[^\]]*)\]
 echo ${sub} | ./httpx -nc -silent -sc -title -ip -td 
 ```
 2. Insert some scopes (see helps):  
