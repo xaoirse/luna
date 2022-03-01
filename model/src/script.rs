@@ -24,7 +24,6 @@ impl Data {
                 let get = |key| caps.name(key).map(|v| v.as_str().to_string());
 
                 let mut luna = Filter {
-                    verbose: 0,
                     n: None,
 
                     program: get("program"),
@@ -120,6 +119,7 @@ impl Data {
 
 #[derive(Debug)]
 pub struct Script {
+    pub verbose: u8,
     pub cd: String,
     pub regex: Regex,
     pub command: String,
@@ -128,18 +128,26 @@ pub struct Script {
 
 impl Script {
     fn execute<'a>(&'a self, luna: &Luna, filter: &FilterRegex, term: Arc<AtomicBool>) -> Luna {
-        let elements = luna.find(self.field, filter);
+        let elements = luna.find(self.field, filter, 0);
 
         let ps = ProgressStyle::default_bar()
                     .template(
                         "{spinner:.green} {wide_msg}\n[{elapsed_precise}] [{wide_bar:.cyan/cyan}] {pos}/{len} ({eta})",
                     ).unwrap()
                     .progress_chars("▓█░");
-        let of = ProgressFinish::WithMessage(self.command.clone().into());
+
         let pb = ProgressBar::new(elements.len() as u64);
+
         pb.set_style(ps);
-        // pb.enable_steady_tick(std::time::Duration::from_millis(500));
-        pb.clone().with_finish(of);
+
+        if self.verbose == 0 {
+            pb.set_draw_target(indicatif::ProgressDrawTarget::hidden());
+        }
+
+        if self.verbose > 1 {
+            pb.clone()
+                .with_finish(ProgressFinish::WithMessage(self.command.clone().into()));
+        }
 
         elements
             .into_par_iter()
@@ -220,6 +228,9 @@ impl Scripts {
 pub struct ScriptCli {
     pub path: String,
 
+    #[clap(short, long, parse(from_occurrences), help = "Show progress bar")]
+    pub verbose: u8,
+
     #[clap(flatten)]
     pub filter: Filter,
 }
@@ -289,6 +300,7 @@ impl ScriptCli {
                     }
 
                     let script = Script {
+                        verbose: self.verbose,
                         cd,
                         regex,
                         command: line.trim().to_string(),

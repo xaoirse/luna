@@ -50,6 +50,9 @@ pub struct FindCli {
     #[clap(arg_enum, ignore_case = true, help = "Case Insensitive")]
     pub field: Fields,
 
+    #[clap(short, long, parse(from_occurrences))]
+    pub verbose: u8,
+
     #[clap(flatten)]
     pub filter: Filter,
 }

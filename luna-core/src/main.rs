@@ -76,11 +76,14 @@ pub fn run() {
             debug!("{:#?}", find);
             let field = find.field;
             match find.filter.try_into() {
-                Ok(find) => {
-                    let mut results = luna.find(field, &find);
+                Ok(filter) => {
+                    let mut results = luna.find(field, &filter, find.verbose);
                     results.par_sort();
                     results.dedup();
-                    results.iter().take(find.n).for_each(|r| println!("{}", r));
+                    results
+                        .iter()
+                        .take(filter.n)
+                        .for_each(|r| println!("{}", r));
                 }
                 Err(err) => error!("Use fucking correct patterns: {}", err),
             }
@@ -122,6 +125,7 @@ pub fn run() {
 
             if let Some(script_path) = check.script.as_ref() {
                 let script = ScriptCli {
+                    verbose: 0,
                     path: script_path.to_string(),
                     filter: Filter::default(),
                 };

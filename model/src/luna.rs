@@ -12,10 +12,10 @@ pub struct Luna {
     #[clap(short, long)]
     pub name: String,
 
-    #[clap(short, long)]
+    #[clap(long)]
     pub status: String,
 
-    #[clap(short, long)]
+    #[clap(long)]
     pub version: String,
 
     #[clap(skip)]
@@ -153,14 +153,14 @@ impl Luna {
         self.dedup = dedup(&mut self.programs, term);
     }
 
-    pub fn find(&self, field: Fields, filter: &FilterRegex) -> Vec<String> {
+    pub fn find(&self, field: Fields, filter: &FilterRegex, verbose: u8) -> Vec<String> {
         match field {
-            Fields::Luna => vec![self.stringify(filter.verbose)],
+            Fields::Luna => vec![self.stringify(verbose)],
             Fields::Program => self
                 .programs
                 .par_iter()
                 .filter(|p| p.matches(filter, true))
-                .map(|p| p.stringify(filter.verbose))
+                .map(|p| p.stringify(verbose))
                 .collect(),
             Fields::Domain => self
                 .programs
@@ -169,7 +169,7 @@ impl Luna {
                 .flat_map(|p| &p.scopes)
                 .filter(|s| s.matches(filter, true))
                 .filter_map(|s| match &s.asset {
-                    ScopeType::Domain(_) => Some(s.stringify(filter.verbose)),
+                    ScopeType::Domain(_) => Some(s.stringify(verbose)),
                     _ => None,
                 })
                 .collect(),
@@ -181,7 +181,7 @@ impl Luna {
                 .filter(|s| s.matches(filter, true))
                 .filter_map(|s| match &s.asset {
                     ScopeType::Cidr(d) => {
-                        if filter.verbose == 3 {
+                        if verbose == 3 {
                             Some(
                                 d.parse::<cidr::IpCidr>()
                                     .unwrap()
@@ -191,7 +191,7 @@ impl Luna {
                                     .join("\n"),
                             )
                         } else {
-                            Some(s.stringify(filter.verbose))
+                            Some(s.stringify(verbose))
                         }
                     }
                     _ => None,
@@ -205,7 +205,7 @@ impl Luna {
                 .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.subs)
                 .filter(|s| s.matches(filter, true))
-                .map(|s| s.stringify(filter.verbose))
+                .map(|s| s.stringify(verbose))
                 .collect(),
             Fields::Url => self
                 .programs
@@ -217,7 +217,7 @@ impl Luna {
                 .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.urls)
                 .filter(|u| u.matches(filter, true))
-                .map(|u| u.stringify(filter.verbose))
+                .map(|u| u.stringify(verbose))
                 .collect(),
             Fields::IP => self
                 .programs
@@ -229,7 +229,7 @@ impl Luna {
                 .filter(|s| s.matches(filter, false))
                 .flat_map(|s| &s.hosts)
                 .filter(|h| h.matches(filter, true))
-                .map(|h| h.stringify(filter.verbose))
+                .map(|h| h.stringify(verbose))
                 .collect(),
             Fields::Service => self
                 .programs
@@ -243,7 +243,7 @@ impl Luna {
                 .filter(|h| h.matches(filter, false))
                 .flat_map(|h| &h.services)
                 .filter(|s| s.matches(filter, true))
-                .map(|s| s.stringify(filter.verbose))
+                .map(|s| s.stringify(verbose))
                 .collect(),
             Fields::Tag => self
                 .programs
@@ -257,7 +257,7 @@ impl Luna {
                 .filter(|u| u.matches(filter, false))
                 .flat_map(|u| &u.tags)
                 .filter(|t| t.matches(filter, true))
-                .map(|t| t.stringify(filter.verbose))
+                .map(|t| t.stringify(verbose))
                 .collect(),
             Fields::Keyword => todo!(),
             Fields::None => vec!["".to_string()],
@@ -374,7 +374,7 @@ impl Luna {
     }
 
     pub fn remove(&mut self, field: Fields, filter: &FilterRegex) -> bool {
-        let len = self.find(field, filter).len();
+        let len = self.find(field, filter, 0).len();
         if len == 1 {
             match field {
                 Fields::Program => self.programs.retain(|p| !p.matches(filter, true)),
@@ -458,13 +458,13 @@ impl Luna {
                 self.status,
                 self.counter,
                 self.programs.iter().filter(|p| !p.name.is_empty()).count(),
-                self.find(Fields::Domain, &FilterRegex::default()).len(),
-                self.find(Fields::Cidr, &FilterRegex::default()).len(),
-                self.find(Fields::Sub, &FilterRegex::default()).len(),
-                self.find(Fields::IP, &FilterRegex::default()).len(),
-                self.find(Fields::Url, &FilterRegex::default()).len(),
-                self.find(Fields::Service, &FilterRegex::default()).len(),
-                self.find(Fields::Tag, &FilterRegex::default()).len(),
+                self.find(Fields::Domain, &FilterRegex::default(), 0).len(),
+                self.find(Fields::Cidr, &FilterRegex::default(), 0).len(),
+                self.find(Fields::Sub, &FilterRegex::default(), 0).len(),
+                self.find(Fields::IP, &FilterRegex::default(), 0).len(),
+                self.find(Fields::Url, &FilterRegex::default(), 0).len(),
+                self.find(Fields::Service, &FilterRegex::default(), 0).len(),
+                self.find(Fields::Tag, &FilterRegex::default(), 0).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),
@@ -502,13 +502,13 @@ impl Luna {
                 } else {
                     "\n    ]"
                 },
-                self.find(Fields::Domain, &FilterRegex::default()).len(),
-                self.find(Fields::Cidr, &FilterRegex::default()).len(),
-                self.find(Fields::Sub, &FilterRegex::default()).len(),
-                self.find(Fields::IP, &FilterRegex::default()).len(),
-                self.find(Fields::Url, &FilterRegex::default()).len(),
-                self.find(Fields::Service, &FilterRegex::default()).len(),
-                self.find(Fields::Tag, &FilterRegex::default()).len(),
+                self.find(Fields::Domain, &FilterRegex::default(), 0).len(),
+                self.find(Fields::Cidr, &FilterRegex::default(), 0).len(),
+                self.find(Fields::Sub, &FilterRegex::default(), 0).len(),
+                self.find(Fields::IP, &FilterRegex::default(), 0).len(),
+                self.find(Fields::Url, &FilterRegex::default(), 0).len(),
+                self.find(Fields::Service, &FilterRegex::default(), 0).len(),
+                self.find(Fields::Tag, &FilterRegex::default(), 0).len(),
                 self.update.map_or("".to_string(), |s| s
                     .with_timezone(&chrono::Local::now().timezone())
                     .to_rfc2822()),

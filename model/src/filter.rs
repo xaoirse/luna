@@ -5,8 +5,6 @@ use super::*;
 
 #[derive(Debug, Parser, Default, Clone)]
 pub struct Filter {
-    #[clap(short, long, parse(from_occurrences))]
-    pub verbose: u8,
     #[clap(short, help = "Number of Results")]
     pub n: Option<usize>,
 
@@ -164,7 +162,6 @@ impl Fields {
 
 #[derive(Default, Debug)]
 pub struct FilterRegex {
-    pub verbose: u8,
     pub n: usize,
 
     pub program: Option<regex::Regex>,
@@ -357,7 +354,6 @@ impl TryFrom<Filter> for FilterRegex {
         };
 
         Ok(Self {
-            verbose: f.verbose,
             n: f.n.unwrap_or(std::usize::MAX),
 
             program,
