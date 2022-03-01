@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 use super::*;
 
 #[derive(Debug, Parser)]
-#[clap(author, version, about, long_about = None)]
+#[clap(name = "Luna",author, version, about, long_about = None)]
 pub struct Opt {
     #[clap(short, long, global = true, help = "Quiet mode")]
     pub quiet: bool,

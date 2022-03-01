@@ -194,4 +194,3 @@ I want a standalone binary release from my code,
 - [ ] Update dependencies
 - [ ] Benchmarks
 - [ ] Tests
-- [ ] Cow

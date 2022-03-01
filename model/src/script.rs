@@ -144,9 +144,9 @@ impl Script {
         elements
             .into_par_iter()
             .progress_with(pb.clone())
-            .map(move |input| {
+            .map(|input| {
                 if term.load(Ordering::Relaxed) {
-                    return Err("Terminated!".into());
+                    return Err("term".into());
                 }
 
                 let cmd = self.command.replace(&self.field.substitution(), &input);
@@ -174,7 +174,7 @@ impl Script {
                 Ok(data) => Some(data),
                 Err(err) => {
                     if err.to_string() == "term" {
-                        warn!("command aborted");
+                        warn!("Command aborted");
                     } else {
                         error!("Error in executing: {}", err);
                     }
@@ -182,12 +182,13 @@ impl Script {
                 }
             })
             .flat_map(|data| data.parse(&self.regex))
-            .collect::<Vec<Luna>>() // This should run parallel here
-            .into_iter()
-            .fold(Luna::default(), |mut init, l| {
+            .reduce(Luna::default, |mut init, l| {
                 init.append(l);
+                init.dedup(term.clone());
                 init
             })
+
+        // This should run parallel here
     }
 }
 
@@ -206,8 +207,8 @@ impl Scripts {
                 if term.load(Ordering::Relaxed) {
                     return;
                 }
-                let mut l = script.execute(luna, &self.filter, term.clone());
-                l.dedup(term.clone());
+                let l = script.execute(luna, &self.filter, term.clone());
+
                 luna.append(l);
                 luna.dedup(term.clone());
                 luna.save();

@@ -956,8 +956,9 @@ impl Luna {
                     scopes: vec![Scope {
                         asset: ScopeType::Domain("test".to_string()),
                         subs: vec![Sub {
+                            asset: "luna.test".to_string(),
                             urls: vec![Url {
-                                url: format!("{}", i),
+                                url: format!("https://luna.test?{}", i),
                                 ..Default::default()
                             }],
                             ..Default::default()

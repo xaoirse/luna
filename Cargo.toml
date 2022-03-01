@@ -1,10 +1,12 @@
 [package]
 name = "luna"
 version = "0.7.0"
-authors = ["SAoirse: https://github.com/XAoirse"]
+authors = ["SAoirse <https://github.com/xaoirse>"]
 description = "A Recon Tool"
 readme = "README.md"
 edition = "2021"
+repository = "https://github.com/xaoirse/luna"
+
 
 [workspace]
 members = [
