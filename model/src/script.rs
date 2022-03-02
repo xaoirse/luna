@@ -149,6 +149,8 @@ impl Script {
                 .with_finish(ProgressFinish::WithMessage(self.command.clone().into()));
         }
 
+        pb.set_message(self.command.clone());
+
         elements
             .into_par_iter()
             .map(|input| {
