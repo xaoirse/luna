@@ -158,20 +158,19 @@ impl Script {
 
                 let cmd = self.command.replace(&self.field.substitution(), &input);
 
-                pb.set_message(cmd.clone());
-
                 let output = String::from_utf8(
                     Command::new("sh")
                         .current_dir(&self.cd)
                         .arg("-c")
-                        .arg(cmd.clone())
+                        .arg(&cmd)
                         .output()?
                         .stdout,
                 )?;
 
-                pb.inc(1);
-
                 debug!("Command: {}\nOutput: {}", cmd, &output);
+
+                pb.set_message(cmd);
+                pb.inc(1);
 
                 Ok(Data {
                     input,

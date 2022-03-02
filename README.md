@@ -23,11 +23,6 @@ For building statically linked rust binary [read this link](https://blog.davidva
 minimum size:  
 `RUSTFLAGS='-C target-feature=+crt-static -C link-arg=-s -C panic=abort -C codegen-units=1' cargo build --target x86_64-unknown-linux-musl --release` + UPX
 
-`-s`, `--strip-all` Omit all symbol information from the output file.
-
-See more keys and their definitions [here](https://doc.rust-lang.org/cargo/reference/manifest.html)
-
-
 # Usage
 
 ```
@@ -60,7 +55,6 @@ SUBCOMMANDS:
     script    
     server    
     stat      
-    test        
 ```
 ## Features
 ### <a name="available-keywords"> </a>Available keywords:

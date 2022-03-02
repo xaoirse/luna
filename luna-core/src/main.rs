@@ -62,7 +62,7 @@ pub fn run() {
             debug!("{:#?}", find);
             let field = find.field;
 
-            match find.filter.clone().try_into() {
+            match find.filter.try_into() {
                 Ok(filter) => {
                     if luna.remove(field, &filter) {
                         luna.save();
