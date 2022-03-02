@@ -27,9 +27,6 @@ pub struct Url {
     #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
-
-    #[clap(skip)]
-    pub dedup: bool,
 }
 
 impl Dedup for Url {
@@ -48,13 +45,6 @@ impl Dedup for Url {
         a.start = a.start.min(b.start);
 
         a.tags.append(&mut b.tags);
-        a.dedup = false;
-    }
-    fn dedup(&mut self, term: Arc<AtomicBool>) {
-        if self.dedup {
-            return;
-        }
-        self.dedup = dedup(&mut self.tags, term);
     }
     fn is_empty(&self) -> bool {
         self.url.is_empty()
@@ -155,7 +145,6 @@ impl Default for Url {
             tags: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),
-            dedup: false,
         }
     }
 }

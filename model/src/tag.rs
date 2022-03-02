@@ -20,9 +20,6 @@ pub struct Tag {
     #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
-
-    #[clap(skip)]
-    pub dedup: bool,
 }
 
 impl Dedup for Tag {
@@ -39,15 +36,6 @@ impl Dedup for Tag {
         merge(&mut a.severity, &mut b.severity, new);
 
         a.values.append(&mut b.values);
-        a.dedup = false;
-    }
-    fn dedup(&mut self, _term: Arc<AtomicBool>) {
-        if self.dedup {
-            return;
-        }
-        self.values.par_sort();
-        self.values.dedup();
-        self.dedup = true;
     }
     fn is_empty(&self) -> bool {
         self.name.is_empty()
@@ -114,7 +102,6 @@ impl Default for Tag {
             values: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),
-            dedup: false,
         }
     }
 }
@@ -127,6 +114,18 @@ impl std::str::FromStr for Tag {
             name: s.to_string(),
             ..Default::default()
         })
+    }
+}
+
+impl Ord for Tag {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.name.cmp(&self.name)
+    }
+}
+
+impl PartialOrd for Tag {
+    fn partial_cmp(&self, other: &Self) -> std::option::Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 

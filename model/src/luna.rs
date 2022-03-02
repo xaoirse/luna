@@ -31,22 +31,18 @@ pub struct Luna {
     #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
-
-    #[clap(skip)]
-    pub dedup: bool,
 }
 
 impl Luna {
     pub fn append(&mut self, mut other: Self) {
         self.counter += other.counter;
         self.programs.append(&mut other.programs);
-        self.dedup = false;
 
         self.update = self.update.max(other.update);
         self.start = self.start.min(other.start);
     }
 
-    pub fn dedup(&mut self, term: Arc<AtomicBool>) {
+    pub fn dedup(&mut self, _: Arc<AtomicBool>) {
         //////////////
         ///// Hosts
         /////////////////////
@@ -63,10 +59,21 @@ impl Luna {
             if hosts[i] == hosts[i - 1] {
                 let (a, b) = hosts.split_at_mut(i);
                 Host::same_bucket(b[0], a[i - 1]);
-                b[0].ip = String::new();
-                hosts[i - 1].dedup = false;
+                b[0].ip.clear();
             }
         }
+        hosts.iter_mut().for_each(|h| {
+            h.services.par_sort();
+            for i in (1..h.services.len()).rev() {
+                if h.services[i] == h.services[i - 1] {
+                    let (a, b) = h.services.split_at_mut(i);
+                    Service::same_bucket(&mut b[0], &mut a[i - 1]);
+                    b[0].port.clear();
+                }
+            }
+
+            h.services.retain(|srv| !srv.is_empty());
+        });
 
         //////////////
         ///// Urls
@@ -84,10 +91,24 @@ impl Luna {
             if urls[i] == urls[i - 1] {
                 let (a, b) = urls.split_at_mut(i);
                 Url::same_bucket(b[0], a[i - 1]);
-                b[0].url = String::new();
-                urls[i - 1].dedup = false;
+                b[0].url.clear();
             }
         }
+        urls.iter_mut().for_each(|u| {
+            u.tags.par_sort();
+            for i in (1..u.tags.len()).rev() {
+                if u.tags[i] == u.tags[i - 1] {
+                    let (a, b) = u.tags.split_at_mut(i);
+                    Tag::same_bucket(&mut b[0], &mut a[i - 1]);
+                    b[0].name.clear();
+                }
+            }
+            u.tags
+                .iter_mut()
+                .for_each(|t| t.values.retain(|vlu| !vlu.is_empty()));
+
+            u.tags.retain(|tag| !tag.is_empty());
+        });
 
         //////////////
         ///// Subs
@@ -109,10 +130,13 @@ impl Luna {
             if subs[i] == subs[i - 1] {
                 let (a, b) = subs.split_at_mut(i);
                 Sub::same_bucket(b[0], a[i - 1]);
-                b[0].asset = String::new();
-                subs[i - 1].dedup = false;
+                b[0].asset.clear();
             }
         }
+        subs.iter_mut()
+            .for_each(|s| s.urls.retain(|url| !url.is_empty()));
+        subs.iter_mut()
+            .for_each(|s| s.hosts.retain(|host| !host.is_empty()));
 
         //////////////
         ///// Scopes
@@ -129,9 +153,11 @@ impl Luna {
                 let (a, b) = scopes.split_at_mut(i);
                 Scope::same_bucket(b[0], a[i - 1]);
                 b[0].asset = ScopeType::Empty;
-                scopes[i - 1].dedup = false;
             }
         }
+        scopes
+            .iter_mut()
+            .for_each(|s| s.subs.retain(|sub| !sub.is_empty()));
 
         //////////////
         ///// Programs
@@ -141,16 +167,14 @@ impl Luna {
             if self.programs[i] == self.programs[i - 1] {
                 let (a, b) = self.programs.split_at_mut(i);
                 Program::same_bucket(&mut b[0], &mut a[i - 1]);
-                b[0].name = String::new();
-                self.programs[i - 1].dedup = false;
+                b[0].name.clear();
             }
         }
+        self.programs
+            .iter_mut()
+            .for_each(|s| s.scopes.retain(|scp| !scp.is_empty()));
 
-        self.dedup = false;
-        //////////////
-        ///// Dedup
-        /////////////////////
-        self.dedup = dedup(&mut self.programs, term);
+        self.programs.retain(|p| !p.is_empty());
     }
 
     pub fn find(&self, field: Fields, filter: &FilterRegex, verbose: u8) -> Vec<String> {
@@ -533,7 +557,6 @@ impl Default for Luna {
             status: "The moon rider has arrived.".to_string(),
             update: Some(Utc::now()),
             start: Some(Utc::now()),
-            dedup: false,
         }
     }
 }
@@ -807,7 +830,6 @@ impl From<Filter> for Luna {
                     .split(',')
                     .map(|s| s.to_string())
                     .collect(),
-                dedup: false,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
             }]
@@ -824,7 +846,6 @@ impl From<Filter> for Luna {
                 tags,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
-                dedup: false,
             }]
         };
 
@@ -850,7 +871,6 @@ impl From<Filter> for Luna {
                     services,
                     update: Some(Utc::now()),
                     start: Some(Utc::now()),
-                    dedup: false,
                 }]
             } else {
                 ip.split(',').map(|s| Host::from_str(s).unwrap()).collect()
@@ -861,7 +881,6 @@ impl From<Filter> for Luna {
                 services,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
-                dedup: false,
             }]
         };
 
@@ -885,7 +904,6 @@ impl From<Filter> for Luna {
                 urls,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
-                dedup: false,
             }]
         };
 
@@ -900,7 +918,6 @@ impl From<Filter> for Luna {
                     subs,
                     update: Some(Utc::now()),
                     start: Some(Utc::now()),
-                    dedup: false,
                 }]
             } else {
                 vec![Scope {
@@ -910,7 +927,6 @@ impl From<Filter> for Luna {
                     subs,
                     update: Some(Utc::now()),
                     start: Some(Utc::now()),
-                    dedup: false,
                 }]
             }
         } else {
@@ -921,7 +937,6 @@ impl From<Filter> for Luna {
                 subs,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
-                dedup: false,
             }]
         };
 
@@ -938,23 +953,29 @@ impl From<Filter> for Luna {
                 scopes,
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
-                dedup: false,
             }],
             ..Default::default()
         }
     }
 }
 
-impl Luna {
-    pub fn test_run(n: i32) {
+mod test {
+
+    #[test]
+    pub fn test_run() {
+        use super::*;
+
+        const N: usize = 1000;
+        const M: usize = 901; // 10 contains 1
+
         let mut luna = Luna::default();
 
-        for i in 0..n {
+        for i in 0..N {
             let l = Luna {
                 programs: vec![Program {
                     name: "S".to_string(),
                     scopes: vec![Scope {
-                        asset: ScopeType::Domain("test".to_string()),
+                        asset: ScopeType::Empty,
                         subs: vec![Sub {
                             asset: "luna.test".to_string(),
                             urls: vec![Url {
@@ -971,9 +992,144 @@ impl Luna {
             };
             luna.append(l);
         }
-        println!("Dedupping...!");
         let term = Arc::new(AtomicBool::new(false));
         luna.dedup(term);
-        luna.save_as("test.json").unwrap();
+
+        assert_eq!(luna.programs.len(), 1);
+        assert_eq!(luna.programs.first().unwrap().scopes.len(), 1);
+        assert_eq!(
+            luna.programs
+                .first()
+                .unwrap()
+                .scopes
+                .first()
+                .unwrap()
+                .subs
+                .len(),
+            1
+        );
+        assert_eq!(
+            luna.programs
+                .first()
+                .unwrap()
+                .scopes
+                .first()
+                .unwrap()
+                .subs
+                .first()
+                .unwrap()
+                .urls
+                .len(),
+            M
+        );
+    }
+
+    #[test]
+    fn dedup() {
+        use super::*;
+
+        let mut a = Luna {
+            programs: vec![Program {
+                name: "A".to_string(),
+                scopes: vec![Scope {
+                    asset: ScopeType::Empty,
+                    subs: vec![Sub {
+                        asset: "luna.test".to_string(),
+                        urls: vec![Url {
+                            url: "https://luna.test?1".to_string(),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+
+        let b = Luna {
+            programs: vec![Program {
+                name: "B".to_string(),
+                scopes: vec![Scope {
+                    asset: ScopeType::Empty,
+                    subs: vec![Sub {
+                        asset: "luna.test".to_string(),
+                        urls: vec![Url {
+                            url: "https://luna.test?1".to_string(),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        let c = Luna {
+            programs: vec![Program {
+                name: "C".to_string(),
+                scopes: vec![Scope {
+                    asset: ScopeType::Empty,
+                    subs: vec![Sub {
+                        asset: "luna.test".to_string(),
+                        urls: vec![Url {
+                            url: "https://luna.test?3".to_string(),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+
+        a.append(b);
+        a.append(c);
+        let term = Arc::new(AtomicBool::new(false));
+        a.dedup(term);
+
+        let c = Luna {
+            programs: vec![
+                Program {
+                    name: "A".to_string(),
+                    scopes: vec![Scope {
+                        asset: ScopeType::Empty,
+                        subs: vec![Sub {
+                            asset: "luna.test".to_string(),
+                            urls: vec![
+                                Url {
+                                    url: "https://luna.test?1".to_string(),
+                                    ..Default::default()
+                                },
+                                Url {
+                                    url: "https://luna.test?3".to_string(),
+                                    ..Default::default()
+                                },
+                            ],
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                },
+                Program {
+                    name: "B".to_string(),
+                    scopes: vec![],
+                    ..Default::default()
+                },
+                Program {
+                    name: "C".to_string(),
+                    scopes: vec![],
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(a.programs, c.programs);
     }
 }

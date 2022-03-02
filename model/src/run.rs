@@ -37,9 +37,6 @@ pub enum Cli {
     },
     Check(Check),
     Stat(LunaStat),
-    Test {
-        n: i32,
-    },
     Report,
     #[clap(subcommand)]
     Server(Server),

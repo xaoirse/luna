@@ -39,9 +39,6 @@ pub struct Program {
     #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
-
-    #[clap(skip)]
-    pub dedup: bool,
 }
 
 impl Dedup for Program {
@@ -64,15 +61,8 @@ impl Dedup for Program {
         a.start = a.start.min(b.start);
 
         a.scopes.append(&mut b.scopes);
-        a.dedup = false;
     }
-    fn dedup(&mut self, term: Arc<AtomicBool>) {
-        if self.dedup {
-            return;
-        }
 
-        self.dedup = dedup(&mut self.scopes, term);
-    }
     fn is_empty(&self) -> bool {
         self.name.is_empty() && self.scopes.is_empty()
     }
@@ -220,7 +210,6 @@ impl Default for Program {
             scopes: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),
-            dedup: false,
         }
     }
 }

@@ -138,7 +138,6 @@ pub fn run() {
             }
         }
         Cli::Stat(s) => println!("{}", luna.stringify(s.verbose + 2)),
-        Cli::Test { n } => Luna::test_run(n),
         Cli::Report => todo!(),
         Cli::Server(_) => todo!(),
     }

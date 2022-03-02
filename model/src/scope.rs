@@ -28,9 +28,6 @@ pub struct Scope {
     #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
-
-    #[clap(skip)]
-    pub dedup: bool,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum ScopeType {
@@ -92,15 +89,8 @@ impl Dedup for Scope {
         a.start = a.start.min(b.start);
 
         a.subs.append(&mut b.subs);
-        a.dedup = false;
     }
-    fn dedup(&mut self, term: Arc<AtomicBool>) {
-        if self.dedup {
-            return;
-        }
 
-        self.dedup = dedup(&mut self.subs, term);
-    }
     fn is_empty(&self) -> bool {
         self.asset == ScopeType::Empty && self.subs.is_empty()
     }
@@ -190,7 +180,6 @@ impl Default for Scope {
             subs: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),
-            dedup: false,
         }
     }
 }

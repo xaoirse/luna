@@ -1,6 +1,6 @@
 use super::*;
-use serde::{Deserialize, Serialize};
 use clap::Parser;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Parser, Clone)]
 pub struct Service {
@@ -40,7 +40,6 @@ impl Dedup for Service {
         merge(&mut a.protocol, &mut b.protocol, new);
         merge(&mut a.banner, &mut b.banner, new);
     }
-    fn dedup(&mut self, _term: Arc<AtomicBool>) {}
     fn is_empty(&self) -> bool {
         self.port.is_empty()
     }
@@ -103,6 +102,18 @@ impl std::str::FromStr for Service {
             port: s.to_string(),
             ..Default::default()
         })
+    }
+}
+
+impl Ord for Service {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.port.cmp(&self.port)
+    }
+}
+
+impl PartialOrd for Service {
+    fn partial_cmp(&self, other: &Self) -> std::option::Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 

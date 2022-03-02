@@ -18,9 +18,6 @@ pub struct Host {
     #[clap(skip)]
     #[serde(with = "utc_rfc2822")]
     pub start: Option<DateTime<Utc>>,
-
-    #[clap(skip)]
-    pub dedup: bool,
 }
 
 impl Dedup for Host {
@@ -33,15 +30,8 @@ impl Dedup for Host {
         a.start = a.start.min(b.start);
 
         a.services.append(&mut b.services);
-        a.dedup = false;
     }
 
-    fn dedup(&mut self, term: Arc<AtomicBool>) {
-        if self.dedup {
-            return;
-        }
-        self.dedup = dedup(&mut self.services, term);
-    }
     fn is_empty(&self) -> bool {
         self.ip.is_empty()
     }
@@ -123,7 +113,6 @@ impl Default for Host {
             services: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),
-            dedup: false,
         }
     }
 }
