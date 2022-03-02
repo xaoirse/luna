@@ -1,5 +1,5 @@
 use clap::Parser;
-use indicatif::{ParallelProgressIterator, ProgressBar, ProgressFinish, ProgressStyle};
+use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
 use log::{debug, error, warn};
 use rayon::prelude::*;
 use regex::Regex;
@@ -151,7 +151,6 @@ impl Script {
 
         elements
             .into_par_iter()
-            .progress_with(pb.clone())
             .map(|input| {
                 if term.load(Ordering::Relaxed) {
                     return Err("term".into());
@@ -169,6 +168,8 @@ impl Script {
                         .output()?
                         .stdout,
                 )?;
+
+                pb.inc(1);
 
                 debug!("Command: {}\nOutput: {}", cmd, &output);
 

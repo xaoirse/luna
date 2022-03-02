@@ -62,7 +62,7 @@ impl Luna {
                 b[0].ip.clear();
             }
         }
-        hosts.iter_mut().for_each(|h| {
+        hosts.par_iter_mut().for_each(|h| {
             h.services.par_sort();
             for i in (1..h.services.len()).rev() {
                 if h.services[i] == h.services[i - 1] {
@@ -94,7 +94,7 @@ impl Luna {
                 b[0].url.clear();
             }
         }
-        urls.iter_mut().for_each(|u| {
+        urls.par_iter_mut().for_each(|u| {
             u.tags.par_sort();
             for i in (1..u.tags.len()).rev() {
                 if u.tags[i] == u.tags[i - 1] {
@@ -104,7 +104,7 @@ impl Luna {
                 }
             }
             u.tags
-                .iter_mut()
+                .par_iter_mut()
                 .for_each(|t| t.values.retain(|vlu| !vlu.is_empty()));
 
             u.tags.retain(|tag| !tag.is_empty());
@@ -115,7 +115,7 @@ impl Luna {
         /////////////////////
         let mut subs: Vec<&mut Sub> = self
             .programs
-            .iter_mut()
+            .par_iter_mut()
             .flat_map(|p| &mut p.scopes)
             .flat_map(|s| {
                 if let ScopeType::Domain(d) = &s.asset {
@@ -133,9 +133,9 @@ impl Luna {
                 b[0].asset.clear();
             }
         }
-        subs.iter_mut()
+        subs.par_iter_mut()
             .for_each(|s| s.urls.retain(|url| !url.is_empty()));
-        subs.iter_mut()
+        subs.par_iter_mut()
             .for_each(|s| s.hosts.retain(|host| !host.is_empty()));
 
         //////////////
@@ -156,7 +156,7 @@ impl Luna {
             }
         }
         scopes
-            .iter_mut()
+            .par_iter_mut()
             .for_each(|s| s.subs.retain(|sub| !sub.is_empty()));
 
         //////////////
@@ -171,7 +171,7 @@ impl Luna {
             }
         }
         self.programs
-            .iter_mut()
+            .par_iter_mut()
             .for_each(|s| s.scopes.retain(|scp| !scp.is_empty()));
 
         self.programs.retain(|p| !p.is_empty());

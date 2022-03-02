@@ -16,7 +16,7 @@ members = [
 
 [[bin]]
 path = "luna-core/src/main.rs"
-name = "luna-core"
+name = "luna"
 
 [lib]
 name = "model"
