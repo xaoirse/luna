@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::io::Write;
 use std::str::FromStr;
+use std::sync::atomic::Ordering;
 
 #[derive(Debug, Clone, Parser, Serialize, Deserialize)]
 pub struct Luna {
@@ -42,10 +43,7 @@ impl Luna {
         self.start = self.start.min(other.start);
     }
 
-    pub fn dedup(&mut self, _: Arc<AtomicBool>) {
-        //////////////
-        ///// Hosts
-        /////////////////////
+    fn dedup_hosts(&mut self, term: Arc<AtomicBool>) {
         let mut hosts: Vec<&mut Host> = self
             .programs
             .iter_mut()
@@ -62,6 +60,11 @@ impl Luna {
                 b[0].ip.clear();
             }
         }
+
+        if term.load(Ordering::Relaxed) {
+            return;
+        }
+
         hosts.par_iter_mut().for_each(|h| {
             h.services.par_sort();
             for i in (1..h.services.len()).rev() {
@@ -74,10 +77,8 @@ impl Luna {
 
             h.services.retain(|srv| !srv.is_empty());
         });
-
-        //////////////
-        ///// Urls
-        /////////////////////
+    }
+    fn dedup_urls(&mut self, term: Arc<AtomicBool>) {
         let mut urls: Vec<&mut Url> = self
             .programs
             .iter_mut()
@@ -94,6 +95,11 @@ impl Luna {
                 b[0].url.clear();
             }
         }
+
+        if term.load(Ordering::Relaxed) {
+            return;
+        }
+
         urls.par_iter_mut().for_each(|u| {
             u.tags.par_sort();
             for i in (1..u.tags.len()).rev() {
@@ -109,10 +115,8 @@ impl Luna {
 
             u.tags.retain(|tag| !tag.is_empty());
         });
-
-        //////////////
-        ///// Subs
-        /////////////////////
+    }
+    fn dedup_subs(&mut self, term: Arc<AtomicBool>) {
         let mut subs: Vec<&mut Sub> = self
             .programs
             .par_iter_mut()
@@ -133,14 +137,17 @@ impl Luna {
                 b[0].asset.clear();
             }
         }
+
+        if term.load(Ordering::Relaxed) {
+            return;
+        }
+
         subs.par_iter_mut()
             .for_each(|s| s.urls.retain(|url| !url.is_empty()));
         subs.par_iter_mut()
             .for_each(|s| s.hosts.retain(|host| !host.is_empty()));
-
-        //////////////
-        ///// Scopes
-        /////////////////////
+    }
+    fn dedup_scopes(&mut self, term: Arc<AtomicBool>) {
         let mut scopes: Vec<&mut Scope> = self
             .programs
             .iter_mut()
@@ -155,13 +162,16 @@ impl Luna {
                 b[0].asset = ScopeType::Empty;
             }
         }
+
+        if term.load(Ordering::Relaxed) {
+            return;
+        }
+
         scopes
             .par_iter_mut()
             .for_each(|s| s.subs.retain(|sub| !sub.is_empty()));
-
-        //////////////
-        ///// Programs
-        /////////////////////
+    }
+    fn dedup_programs(&mut self, term: Arc<AtomicBool>) {
         self.programs.par_sort();
         for i in (1..self.programs.len()).rev() {
             if self.programs[i] == self.programs[i - 1] {
@@ -170,9 +180,37 @@ impl Luna {
                 b[0].name.clear();
             }
         }
+
+        if term.load(Ordering::Relaxed) {
+            return;
+        }
+
         self.programs
             .par_iter_mut()
             .for_each(|s| s.scopes.retain(|scp| !scp.is_empty()));
+    }
+
+    pub fn dedup(&mut self, term: Arc<AtomicBool>) {
+        if term.load(Ordering::Relaxed) {
+            return;
+        }
+        self.dedup_hosts(term.clone());
+        if term.load(Ordering::Relaxed) {
+            return;
+        }
+        self.dedup_urls(term.clone());
+        if term.load(Ordering::Relaxed) {
+            return;
+        }
+        self.dedup_subs(term.clone());
+        if term.load(Ordering::Relaxed) {
+            return;
+        }
+        self.dedup_scopes(term.clone());
+        if term.load(Ordering::Relaxed) {
+            return;
+        }
+        self.dedup_programs(term);
 
         self.programs.retain(|p| !p.is_empty());
     }
