@@ -184,7 +184,7 @@ pub struct InsertService {
     #[clap(flatten)]
     pub service: Service,
     #[clap(long)]
-    pub host: String,
+    pub host: std::net::IpAddr,
     #[clap(long)]
     pub sub: Option<String>,
     #[clap(short, long)]

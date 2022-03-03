@@ -58,7 +58,7 @@ impl Luna {
             if hosts[i] == hosts[i - 1] {
                 let (a, b) = hosts.split_at_mut(i);
                 Host::same_bucket(b[0], a[i - 1]);
-                b[0].ip.clear();
+                b[0].clear();
             }
         }
 
@@ -93,7 +93,7 @@ impl Luna {
             if urls[i] == urls[i - 1] {
                 let (a, b) = urls.split_at_mut(i);
                 Url::same_bucket(b[0], a[i - 1]);
-                b[0].empty();
+                b[0].clear();
             }
         }
 
@@ -905,7 +905,11 @@ impl From<Filter> for Luna {
         let hosts = if host_is_none {
             vec![]
         } else if let Some(ip) = f.ip.take() {
-            if !ip.contains(',') {
+            if ip.contains(',') {
+                ip.split(',')
+                    .filter_map(|s| Host::from_str(s).ok())
+                    .collect()
+            } else if let Ok(ip) = std::net::IpAddr::from_str(&ip) {
                 vec![Host {
                     ip,
                     services,
@@ -913,15 +917,10 @@ impl From<Filter> for Luna {
                     start: Some(Utc::now()),
                 }]
             } else {
-                ip.split(',').map(|s| Host::from_str(s).unwrap()).collect()
+                vec![]
             }
         } else {
-            vec![Host {
-                ip: String::new(),
-                services,
-                update: Some(Utc::now()),
-                start: Some(Utc::now()),
-            }]
+            vec![]
         };
 
         let subs = if sub_is_none {

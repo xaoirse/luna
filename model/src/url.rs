@@ -48,7 +48,7 @@ impl Dedup for Url {
 }
 
 impl Url {
-    pub fn empty(&mut self) {
+    pub fn clear(&mut self) {
         self.url = urlib::Url::parse("http://default.url").unwrap();
     }
 

@@ -2,11 +2,12 @@ use super::*;
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
+use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Debug, Serialize, Deserialize, Parser, Clone)]
 pub struct Host {
     #[clap(long)]
-    pub ip: String,
+    pub ip: IpAddr,
 
     #[clap(long)]
     pub services: Vec<Service>,
@@ -22,10 +23,6 @@ pub struct Host {
 
 impl Dedup for Host {
     fn same_bucket(b: &mut Self, a: &mut Self) {
-        if a.ip.is_empty() {
-            a.ip = std::mem::take(&mut b.ip);
-        }
-
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 
@@ -33,24 +30,22 @@ impl Dedup for Host {
     }
 
     fn is_empty(&self) -> bool {
-        self.ip.is_empty()
+        self.ip.is_unspecified()
     }
 }
 
 impl Host {
+    pub fn clear(&mut self) {
+        self.ip = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
+    }
+
     pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         filter
             .ip_cidr
             .as_ref()
             .map_or(true, |ip_cidr| match ip_cidr {
-                IpCidr::Cidr(cidr) => self
-                    .ip
-                    .parse::<std::net::IpAddr>()
-                    .map_or(false, |ip| cidr.contains(&ip)),
-                IpCidr::Ip(ip) => self
-                    .ip
-                    .parse::<std::net::IpAddr>()
-                    .map_or(false, |i| ip == &i),
+                IpCidr::Cidr(cidr) => cidr.contains(&self.ip),
+                IpCidr::Ip(ip) => &self.ip == ip,
             })
             && (!date
                 || (check_date(&self.update, &filter.updated_at)
@@ -109,7 +104,7 @@ impl Host {
 impl Default for Host {
     fn default() -> Self {
         Self {
-            ip: String::new(),
+            ip: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
             services: vec![],
             update: Some(Utc::now()),
             start: Some(Utc::now()),
