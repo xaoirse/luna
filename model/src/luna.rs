@@ -845,6 +845,7 @@ impl From<Insert> for Luna {
 }
 
 impl From<Filter> for Luna {
+    #[allow(clippy::or_fun_call)]
     fn from(mut f: Filter) -> Self {
         let tag_is_none = f.tag_is_none();
         let url_is_none = f.url_is_none();
@@ -924,15 +925,14 @@ impl From<Filter> for Luna {
         let subs = if sub_is_none {
             vec![]
         } else {
-            let asset = urls
-                .first()
-                .map(|u| {
-                    u.url
-                        .host_str()
-                        .unwrap_or(&f.sub.unwrap_or_default())
-                        .to_string()
-                })
-                .unwrap_or_default();
+            let asset = match urls.first() {
+                Some(url) => url
+                    .url
+                    .host_str()
+                    .unwrap_or(f.sub.take().unwrap_or_default().as_str())
+                    .to_string(),
+                None => f.sub.take().unwrap_or_default(),
+            };
 
             vec![Sub {
                 asset,
