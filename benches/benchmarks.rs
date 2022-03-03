@@ -1,6 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use model::*;
-use std::sync::{atomic::AtomicBool, Arc};
+use std::{
+    str::FromStr,
+    sync::{atomic::AtomicBool, Arc},
+};
 
 fn dedup(n: i32) {
     let mut luna = Luna::default();
@@ -12,10 +15,7 @@ fn dedup(n: i32) {
                 scopes: vec![Scope {
                     asset: ScopeType::Domain("test".to_string()),
                     subs: vec![Sub {
-                        urls: vec![Url {
-                            url: format!("{}", i),
-                            ..Default::default()
-                        }],
+                        urls: vec![Url::from_str(&format!("https://luna.test?{}", i)).unwrap()],
                         ..Default::default()
                     }],
                     ..Default::default()

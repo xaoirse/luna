@@ -142,6 +142,8 @@ impl Script {
 
         if self.verbose == 0 {
             pb.set_draw_target(indicatif::ProgressDrawTarget::hidden());
+        } else {
+            pb.set_draw_target(indicatif::ProgressDrawTarget::stdout());
         }
 
         if self.verbose > 1 {
@@ -161,12 +163,15 @@ impl Script {
                 let cmd = self.command.replace(&self.field.substitution(), &input);
 
                 let output = String::from_utf8(
-                    Command::new("sh")
+                    match Command::new("sh")
                         .current_dir(&self.cd)
                         .arg("-c")
                         .arg(&cmd)
-                        .output()?
-                        .stdout,
+                        .output()
+                    {
+                        Ok(res) => res.stdout,
+                        Err(err) => return Err(format!("{}: \"{}\"", &cmd, err).into()),
+                    },
                 )?;
 
                 debug!("Command: {}\nOutput: {}", cmd, &output);
@@ -186,7 +191,7 @@ impl Script {
                     if err.to_string() == "term" {
                         warn!("Command aborted");
                     } else {
-                        error!("Error in executing: {}", err);
+                        error!("Executing: {}", err);
                     }
                     None
                 }

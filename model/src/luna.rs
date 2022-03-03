@@ -1,4 +1,5 @@
 use super::*;
+use ::url as urlib;
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use log::{error, info, warn};
@@ -92,7 +93,7 @@ impl Luna {
             if urls[i] == urls[i - 1] {
                 let (a, b) = urls.split_at_mut(i);
                 Url::same_bucket(b[0], a[i - 1]);
-                b[0].url.clear();
+                b[0].empty();
             }
         }
 
@@ -123,7 +124,7 @@ impl Luna {
             .flat_map(|p| &mut p.scopes)
             .flat_map(|s| {
                 if let ScopeType::Domain(d) = &s.asset {
-                    s.subs.retain(|sub| sub.asset.contains(d));
+                    s.subs.retain(|sub| sub.asset.ends_with(d));
                 }
                 &mut s.subs
             })
@@ -167,9 +168,12 @@ impl Luna {
             return;
         }
 
-        scopes
-            .par_iter_mut()
-            .for_each(|s| s.subs.retain(|sub| !sub.is_empty()));
+        scopes.par_iter_mut().for_each(|s| match &s.asset {
+            ScopeType::Domain(d) => s
+                .subs
+                .retain(|sub| !sub.is_empty() && sub.asset.contains(d)),
+            _ => s.subs.retain(|sub| !sub.is_empty()),
+        });
     }
     fn dedup_programs(&mut self, term: Arc<AtomicBool>) {
         self.programs.par_sort();
@@ -686,9 +690,9 @@ impl From<InsertUrl> for Luna {
                 scopes: vec![Scope {
                     asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
                     subs: vec![Sub {
-                        asset: i
-                            .sub
-                            .unwrap_or_else(|| i.url.sub_asset().unwrap_or_default()),
+                        asset: i.sub.unwrap_or_else(|| {
+                            i.url.url.host_str().unwrap_or_default().to_string()
+                        }),
                         urls: vec![Url {
                             update: Some(Utc::now()),
                             start: Some(Utc::now()),
@@ -780,13 +784,9 @@ impl From<InsertTag> for Luna {
                 scopes: vec![Scope {
                     asset: ScopeType::from_str(&i.scope.unwrap_or_default()).unwrap(),
                     subs: vec![Sub {
-                        asset: i.sub.unwrap_or_else(|| {
-                            i.url
-                                .split('/')
-                                .nth(2)
-                                .map(|s| s.to_string())
-                                .unwrap_or_default()
-                        }),
+                        asset: i
+                            .sub
+                            .unwrap_or_else(|| i.url.host_str().unwrap_or_default().to_string()),
                         urls: vec![Url {
                             url: i.url,
                             tags: vec![Tag { ..i.tag }],
@@ -875,9 +875,9 @@ impl From<Filter> for Luna {
 
         let urls = if url_is_none {
             vec![]
-        } else {
+        } else if let Ok(url) = urlib::Url::parse(&f.url.unwrap_or_default()) {
             vec![Url {
-                url: f.url.take().unwrap_or_default(),
+                url,
                 title: f.title.take(),
                 status_code: f.status_code.take(),
                 response: f.response.take(),
@@ -885,6 +885,8 @@ impl From<Filter> for Luna {
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
             }]
+        } else {
+            vec![]
         };
 
         let services = if service_is_none {
@@ -928,13 +930,7 @@ impl From<Filter> for Luna {
             vec![Sub {
                 asset: f.sub.take().unwrap_or_else(|| {
                     urls.first()
-                        .map(|u| {
-                            u.url
-                                .split('/')
-                                .nth(2)
-                                .map(|s| s.to_string())
-                                .unwrap_or_default()
-                        })
+                        .map(|u| u.url.host_str().unwrap_or_default().to_string())
                         .unwrap_or_default()
                 }),
                 typ: f.sub_type.take(),
@@ -948,7 +944,7 @@ impl From<Filter> for Luna {
         let scopes = if scope_is_none {
             vec![]
         } else if let (Some(scope), Some(sub)) = (f.scope.as_ref(), subs.first()) {
-            if sub.asset.contains(scope) {
+            if sub.asset.ends_with(scope) {
                 vec![Scope {
                     asset: ScopeType::Domain(scope.to_string()),
                     severity: f.scope_severity,
@@ -958,14 +954,7 @@ impl From<Filter> for Luna {
                     start: Some(Utc::now()),
                 }]
             } else {
-                vec![Scope {
-                    asset: ScopeType::Empty,
-                    severity: f.scope_severity,
-                    bounty: f.scope_bounty,
-                    subs,
-                    update: Some(Utc::now()),
-                    start: Some(Utc::now()),
-                }]
+                vec![]
             }
         } else {
             vec![Scope {
@@ -1016,10 +1005,7 @@ mod test {
                         asset: ScopeType::Empty,
                         subs: vec![Sub {
                             asset: "luna.test".to_string(),
-                            urls: vec![Url {
-                                url: format!("https://luna.test?{}", i),
-                                ..Default::default()
-                            }],
+                            urls: vec![Url::from_str(&format!("https://luna.test?{}", i)).unwrap()],
                             ..Default::default()
                         }],
                         ..Default::default()
@@ -1073,10 +1059,7 @@ mod test {
                     asset: ScopeType::Empty,
                     subs: vec![Sub {
                         asset: "luna.test".to_string(),
-                        urls: vec![Url {
-                            url: "https://luna.test?1".to_string(),
-                            ..Default::default()
-                        }],
+                        urls: vec![Url::from_str("https://luna.test?1").unwrap()],
                         ..Default::default()
                     }],
                     ..Default::default()
@@ -1093,10 +1076,7 @@ mod test {
                     asset: ScopeType::Empty,
                     subs: vec![Sub {
                         asset: "luna.test".to_string(),
-                        urls: vec![Url {
-                            url: "https://luna.test?1".to_string(),
-                            ..Default::default()
-                        }],
+                        urls: vec![Url::from_str("https://luna.test?1").unwrap()],
                         ..Default::default()
                     }],
                     ..Default::default()
@@ -1112,10 +1092,7 @@ mod test {
                     asset: ScopeType::Empty,
                     subs: vec![Sub {
                         asset: "luna.test".to_string(),
-                        urls: vec![Url {
-                            url: "https://luna.test?3".to_string(),
-                            ..Default::default()
-                        }],
+                        urls: vec![Url::from_str("https://luna.test?1").unwrap()],
                         ..Default::default()
                     }],
                     ..Default::default()
@@ -1139,15 +1116,10 @@ mod test {
                         subs: vec![Sub {
                             asset: "luna.test".to_string(),
                             urls: vec![
-                                Url {
-                                    url: "https://luna.test?1".to_string(),
-                                    ..Default::default()
-                                },
-                                Url {
-                                    url: "https://luna.test?3".to_string(),
-                                    ..Default::default()
-                                },
+                                Url::from_str("https://luna.test?1").unwrap(),
+                                Url::from_str("https://luna.test?1").unwrap(),
                             ],
+
                             ..Default::default()
                         }],
                         ..Default::default()

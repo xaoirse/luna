@@ -1,6 +1,6 @@
-use clap::{Parser, Subcommand};
-
 use super::*;
+use ::url as urlib;
+use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 #[clap(name = "Luna",author, version, about, long_about = None)]
@@ -170,7 +170,7 @@ pub struct InsertTag {
     #[clap(flatten)]
     pub tag: Tag,
     #[clap(long)]
-    pub url: String,
+    pub url: urlib::Url,
     #[clap(long)]
     pub sub: Option<String>,
     #[clap(short, long)]

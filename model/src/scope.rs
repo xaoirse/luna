@@ -221,15 +221,15 @@ impl PartialEq for Scope {
 
 impl Eq for Scope {}
 
-#[allow(unused_imports)]
 mod test {
-    use super::*;
 
     #[test]
     fn test_eq() {
+        use super::*;
+
         let a = Scope {
             subs: vec![Sub {
-                urls: vec![Url::from_str("a").unwrap()],
+                urls: vec![Url::from_str("http://a.a").unwrap()],
                 ..Default::default()
             }],
             ..Default::default()
@@ -237,7 +237,10 @@ mod test {
         let b = Scope {
             subs: vec![
                 Sub {
-                    urls: vec![Url::from_str("a").unwrap(), Url::from_str("b").unwrap()],
+                    urls: vec![
+                        Url::from_str("http://a.a").unwrap(),
+                        Url::from_str("http://a.a").unwrap(),
+                    ],
                     ..Default::default()
                 },
                 Sub {

@@ -36,7 +36,8 @@ rayon = "1.5"
 cidr = "0.2.1"
 signal-hook = "*"
 indicatif = {version = "0.17.0-rc.5", features = ["rayon"]}
-url = "2.2.2"
+url = { version = "2.2", features = ["serde"] }
+
 
 [dev-dependencies]
 criterion = "0.3"

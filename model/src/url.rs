@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Parser, Clone)]
 pub struct Url {
     #[clap(long)]
-    pub url: String,
+    pub url: urlib::Url,
 
     #[clap(long)]
     pub title: Option<String>,
@@ -33,10 +33,6 @@ impl Dedup for Url {
     fn same_bucket(b: &mut Self, a: &mut Self) {
         let new = a.update < b.update;
 
-        if a.url.is_empty() {
-            a.url = std::mem::take(&mut b.url);
-        }
-
         merge(&mut a.title, &mut b.title, new);
         merge(&mut a.status_code, &mut b.status_code, new);
         merge(&mut a.response, &mut b.response, new);
@@ -47,13 +43,17 @@ impl Dedup for Url {
         a.tags.append(&mut b.tags);
     }
     fn is_empty(&self) -> bool {
-        self.url.is_empty()
+        self.url == urlib::Url::parse("http://default.url").unwrap()
     }
 }
 
 impl Url {
+    pub fn empty(&mut self) {
+        self.url = urlib::Url::parse("http://default.url").unwrap();
+    }
+
     pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
-        self.url.contains_opt(&filter.url)
+        self.url.to_string().contains_opt(&filter.url)
             && self.title.contains_opt(&filter.title)
             && self.response.contains_opt(&filter.response)
             && self.status_code.contains_opt(&filter.status_code)
@@ -130,15 +130,15 @@ impl Url {
         }
     }
 
-    pub fn sub_asset(&self) -> Option<String> {
-        self.url.split('/').nth(2).map(|s| s.to_string())
+    pub fn sub_asset(&self) -> Option<&str> {
+        self.url.host_str()
     }
 }
 
 impl Default for Url {
     fn default() -> Self {
         Self {
-            url: String::new(),
+            url: urlib::Url::parse("http://default.url").unwrap(),
             title: None,
             status_code: None,
             response: None,
@@ -150,11 +150,11 @@ impl Default for Url {
 }
 
 impl std::str::FromStr for Url {
-    type Err = std::str::Utf8Error;
+    type Err = Errors;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Url {
-            url: s.to_string(),
+            url: urlib::Url::parse(s)?,
             ..Default::default()
         })
     }
@@ -173,36 +173,30 @@ impl PartialOrd for Url {
 
 impl PartialEq for Url {
     fn eq(&self, other: &Self) -> bool {
-        other.url.contains(&self.url) || self.url.contains(&other.url) || {
-            let a = urlib::Url::parse(&other.url);
-            let b = urlib::Url::parse(&self.url);
+        other.url.as_str().contains(&self.url.as_str())
+            || self.url.as_str().contains(&other.url.as_str())
+            || {
+                let aa = other.url.path_segments();
+                let bb = self.url.path_segments();
 
-            match (a, b) {
-                (Ok(a), Ok(b)) => {
-                    let aa = a.path_segments();
-                    let bb = b.path_segments();
-
-                    a[..urlib::Position::BeforePath] == b[..urlib::Position::BeforePath]
-                        && {
-                            let mut a = a.query_pairs().map(|(k, _)| k).collect::<Vec<_>>();
-                            let mut b = b.query_pairs().map(|(k, _)| k).collect::<Vec<_>>();
-                            a.sort();
-                            b.sort();
-                            a == b
+                other.url[..urlib::Position::BeforePath] == self.url[..urlib::Position::BeforePath]
+                    && {
+                        let mut a = other.url.query_pairs().map(|(k, _)| k).collect::<Vec<_>>();
+                        let mut b = self.url.query_pairs().map(|(k, _)| k).collect::<Vec<_>>();
+                        a.sort();
+                        b.sort();
+                        a == b
+                    }
+                    && match (aa, bb) {
+                        (Some(a), Some(b)) => {
+                            let n = a
+                                .zip(b)
+                                .fold(0, |init, (a, b)| if a == b { init } else { init + 1 });
+                            n < 2
                         }
-                        && match (aa, bb) {
-                            (Some(a), Some(b)) => {
-                                let n = a
-                                    .zip(b)
-                                    .fold(0, |init, (a, b)| if a == b { init } else { init + 1 });
-                                n < 2
-                            }
-                            _ => false,
-                        }
-                }
-                _ => false,
+                        _ => false,
+                    }
             }
-        }
     }
 }
 
@@ -216,36 +210,43 @@ mod test {
         use std::str::FromStr;
 
         assert_ne!(
-            Url::from_str("https://a.com"),
-            Url::from_str("https://b.com")
+            Url::from_str("https://a.com").unwrap(),
+            Url::from_str("https://b.com").unwrap()
         );
         assert_eq!(
-            Url::from_str("https://a.com/"),
-            Url::from_str("https://a.com")
+            Url::from_str("https://a.com/").unwrap(),
+            Url::from_str("https://a.com").unwrap()
         );
         assert_eq!(
-            Url::from_str("https://a.com/a/b?mia=love"),
-            Url::from_str("https://a.com/a")
+            Url::from_str("https://a.com/a/b?mia=love").unwrap(),
+            Url::from_str("https://a.com/a").unwrap()
         );
         assert_eq!(
-            Url::from_str("https://a.com/a/b/c/"),
-            Url::from_str("https://a.com/a/d/c")
+            Url::from_str("https://a.com/a/b/c/").unwrap(),
+            Url::from_str("https://a.com/a/d/c").unwrap()
         );
         assert_ne!(
-            Url::from_str("https://a.com/a/b/c/"),
-            Url::from_str("https://a.com/a/d/e")
+            Url::from_str("https://a.com/a/b/c/").unwrap(),
+            Url::from_str("https://a.com/a/d/e").unwrap()
         );
         assert_eq!(
-            Url::from_str("https://a.com/a/"),
-            Url::from_str("https://a.com/a/d/e")
+            Url::from_str("https://a.com/a/").unwrap(),
+            Url::from_str("https://a.com/a/d/e").unwrap()
         );
     }
 
     #[test]
-    fn test_sort() {
+    fn dedup() {
         use super::*;
-
         use std::str::FromStr;
+
+        let mut arr = vec![
+            Url::from_str("https://a.com/a/a.html").unwrap(),
+            Url::from_str("https://a.com/a/b.html").unwrap(),
+        ];
+        arr.sort();
+        arr.dedup();
+        assert_eq!(arr, vec![Url::from_str("https://a.com/a/b.html").unwrap(),]);
 
         let mut arr = vec![
             Url::from_str("https://a.com").unwrap(),
@@ -298,6 +299,6 @@ mod test {
                 Url::from_str("https://a.com/a/b?mia=love").unwrap(),
                 Url::from_str("https://a.com/a/b/c/").unwrap(),
             ]
-        )
+        );
     }
 }
