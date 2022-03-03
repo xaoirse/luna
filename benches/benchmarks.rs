@@ -13,7 +13,7 @@ fn dedup(n: i32) {
             programs: vec![Program {
                 name: "S".to_string(),
                 scopes: vec![Scope {
-                    asset: ScopeType::Domain("test".to_string()),
+                    asset: ScopeType::from_str("test.com").unwrap(),
                     subs: vec![Sub {
                         urls: vec![Url::from_str(&format!("https://luna.test?{}", i)).unwrap()],
                         ..Default::default()

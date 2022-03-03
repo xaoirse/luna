@@ -27,11 +27,11 @@ pub struct Luna {
     pub programs: Vec<Program>,
 
     #[clap(skip)]
-    #[serde(with = "utc_rfc2822")]
+    #[serde(with = "serde_time")]
     pub update: Option<DateTime<Utc>>,
 
     #[clap(skip)]
-    #[serde(with = "utc_rfc2822")]
+    #[serde(with = "serde_time")]
     pub start: Option<DateTime<Utc>>,
 }
 
@@ -124,7 +124,7 @@ impl Luna {
             .flat_map(|p| &mut p.scopes)
             .flat_map(|s| {
                 if let ScopeType::Domain(d) = &s.asset {
-                    s.subs.retain(|sub| sub.asset.ends_with(d));
+                    s.subs.retain(|sub| sub.asset.ends_with(&d.to_string()));
                 }
                 &mut s.subs
             })
@@ -171,7 +171,7 @@ impl Luna {
         scopes.par_iter_mut().for_each(|s| match &s.asset {
             ScopeType::Domain(d) => s
                 .subs
-                .retain(|sub| !sub.is_empty() && sub.asset.contains(d)),
+                .retain(|sub| !sub.is_empty() && sub.asset.contains(&d.to_string())),
             _ => s.subs.retain(|sub| !sub.is_empty()),
         });
     }
@@ -249,9 +249,7 @@ impl Luna {
                     ScopeType::Cidr(d) => {
                         if verbose == 3 {
                             Some(
-                                d.parse::<cidr::IpCidr>()
-                                    .unwrap()
-                                    .iter()
+                                d.iter()
                                     .map(|c| c.address().to_string())
                                     .collect::<Vec<String>>()
                                     .join("\n"),
@@ -944,14 +942,18 @@ impl From<Filter> for Luna {
             vec![]
         } else if let (Some(scope), Some(sub)) = (f.scope.as_ref(), subs.first()) {
             if sub.asset.ends_with(scope) {
-                vec![Scope {
-                    asset: ScopeType::Domain(scope.to_string()),
-                    severity: f.scope_severity,
-                    bounty: f.scope_bounty,
-                    subs,
-                    update: Some(Utc::now()),
-                    start: Some(Utc::now()),
-                }]
+                if let Ok(scope) = ScopeType::from_str(&f.scope.unwrap_or_default()) {
+                    vec![Scope {
+                        asset: scope,
+                        severity: f.scope_severity,
+                        bounty: f.scope_bounty,
+                        subs,
+                        update: Some(Utc::now()),
+                        start: Some(Utc::now()),
+                    }]
+                } else {
+                    vec![]
+                }
             } else {
                 vec![]
             }

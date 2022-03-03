@@ -1,5 +1,7 @@
 use super::*;
+use ::url as urlib;
 use chrono::{DateTime, Utc};
+use cidr::IpCidr;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -22,17 +24,18 @@ pub struct Scope {
     pub subs: Vec<Sub>,
 
     #[clap(skip)]
-    #[serde(with = "utc_rfc2822")]
+    #[serde(with = "serde_time")]
     pub update: Option<DateTime<Utc>>,
 
     #[clap(skip)]
-    #[serde(with = "utc_rfc2822")]
+    #[serde(with = "serde_time")]
     pub start: Option<DateTime<Utc>>,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum ScopeType {
-    Domain(String),
-    Cidr(String),
+    Domain(urlib::Host),
+    #[serde(with = "serde_cidr")]
+    Cidr(IpCidr),
     Empty,
 }
 
@@ -55,10 +58,12 @@ impl FromStr for ScopeType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
             Ok(Self::Empty)
-        } else if s.parse::<cidr::IpCidr>().is_ok() {
-            Ok(Self::Cidr(s.to_string()))
+        } else if let Ok(cidr) = s.parse::<cidr::IpCidr>() {
+            Ok(Self::Cidr(cidr))
+        } else if let Ok(d) = urlib::Host::parse(s) {
+            Ok(Self::Domain(d))
         } else {
-            Ok(Self::Domain(s.to_string()))
+            Err("Invalid scope".to_string())
         }
     }
 }
@@ -66,8 +71,8 @@ impl FromStr for ScopeType {
 impl EqExt for ScopeType {
     fn contains_opt(&self, regex: &Option<Regex>) -> bool {
         match (self, regex) {
-            (Self::Domain(text), Some(re)) => re.captures(text).is_some(),
-            (Self::Cidr(text), Some(re)) => re.captures(text).is_some(),
+            (Self::Domain(d), Some(re)) => re.captures(&d.to_string()).is_some(),
+            (Self::Cidr(c), Some(re)) => re.captures(&c.to_string()).is_some(),
             (_, None) => true,
             (Self::Empty, _) => false,
         }

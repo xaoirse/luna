@@ -21,11 +21,11 @@ pub struct Url {
     pub tags: Vec<Tag>,
 
     #[clap(skip)]
-    #[serde(with = "utc_rfc2822")]
+    #[serde(with = "serde_time")]
     pub update: Option<DateTime<Utc>>,
 
     #[clap(skip)]
-    #[serde(with = "utc_rfc2822")]
+    #[serde(with = "serde_time")]
     pub start: Option<DateTime<Utc>>,
 }
 

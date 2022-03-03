@@ -33,11 +33,11 @@ pub struct Program {
     pub scopes: Vec<Scope>,
 
     #[clap(skip)]
-    #[serde(with = "utc_rfc2822")]
+    #[serde(with = "serde_time")]
     pub update: Option<DateTime<Utc>>,
 
     #[clap(skip)]
-    #[serde(with = "utc_rfc2822")]
+    #[serde(with = "serde_time")]
     pub start: Option<DateTime<Utc>>,
 }
 

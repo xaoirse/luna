@@ -2,7 +2,6 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use rayon::prelude::*;
-
 pub mod filter;
 pub mod host;
 pub mod job;
@@ -11,11 +10,12 @@ pub mod program;
 pub mod run;
 pub mod scope;
 pub mod script;
+pub mod serde_cidr;
+pub mod serde_time;
 pub mod service;
 pub mod sub;
 pub mod tag;
 pub mod url;
-pub mod utc_rfc2822;
 
 pub use crate::url::Url;
 pub use filter::{Fields, Filter, FilterRegex, IpCidr};
