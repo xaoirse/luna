@@ -924,12 +924,18 @@ impl From<Filter> for Luna {
         let subs = if sub_is_none {
             vec![]
         } else {
+            let asset = urls
+                .first()
+                .map(|u| {
+                    u.url
+                        .host_str()
+                        .unwrap_or(&f.sub.unwrap_or_default())
+                        .to_string()
+                })
+                .unwrap_or_default();
+
             vec![Sub {
-                asset: f.sub.take().unwrap_or_else(|| {
-                    urls.first()
-                        .map(|u| u.url.host_str().unwrap_or_default().to_string())
-                        .unwrap_or_default()
-                }),
+                asset,
                 typ: f.sub_type.take(),
                 hosts,
                 urls,
