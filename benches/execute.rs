@@ -1,31 +1,12 @@
-use model::*;
-use std::{
-    str::FromStr,
-    sync::{atomic::AtomicBool, Arc},
-};
+use model::{script::Script, *};
 
-pub fn execute(n: i32) {
-    let mut luna = Luna::default();
-
-    for i in 0..n {
-        let l = Luna {
-            programs: vec![Program {
-                name: "S".to_string(),
-                scopes: vec![Scope {
-                    asset: ScopeType::from_str("test.com").unwrap(),
-                    subs: vec![Sub {
-                        urls: vec![Url::from_str(&format!("https://luna.test?{}", i)).unwrap()],
-                        ..Default::default()
-                    }],
-                    ..Default::default()
-                }],
-                ..Default::default()
-            }],
-            ..Default::default()
-        };
-        luna.append(l);
-    }
-
-    let term = Arc::new(AtomicBool::new(false));
-    luna.dedup(term);
+pub fn _execute(_n: i32) {
+    let regex = regex::Regex::new(r"(?P<program>\w+)").unwrap();
+    let _script = Script {
+        cd: "".to_string(),
+        command: "cat /etc/passwd".to_string(),
+        field: Fields::None,
+        regex,
+        verbose: 0,
+    };
 }

@@ -2,8 +2,9 @@ use clap::Parser;
 use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
 use log::{debug, error, warn};
 use rayon::prelude::*;
-use regex::bytes::Regex;
-use std::process::Command;
+use regex::Regex;
+use std::io::{BufRead, BufReader};
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -13,18 +14,15 @@ use super::*;
 pub struct Data {
     pub input: String,
     pub field: Fields,
-    pub output: Vec<u8>,
+    pub output: String,
 }
 impl Data {
-    fn parse(&self, regex: &Regex) -> Vec<Luna> {
+    fn parse(&self, regex: &Regex) -> Luna {
         debug!("{:#?}", &self);
         regex
             .captures_iter(&self.output)
             .filter_map(|caps| {
-                let get = |key| {
-                    caps.name(key)
-                        .map(|v| String::from_utf8_lossy(v.as_bytes()).to_string())
-                };
+                let get = |key| caps.name(key).map(|v| v.as_str().to_string());
 
                 let mut luna = Filter {
                     n: None,
@@ -116,7 +114,10 @@ impl Data {
                     None
                 }
             })
-            .collect()
+            .fold(Luna::default(), |mut init, l| {
+                init.append(l);
+                init
+            })
     }
 }
 
@@ -158,46 +159,56 @@ impl Script {
 
         elements
             .into_par_iter()
-            .map(|input| {
+            .filter_map(|input| {
                 if term.load(Ordering::Relaxed) {
-                    return Err("term".into());
+                    warn!("Command aborted! {} => {}", input, self.command);
+                    return None;
                 }
 
                 let cmd = self.command.replace(&self.field.substitution(), &input);
+                debug!("Command: {}", &cmd);
 
-                let output = match Command::new("sh")
+                let child = match Command::new("sh")
                     .current_dir(&self.cd)
                     .arg("-c")
                     .arg(&cmd)
-                    .output()
+                    .stdout(Stdio::piped())
+                    .spawn()
                 {
-                    Ok(res) => res.stdout,
-                    Err(err) => return Err(format!("{}: \"{}\"", &cmd, err).into()),
+                    Ok(child) => child,
+                    Err(err) => {
+                        error!("{err}");
+                        return None;
+                    }
                 };
 
-                debug!("Command: {}", cmd);
+                if let Some(stdout) = child.stdout {
+                    let lines = BufReader::new(stdout).lines();
+                    let mut luna = lines.flatten().fold(Luna::default(), |mut init, line| {
+                        debug!("{}: {}", &cmd, &line);
 
-                pb.set_message(cmd);
-                pb.inc(1);
+                        init.append(
+                            Data {
+                                input: input.to_string(),
+                                field: self.field,
+                                output: line,
+                            }
+                            .parse(&self.regex),
+                        );
+                        init
+                    });
 
-                Ok(Data {
-                    input,
-                    field: self.field,
-                    output,
-                })
-            })
-            .filter_map(|result: Result<Data, Errors>| match result {
-                Ok(data) => Some(data),
-                Err(err) => {
-                    if err.to_string() == "term" {
-                        warn!("Command aborted");
-                    } else {
-                        error!("Executing: {}", err);
-                    }
+                    luna.dedup(term.clone());
+
+                    pb.set_message(cmd);
+                    pb.inc(1);
+
+                    Some(luna)
+                } else {
+                    error!("Executing: {cmd}");
                     None
                 }
             })
-            .flat_map(|data| data.parse(&self.regex))
             .reduce(Luna::default, |mut init, l| {
                 init.append(l);
 
@@ -264,7 +275,7 @@ impl ScriptCli {
             .lines()
             .enumerate()
         {
-            if regex_pat.is_match(line.as_bytes()) {
+            if regex_pat.is_match(line) {
                 regex = line
                     .split_once("=")
                     .map_or("".to_string(), |p| p.1.trim().to_string())
