@@ -2,7 +2,7 @@ use clap::Parser;
 use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
 use log::{debug, error, warn};
 use rayon::prelude::*;
-use regex::Regex;
+use regex::bytes::Regex;
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -13,7 +13,7 @@ use super::*;
 pub struct Data {
     pub input: String,
     pub field: Fields,
-    pub output: String,
+    pub output: Vec<u8>,
 }
 impl Data {
     fn parse(&self, regex: &Regex) -> Vec<Luna> {
@@ -21,7 +21,10 @@ impl Data {
         regex
             .captures_iter(&self.output)
             .filter_map(|caps| {
-                let get = |key| caps.name(key).map(|v| v.as_str().to_string());
+                let get = |key| {
+                    caps.name(key)
+                        .map(|v| String::from_utf8_lossy(v.as_bytes()).to_string())
+                };
 
                 let mut luna = Filter {
                     n: None,
@@ -127,7 +130,7 @@ pub struct Script {
 }
 
 impl Script {
-    fn execute<'a>(&'a self, luna: &Luna, filter: &FilterRegex, term: Arc<AtomicBool>) -> Luna {
+    fn execute(&self, luna: &Luna, filter: &FilterRegex, term: Arc<AtomicBool>) -> Luna {
         let elements = luna.find(self.field, filter, 0);
 
         let ps = ProgressStyle::default_bar()
@@ -162,19 +165,17 @@ impl Script {
 
                 let cmd = self.command.replace(&self.field.substitution(), &input);
 
-                let output = String::from_utf8(
-                    match Command::new("sh")
-                        .current_dir(&self.cd)
-                        .arg("-c")
-                        .arg(&cmd)
-                        .output()
-                    {
-                        Ok(res) => res.stdout,
-                        Err(err) => return Err(format!("{}: \"{}\"", &cmd, err).into()),
-                    },
-                )?;
+                let output = match Command::new("sh")
+                    .current_dir(&self.cd)
+                    .arg("-c")
+                    .arg(&cmd)
+                    .output()
+                {
+                    Ok(res) => res.stdout,
+                    Err(err) => return Err(format!("{}: \"{}\"", &cmd, err).into()),
+                };
 
-                debug!("Command: {}\nOutput: {}", cmd, &output);
+                debug!("Command: {}", cmd);
 
                 pb.set_message(cmd);
                 pb.inc(1);
@@ -199,11 +200,14 @@ impl Script {
             .flat_map(|data| data.parse(&self.regex))
             .reduce(Luna::default, |mut init, l| {
                 init.append(l);
+
+                if term.load(Ordering::Relaxed) {
+                    return init;
+                }
+
                 init.dedup(term.clone());
                 init
             })
-
-        // This should run parallel here
     }
 }
 
@@ -225,6 +229,12 @@ impl Scripts {
                 let l = script.execute(luna, &self.filter, term.clone());
 
                 luna.append(l);
+
+                if term.load(Ordering::Relaxed) {
+                    luna.save_as("backup.json").unwrap();
+                    return;
+                }
+
                 luna.dedup(term.clone());
                 luna.save();
             })
@@ -254,7 +264,7 @@ impl ScriptCli {
             .lines()
             .enumerate()
         {
-            if regex_pat.is_match(line) {
+            if regex_pat.is_match(line.as_bytes()) {
                 regex = line
                     .split_once("=")
                     .map_or("".to_string(), |p| p.1.trim().to_string())
@@ -288,10 +298,10 @@ impl ScriptCli {
                     Fields::None
                 };
 
-                if let Ok(regex) = regex::Regex::new(&regex) {
+                if let Ok(regex) = Regex::new(&regex) {
                     if !regex_check(&regex) {
                         return Err(
-                        format!("line {} regex \"{}\"  doesn't have necessery names \"program\", \"scope\", \"sub\", \"url\" or \"ip\""
+                        format!("Line {} regex \"{}\"  doesn't have necessery names \"program\", \"scope\", \"sub\", \"url\" or \"ip\""
                             ,n,regex).into(),
                     );
                     }

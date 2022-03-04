@@ -67,7 +67,7 @@ impl Luna {
         }
 
         hosts.par_iter_mut().for_each(|h| {
-            h.services.par_sort();
+            h.services.sort();
             for i in (1..h.services.len()).rev() {
                 if h.services[i] == h.services[i - 1] {
                     let (a, b) = h.services.split_at_mut(i);
@@ -102,7 +102,7 @@ impl Luna {
         }
 
         urls.par_iter_mut().for_each(|u| {
-            u.tags.par_sort();
+            u.tags.sort();
             for i in (1..u.tags.len()).rev() {
                 if u.tags[i] == u.tags[i - 1] {
                     let (a, b) = u.tags.split_at_mut(i);
@@ -111,7 +111,7 @@ impl Luna {
                 }
             }
             u.tags
-                .par_iter_mut()
+                .iter_mut()
                 .for_each(|t| t.values.retain(|vlu| !vlu.is_empty()));
 
             u.tags.retain(|tag| !tag.is_empty());
@@ -149,6 +149,25 @@ impl Luna {
             .for_each(|s| s.hosts.retain(|host| !host.is_empty()));
     }
     fn dedup_scopes(&mut self, term: Arc<AtomicBool>) {
+        let scopes: Vec<ScopeType> = self
+            .programs
+            .iter_mut()
+            .flat_map(|p| &mut p.scopes)
+            .filter(|s| s.asset != ScopeType::Empty)
+            .map(|s| s.asset.clone())
+            .collect();
+        self.programs
+            .iter_mut()
+            .flat_map(|s| &mut s.scopes)
+            .filter(|s| s.asset == ScopeType::Empty)
+            .for_each(|s| {
+                for name in &scopes {
+                    if s.subs.iter().any(|s| s.asset.contains(&name.to_string())) {
+                        s.asset = name.clone();
+                    }
+                }
+            });
+
         let mut scopes: Vec<&mut Scope> = self
             .programs
             .iter_mut()
@@ -380,7 +399,7 @@ impl Luna {
             .collect()
     }
 
-    fn save_as(&self, path: &str) -> Result<usize, Errors> {
+    pub fn save_as(&self, path: &str) -> Result<usize, Errors> {
         let str = serde_json::to_string(&self)?;
 
         if !Opt::parse().no_backup && std::path::Path::new(path).exists() {
