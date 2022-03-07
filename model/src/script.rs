@@ -138,7 +138,7 @@ impl Script {
 
         let ps = ProgressStyle::default_bar()
                     .template(
-                        "{spinner:.green} {wide_msg}\n[{elapsed_precise}] [{wide_bar:.cyan/cyan}] {pos}/{len} ({eta})",
+                        "{spinner:.green} {wide_msg:.green}\n{elapsed_precise:.yellow} {wide_bar:.cyan/cyan} {pos:}/{len:} {eta:.magenta}",
                     ).unwrap()
                     .progress_chars("▓█░");
 
