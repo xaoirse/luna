@@ -10,7 +10,7 @@ pub fn dedup(n: i32) {
     for i in 0..n {
         let l = Luna {
             programs: vec![Program {
-                name: "S".to_string(),
+                name: "".to_string(),
                 scopes: vec![Scope {
                     asset: ScopeType::from_str("test.com").unwrap(),
                     subs: vec![Sub {

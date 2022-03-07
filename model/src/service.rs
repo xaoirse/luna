@@ -40,12 +40,31 @@ impl Dedup for Service {
         merge(&mut a.protocol, &mut b.protocol, new);
         merge(&mut a.banner, &mut b.banner, new);
     }
+    fn dedup(&mut self, _term: Arc<AtomicBool>) {}
     fn is_empty(&self) -> bool {
+        self.port.is_empty()
+    }
+    fn no_name(&self) -> bool {
         self.port.is_empty()
     }
 }
 
 impl Service {
+    pub fn same(mut b: Self, a: &mut Self) {
+        let new = a.update < b.update;
+
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
+
+        if a.port.is_empty() {
+            a.port = std::mem::take(&mut b.port);
+        }
+
+        merge(&mut a.name, &mut b.name, new);
+        merge(&mut a.protocol, &mut b.protocol, new);
+        merge(&mut a.banner, &mut b.banner, new);
+    }
+
     pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.port.contains_opt(&filter.port)
             && self.name.contains_opt(&filter.service_name)

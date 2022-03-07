@@ -3,7 +3,7 @@ mod dedup;
 mod execute;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("dedup", |b| b.iter(|| dedup::dedup(black_box(5000))));
+    c.bench_function("dedup", |b| b.iter(|| dedup::dedup(black_box(8000))));
     // c.bench_function("execute", |b| b.iter(|| execute::exe(black_box(2000))));
 }
 

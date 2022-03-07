@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::io::Write;
 use std::str::FromStr;
-use std::sync::atomic::Ordering;
 
 #[derive(Debug, Clone, Parser, Serialize, Deserialize)]
 pub struct Luna {
@@ -36,205 +35,123 @@ pub struct Luna {
 }
 
 impl Luna {
-    pub fn append(&mut self, mut other: Self) {
+    pub fn append(&mut self, other: Self) {
         self.counter += other.counter;
-        self.programs.append(&mut other.programs);
 
         self.update = self.update.max(other.update);
         self.start = self.start.min(other.start);
-    }
 
-    fn dedup_hosts(&mut self, term: Arc<AtomicBool>) {
-        let mut hosts: Vec<&mut Host> = self
-            .programs
-            .iter_mut()
-            .flat_map(|p| &mut p.scopes)
-            .flat_map(|s| &mut s.subs)
-            .flat_map(|s| &mut s.hosts)
-            .collect();
+        let filter = &FilterRegex::default();
 
-        hosts.par_sort();
-        for i in (1..hosts.len()).rev() {
-            if hosts[i] == hosts[i - 1] {
-                let (a, b) = hosts.split_at_mut(i);
-                Host::same_bucket(b[0], a[i - 1]);
-                b[0].clear();
-            }
-        }
+        other.programs.into_iter().for_each(|p| {
+            if p.name.is_empty() {
+                p.scopes.into_iter().for_each(|s| {
+                    if s.asset == ScopeType::Empty {
+                        s.subs.into_iter().for_each(|s| {
+                            if s.asset.is_empty() {
+                                s.urls.into_iter().for_each(|u| {
+                                    let urls = self.urls(filter);
+                                    for su in urls {
+                                        if su == &u {
+                                            Url::same(u, su);
+                                            return;
+                                        }
+                                    }
+                                    self.programs.push(Program {
+                                        scopes: vec![Scope {
+                                            subs: vec![Sub {
+                                                urls: vec![u],
+                                                ..Default::default()
+                                            }],
+                                            ..Default::default()
+                                        }],
+                                        ..Default::default()
+                                    });
+                                });
+                                s.hosts.into_iter().for_each(|h| {
+                                    let hosts = self.hosts(filter);
+                                    for sh in hosts {
+                                        if sh == &h {
+                                            Host::same(h, sh);
+                                            return;
+                                        }
+                                    }
+                                    self.programs.push(Program {
+                                        scopes: vec![Scope {
+                                            subs: vec![Sub {
+                                                hosts: vec![h],
+                                                ..Default::default()
+                                            }],
+                                            ..Default::default()
+                                        }],
+                                        ..Default::default()
+                                    });
+                                });
+                            } else {
+                                let subs = self.subs(filter);
+                                for ss in subs {
+                                    if ss == &s {
+                                        Sub::same(s, ss);
+                                        return;
+                                    }
+                                }
 
-        if term.load(Ordering::Relaxed) {
-            return;
-        }
-
-        hosts.par_iter_mut().for_each(|h| {
-            h.services.sort();
-            for i in (1..h.services.len()).rev() {
-                if h.services[i] == h.services[i - 1] {
-                    let (a, b) = h.services.split_at_mut(i);
-                    Service::same_bucket(&mut b[0], &mut a[i - 1]);
-                    b[0].port.clear();
-                }
-            }
-
-            h.services.retain(|srv| !srv.is_empty());
-        });
-    }
-    fn dedup_urls(&mut self, term: Arc<AtomicBool>) {
-        let mut urls: Vec<&mut Url> = self
-            .programs
-            .iter_mut()
-            .flat_map(|p| &mut p.scopes)
-            .flat_map(|s| &mut s.subs)
-            .flat_map(|s| &mut s.urls)
-            .collect();
-
-        urls.par_sort();
-        for i in (1..urls.len()).rev() {
-            if urls[i] == urls[i - 1] {
-                let (a, b) = urls.split_at_mut(i);
-                Url::same_bucket(b[0], a[i - 1]);
-                b[0].clear();
-            }
-        }
-
-        if term.load(Ordering::Relaxed) {
-            return;
-        }
-
-        urls.par_iter_mut().for_each(|u| {
-            u.tags.sort();
-            for i in (1..u.tags.len()).rev() {
-                if u.tags[i] == u.tags[i - 1] {
-                    let (a, b) = u.tags.split_at_mut(i);
-                    Tag::same_bucket(&mut b[0], &mut a[i - 1]);
-                    b[0].name.clear();
-                }
-            }
-            u.tags
-                .iter_mut()
-                .for_each(|t| t.values.retain(|vlu| !vlu.is_empty()));
-
-            u.tags.retain(|tag| !tag.is_empty());
-        });
-    }
-    fn dedup_subs(&mut self, term: Arc<AtomicBool>) {
-        let mut subs: Vec<&mut Sub> = self
-            .programs
-            .par_iter_mut()
-            .flat_map(|p| &mut p.scopes)
-            .flat_map(|s| {
-                if let ScopeType::Domain(d) = &s.asset {
-                    s.subs.retain(|sub| sub.asset.ends_with(&d.to_string()));
-                }
-                &mut s.subs
-            })
-            .collect();
-
-        subs.par_sort();
-        for i in (1..subs.len()).rev() {
-            if subs[i] == subs[i - 1] {
-                let (a, b) = subs.split_at_mut(i);
-                Sub::same_bucket(b[0], a[i - 1]);
-                b[0].asset.clear();
-            }
-        }
-
-        if term.load(Ordering::Relaxed) {
-            return;
-        }
-
-        subs.par_iter_mut()
-            .for_each(|s| s.urls.retain(|url| !url.is_empty()));
-        subs.par_iter_mut()
-            .for_each(|s| s.hosts.retain(|host| !host.is_empty()));
-    }
-    fn dedup_scopes(&mut self, term: Arc<AtomicBool>) {
-        let scopes: Vec<ScopeType> = self
-            .programs
-            .iter_mut()
-            .flat_map(|p| &mut p.scopes)
-            .filter(|s| s.asset != ScopeType::Empty)
-            .map(|s| s.asset.clone())
-            .collect();
-        self.programs
-            .iter_mut()
-            .flat_map(|s| &mut s.scopes)
-            .filter(|s| s.asset == ScopeType::Empty)
-            .for_each(|s| {
-                for name in &scopes {
-                    if s.subs.iter().any(|s| s.asset.contains(&name.to_string())) {
-                        s.asset = name.clone();
+                                if let Some(ss) = self
+                                    .programs
+                                    .iter_mut()
+                                    .flat_map(|p| &mut p.scopes)
+                                    .find(|ss| match &ss.asset {
+                                        ScopeType::Domain(d) => s.asset.ends_with(&d.to_string()),
+                                        _ => false,
+                                    })
+                                {
+                                    if let Some(a) = ss.subs.iter_mut().find(|a| &&s == a) {
+                                        Sub::same(s, a);
+                                    } else {
+                                        ss.subs.push(s);
+                                    }
+                                } else {
+                                    self.programs.push(Program {
+                                        scopes: vec![Scope {
+                                            subs: vec![s],
+                                            ..Default::default()
+                                        }],
+                                        ..Default::default()
+                                    });
+                                }
+                            }
+                        })
+                    } else {
+                        let scopes = self.scopes(filter);
+                        for ss in scopes {
+                            if ss == &s {
+                                Scope::same(s, ss);
+                                return;
+                            }
+                        }
+                        self.programs.push(Program {
+                            scopes: vec![s],
+                            ..Default::default()
+                        });
+                    }
+                })
+            } else {
+                for i in 0..self.programs.len() {
+                    if self.programs[i] == p {
+                        Program::same(p, &mut self.programs[i]);
+                        return;
                     }
                 }
-            });
-
-        let mut scopes: Vec<&mut Scope> = self
-            .programs
-            .iter_mut()
-            .flat_map(|p| &mut p.scopes)
-            .collect();
-
-        scopes.par_sort();
-        for i in (1..scopes.len()).rev() {
-            if scopes[i] == scopes[i - 1] {
-                let (a, b) = scopes.split_at_mut(i);
-                Scope::same_bucket(b[0], a[i - 1]);
-                b[0].asset = ScopeType::Empty;
+                self.programs.push(p);
             }
-        }
-
-        if term.load(Ordering::Relaxed) {
-            return;
-        }
-
-        scopes.par_iter_mut().for_each(|s| match &s.asset {
-            ScopeType::Domain(d) => s
-                .subs
-                .retain(|sub| !sub.is_empty() && sub.asset.contains(&d.to_string())),
-            _ => s.subs.retain(|sub| !sub.is_empty()),
-        });
-    }
-    fn dedup_programs(&mut self, term: Arc<AtomicBool>) {
-        self.programs.par_sort();
-        for i in (1..self.programs.len()).rev() {
-            if self.programs[i] == self.programs[i - 1] {
-                let (a, b) = self.programs.split_at_mut(i);
-                Program::same_bucket(&mut b[0], &mut a[i - 1]);
-                b[0].name.clear();
-            }
-        }
-
-        if term.load(Ordering::Relaxed) {
-            return;
-        }
-
-        self.programs
-            .par_iter_mut()
-            .for_each(|s| s.scopes.retain(|scp| !scp.is_empty()));
+        })
     }
 
     pub fn dedup(&mut self, term: Arc<AtomicBool>) {
-        if term.load(Ordering::Relaxed) {
-            return;
-        }
-        self.dedup_hosts(term.clone());
-        if term.load(Ordering::Relaxed) {
-            return;
-        }
-        self.dedup_urls(term.clone());
-        if term.load(Ordering::Relaxed) {
-            return;
-        }
-        self.dedup_subs(term.clone());
-        if term.load(Ordering::Relaxed) {
-            return;
-        }
-        self.dedup_scopes(term.clone());
-        if term.load(Ordering::Relaxed) {
-            return;
-        }
-        self.dedup_programs(term);
-
+        dedup(&mut self.programs, term);
+        self.programs
+            .par_iter_mut()
+            .for_each(|p| p.scopes.retain(|s| s.asset != ScopeType::Empty));
         self.programs.retain(|p| !p.is_empty());
     }
 
@@ -1018,17 +935,17 @@ mod test {
     pub fn test_run() {
         use super::*;
 
-        const N: usize = 1000;
-        const M: usize = 901; // 10 contains 1
+        const N: usize = 10000;
+        const M: usize = 10000; // 10 contains 1
 
         let mut luna = Luna::default();
 
         for i in 0..N {
             let l = Luna {
                 programs: vec![Program {
-                    name: "S".to_string(),
+                    name: "".to_string(),
                     scopes: vec![Scope {
-                        asset: ScopeType::Empty,
+                        asset: ScopeType::from_str("luna.test").unwrap(),
                         subs: vec![Sub {
                             asset: "luna.test".to_string(),
                             urls: vec![Url::from_str(&format!("https://luna.test?{}", i)).unwrap()],
@@ -1141,10 +1058,7 @@ mod test {
                         asset: ScopeType::Empty,
                         subs: vec![Sub {
                             asset: "luna.test".to_string(),
-                            urls: vec![
-                                Url::from_str("https://luna.test?1").unwrap(),
-                                Url::from_str("https://luna.test?1").unwrap(),
-                            ],
+                            urls: vec![Url::from_str("https://luna.test?1").unwrap()],
 
                             ..Default::default()
                         }],

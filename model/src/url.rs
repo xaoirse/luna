@@ -40,14 +40,50 @@ impl Dedup for Url {
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 
-        a.tags.append(&mut b.tags);
+        let mut i = b.tags.len();
+        while i > 0 {
+            i -= 1;
+
+            let b = b.tags.swap_remove(i);
+            if let Some(a) = a.tags.iter_mut().find(|a| &&b == a) {
+                Tag::same(b, a);
+            } else {
+                a.tags.push(b);
+            }
+        }
+    }
+    fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.tags, term);
     }
     fn is_empty(&self) -> bool {
+        self.url == urlib::Url::parse("http://default.url").unwrap()
+    }
+    fn no_name(&self) -> bool {
         self.url == urlib::Url::parse("http://default.url").unwrap()
     }
 }
 
 impl Url {
+    pub fn same(mut b: Self, a: &mut Self) {
+        let new = a.update < b.update;
+
+        merge(&mut a.title, &mut b.title, new);
+        merge(&mut a.status_code, &mut b.status_code, new);
+        merge(&mut a.response, &mut b.response, new);
+
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
+
+        a.tags.par_sort();
+        for b in b.tags {
+            if let Ok(i) = a.tags.binary_search(&b) {
+                Tag::same(b, &mut a.tags[i]);
+            } else {
+                a.tags.push(b);
+            }
+        }
+    }
+
     pub fn clear(&mut self) {
         self.url = urlib::Url::parse("http://default.url").unwrap();
     }

@@ -37,12 +37,42 @@ impl Dedup for Tag {
 
         a.values.append(&mut b.values);
     }
+    fn dedup(&mut self, _term: Arc<AtomicBool>) {
+        self.values.par_sort();
+        self.values.dedup();
+    }
     fn is_empty(&self) -> bool {
+        self.name.is_empty()
+    }
+    fn no_name(&self) -> bool {
         self.name.is_empty()
     }
 }
 
 impl Tag {
+    pub fn same(mut b: Self, a: &mut Self) {
+        let new = a.update < b.update;
+
+        if a.name.is_empty() {
+            a.name = std::mem::take(&mut b.name);
+        }
+
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
+
+        merge(&mut a.severity, &mut b.severity, new);
+
+        let mut i = b.values.len();
+        while i > 0 {
+            i -= 1;
+
+            let b = b.values.swap_remove(i);
+            if !a.values.iter_mut().any(|a| &b == a) {
+                a.values.push(b);
+            }
+        }
+    }
+
     pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.name.contains_opt(&filter.tag)
             && self.severity.contains_opt(&filter.tag_severity)

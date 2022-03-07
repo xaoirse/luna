@@ -37,6 +37,7 @@ cidr = "0.2.1"
 signal-hook = "*"
 indicatif = {version = "0.17.0-rc.5", features = ["rayon"]}
 url = { version = "2.2", features = ["serde"] }
+fixed-buffer = "0.3.1"
 
 
 [dev-dependencies]

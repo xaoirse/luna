@@ -26,15 +26,46 @@ impl Dedup for Host {
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 
-        a.services.append(&mut b.services);
+        let mut i = b.services.len();
+        while i > 0 {
+            i -= 1;
+
+            let b = b.services.swap_remove(i);
+            if let Some(a) = a.services.iter_mut().find(|a| &&b == a) {
+                Service::same(b, a);
+            } else {
+                a.services.push(b);
+            }
+        }
+    }
+
+    fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.services, term);
     }
 
     fn is_empty(&self) -> bool {
         self.ip.is_unspecified()
     }
+    fn no_name(&self) -> bool {
+        self.ip.is_unspecified()
+    }
 }
 
 impl Host {
+    pub fn same(b: Self, a: &mut Self) {
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
+
+        a.services.par_sort();
+        for b in b.services {
+            if let Ok(i) = a.services.binary_search(&b) {
+                Service::same(b, &mut a.services[i]);
+            } else {
+                a.services.push(b);
+            }
+        }
+    }
+
     pub fn clear(&mut self) {
         self.ip = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
     }

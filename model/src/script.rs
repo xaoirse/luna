@@ -1,9 +1,9 @@
 use clap::Parser;
+use fixed_buffer::{deframe_line, FixedBuf};
 use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
 use log::{debug, error, warn};
 use rayon::prelude::*;
-use regex::Regex;
-use std::io::{BufRead, BufReader};
+use regex::bytes::Regex;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -11,18 +11,20 @@ use std::sync::Arc;
 use super::*;
 
 #[derive(Debug)]
-pub struct Data {
-    pub input: String,
+pub struct Data<'a> {
+    pub input: &'a str,
     pub field: Fields,
-    pub output: String,
+    pub output: &'a [u8],
 }
-impl Data {
+impl<'a> Data<'a> {
     fn parse(&self, regex: &Regex) -> Luna {
-        debug!("{:#?}", &self);
         regex
-            .captures_iter(&self.output)
+            .captures_iter(self.output)
             .filter_map(|caps| {
-                let get = |key| caps.name(key).map(|v| v.as_str().to_string());
+                let get = |key| {
+                    caps.name(key)
+                        .map(|v| String::from_utf8_lossy(v.as_bytes()).to_string())
+                };
 
                 let mut luna = Filter {
                     n: None,
@@ -62,7 +64,7 @@ impl Data {
                     updated_at: None,
                     started_at: None,
                 };
-                let input = Some(self.input.clone());
+                let input = Some(self.input.to_string());
                 match self.field {
                     Fields::Luna => (),
                     Fields::Program => luna.program = input,
@@ -140,7 +142,7 @@ impl Script {
                     ).unwrap()
                     .progress_chars("▓█░");
 
-        let pb = ProgressBar::new(elements.len() as u64);
+        let pb = ProgressBar::new(elements.len().min(filter.n) as u64);
 
         pb.set_style(ps);
 
@@ -158,14 +160,15 @@ impl Script {
         pb.set_message(self.command.clone());
 
         elements
-            .into_par_iter()
+            .par_iter()
+            .take(filter.n)
             .filter_map(|input| {
                 if term.load(Ordering::Relaxed) {
                     warn!("Command aborted! {} => {}", input, self.command);
                     return None;
                 }
 
-                let cmd = self.command.replace(&self.field.substitution(), &input);
+                let cmd = self.command.replace(&self.field.substitution(), input);
                 debug!("Command: {}", &cmd);
 
                 let child = match Command::new("sh")
@@ -182,26 +185,27 @@ impl Script {
                     }
                 };
 
-                if let Some(stdout) = child.stdout {
-                    let lines = BufReader::new(stdout).lines();
-                    let mut luna = lines.flatten().fold(Luna::default(), |mut init, line| {
-                        debug!("{}: {}", &cmd, &line);
+                if let Some(mut stdout) = child.stdout {
+                    const S: usize = 4096;
+                    let mut buf: FixedBuf<S> = FixedBuf::new();
 
-                        init.append(
+                    let mut luna = Luna::default();
+
+                    while let Ok(Some(bytes)) = buf.read_frame(&mut stdout, deframe_line) {
+                        luna.append(
                             Data {
-                                input: input.to_string(),
+                                input,
                                 field: self.field,
-                                output: line,
+                                output: bytes,
                             }
                             .parse(&self.regex),
                         );
-                        init
-                    });
-
-                    luna.dedup(term.clone());
+                    }
 
                     pb.set_message(cmd);
                     pb.inc(1);
+
+                    debug!("{:#?}", luna);
 
                     Some(luna)
                 } else {
@@ -216,7 +220,6 @@ impl Script {
                     return init;
                 }
 
-                init.dedup(term.clone());
                 init
             })
     }
@@ -275,7 +278,7 @@ impl ScriptCli {
             .lines()
             .enumerate()
         {
-            if regex_pat.is_match(line) {
+            if regex_pat.is_match(line.as_bytes()) {
                 regex = line
                     .split_once("=")
                     .map_or("".to_string(), |p| p.1.trim().to_string())

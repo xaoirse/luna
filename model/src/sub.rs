@@ -41,16 +41,76 @@ impl Dedup for Sub {
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 
-        a.hosts.append(&mut b.hosts);
-        a.urls.append(&mut b.urls);
+        let mut i = b.hosts.len();
+        while i > 0 {
+            i -= 1;
+
+            let b = b.hosts.swap_remove(i);
+            if let Some(a) = a.hosts.iter_mut().find(|a| &&b == a) {
+                Host::same(b, a);
+            } else {
+                a.hosts.push(b);
+            }
+        }
+
+        let mut i = b.urls.len();
+        while i > 0 {
+            i -= 1;
+
+            let b = b.urls.swap_remove(i);
+            if let Some(a) = a.urls.iter_mut().find(|a| &&b == a) {
+                Url::same(b, a);
+            } else {
+                a.urls.push(b);
+            }
+        }
+    }
+
+    fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.hosts, term.clone());
+        dedup(&mut self.urls, term);
     }
 
     fn is_empty(&self) -> bool {
         self.asset.is_empty() && self.urls.is_empty() && self.hosts.is_empty()
     }
+    fn no_name(&self) -> bool {
+        self.asset.is_empty()
+    }
 }
 
 impl Sub {
+    pub fn same(mut b: Self, a: &mut Self) {
+        let new = a.update < b.update;
+
+        if a.asset.is_empty() {
+            a.asset = std::mem::take(&mut b.asset);
+        }
+
+        merge(&mut a.typ, &mut b.typ, new);
+
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
+
+        a.hosts.par_sort();
+        for b in b.hosts {
+            if let Ok(i) = a.hosts.binary_search(&b) {
+                Host::same(b, &mut a.hosts[i]);
+            } else {
+                a.hosts.push(b);
+            }
+        }
+
+        a.urls.par_sort();
+        for b in b.urls {
+            if let Ok(i) = a.urls.binary_search(&b) {
+                Url::same(b, &mut a.urls[i]);
+            } else {
+                a.urls.push(b);
+            }
+        }
+    }
+
     pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.asset.contains_opt(&filter.sub)
             && self.typ.contains_opt(&filter.sub_type)

@@ -15,4 +15,4 @@ rayon = "1.5"
 cidr = "0.2.1"
 indicatif = {version = "0.17.0-rc.5", features = ["rayon"]}
 url = "2.2.2"
-
+fixed-buffer = "0.3.1"

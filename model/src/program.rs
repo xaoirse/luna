@@ -60,15 +60,59 @@ impl Dedup for Program {
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 
-        a.scopes.append(&mut b.scopes);
+        let mut i = b.scopes.len();
+        while i > 0 {
+            i -= 1;
+
+            let b = b.scopes.swap_remove(i);
+            if let Some(a) = a.scopes.iter_mut().find(|a| &&b == a) {
+                Scope::same(b, a);
+            } else {
+                a.scopes.push(b);
+            }
+        }
+    }
+
+    fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.scopes, term);
     }
 
     fn is_empty(&self) -> bool {
         self.name.is_empty() && self.scopes.is_empty()
     }
+    fn no_name(&self) -> bool {
+        self.name.is_empty()
+    }
 }
 
 impl Program {
+    pub fn same(mut b: Self, a: &mut Self) {
+        let new = a.update < b.update;
+
+        if a.name.is_empty() {
+            a.name = std::mem::take(&mut b.name);
+        }
+
+        merge(&mut a.platform, &mut b.platform, new);
+        merge(&mut a.handle, &mut b.handle, new);
+        merge(&mut a.typ, &mut b.typ, new);
+        merge(&mut a.url, &mut b.url, new);
+        merge(&mut a.icon, &mut b.icon, new);
+        merge(&mut a.bounty, &mut b.bounty, new);
+        merge(&mut a.state, &mut b.state, new);
+
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
+
+        for b in b.scopes {
+            if let Some(a) = a.scopes.iter_mut().find(|a| &&b == a) {
+                Scope::same(b, a);
+            } else {
+                a.scopes.push(b);
+            }
+        }
+    }
+
     pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.name.contains_opt(&filter.program)
             && self.platform.contains_opt(&filter.program_platform)
@@ -241,8 +285,8 @@ impl PartialEq for Program {
     fn eq(&self, other: &Self) -> bool {
         if self.name.is_empty() || other.name.is_empty() {
             self.scopes
-                .par_iter()
-                .any(|s| other.scopes.par_iter().any(|ss| s == ss))
+                .iter()
+                .any(|s| other.scopes.iter().any(|ss| s == ss))
         } else {
             self.name.to_lowercase() == other.name.to_lowercase()
         }

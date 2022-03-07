@@ -93,15 +93,52 @@ impl Dedup for Scope {
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 
-        a.subs.append(&mut b.subs);
-    }
+        let mut i = b.subs.len();
+        while i > 0 {
+            i -= 1;
 
+            let b = b.subs.swap_remove(i);
+            if let Some(a) = a.subs.iter_mut().find(|a| &&b == a) {
+                Sub::same(b, a);
+            } else {
+                a.subs.push(b);
+            }
+        }
+    }
+    fn dedup(&mut self, term: Arc<AtomicBool>) {
+        dedup(&mut self.subs, term);
+    }
     fn is_empty(&self) -> bool {
         self.asset == ScopeType::Empty && self.subs.is_empty()
+    }
+    fn no_name(&self) -> bool {
+        self.asset == ScopeType::Empty
     }
 }
 
 impl Scope {
+    pub fn same(mut b: Self, a: &mut Self) {
+        let new = a.update < b.update;
+
+        if a.asset == ScopeType::Empty {
+            a.asset = std::mem::take(&mut b.asset);
+        }
+
+        merge(&mut a.bounty, &mut b.bounty, new);
+        merge(&mut a.severity, &mut b.severity, new);
+
+        a.update = a.update.max(b.update);
+        a.start = a.start.min(b.start);
+
+        for b in b.subs {
+            if let Some(a) = a.subs.iter_mut().find(|a| &&b == a) {
+                Sub::same(b, a);
+            } else {
+                a.subs.push(b);
+            }
+        }
+    }
+
     pub fn matches(&self, filter: &FilterRegex, date: bool) -> bool {
         self.asset.contains_opt(&filter.scope)
             && self.bounty.contains_opt(&filter.scope_bounty)
