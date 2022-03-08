@@ -98,14 +98,14 @@ impl Luna {
 
                                 if let Some(ss) = self
                                     .programs
-                                    .iter_mut()
+                                    .par_iter_mut()
                                     .flat_map(|p| &mut p.scopes)
-                                    .find(|ss| match &ss.asset {
+                                    .find_any(|ss| match &ss.asset {
                                         ScopeType::Domain(d) => s.asset.ends_with(&d.to_string()),
                                         _ => false,
                                     })
                                 {
-                                    if let Some(a) = ss.subs.iter_mut().find(|a| &&s == a) {
+                                    if let Some(a) = ss.subs.par_iter_mut().find_any(|a| &&s == a) {
                                         Sub::same(s, a);
                                     } else {
                                         ss.subs.push(s);
@@ -936,7 +936,6 @@ mod test {
         use super::*;
 
         const N: usize = 10000;
-        const M: usize = 10000; // 10 contains 1
 
         let mut luna = Luna::default();
 
@@ -987,7 +986,7 @@ mod test {
                 .unwrap()
                 .urls
                 .len(),
-            M
+            N
         );
     }
 

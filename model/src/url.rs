@@ -45,7 +45,7 @@ impl Dedup for Url {
             i -= 1;
 
             let b = b.tags.swap_remove(i);
-            if let Some(a) = a.tags.iter_mut().find(|a| &&b == a) {
+            if let Some(a) = a.tags.par_iter_mut().find_any(|a| &&b == a) {
                 Tag::same(b, a);
             } else {
                 a.tags.push(b);
@@ -74,10 +74,9 @@ impl Url {
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 
-        a.tags.par_sort();
         for b in b.tags {
-            if let Ok(i) = a.tags.binary_search(&b) {
-                Tag::same(b, &mut a.tags[i]);
+            if let Some(a) = a.tags.par_iter_mut().find_any(|a| &&b == a) {
+                Tag::same(b, a);
             } else {
                 a.tags.push(b);
             }
@@ -165,10 +164,6 @@ impl Url {
             _ => format!("{:#?}", self),
         }
     }
-
-    pub fn sub_asset(&self) -> Option<&str> {
-        self.url.host_str()
-    }
 }
 
 impl Default for Url {
@@ -209,30 +204,22 @@ impl PartialOrd for Url {
 
 impl PartialEq for Url {
     fn eq(&self, other: &Self) -> bool {
-        other.url.as_str().contains(&self.url.as_str())
-            || self.url.as_str().contains(&other.url.as_str())
-            || {
-                let aa = other.url.path_segments();
-                let bb = self.url.path_segments();
-
-                other.url[..urlib::Position::BeforePath] == self.url[..urlib::Position::BeforePath]
-                    && {
-                        let mut a = other.url.query_pairs().map(|(k, _)| k).collect::<Vec<_>>();
-                        let mut b = self.url.query_pairs().map(|(k, _)| k).collect::<Vec<_>>();
-                        a.sort();
-                        b.sort();
-                        a == b
-                    }
-                    && match (aa, bb) {
-                        (Some(a), Some(b)) => {
-                            let n = a
-                                .zip(b)
-                                .fold(0, |init, (a, b)| if a == b { init } else { init + 1 });
-                            n < 2
-                        }
-                        _ => false,
-                    }
+        other.url[..urlib::Position::BeforePath] == self.url[..urlib::Position::BeforePath]
+            && match (other.url.path_segments(), self.url.path_segments()) {
+                (Some(a), Some(b)) => {
+                    let n = a
+                        .zip(b)
+                        .fold(0, |init, (a, b)| if a == b { init } else { init + 1 });
+                    n < 2
+                }
+                (None, None) => true,
+                _ => false,
             }
+            && other
+                .url
+                .query_pairs()
+                .map(|(k, _)| k)
+                .eq(self.url.query_pairs().map(|(k, _)| k))
     }
 }
 
@@ -245,6 +232,26 @@ mod test {
         use super::Url;
         use std::str::FromStr;
 
+        assert_eq!(
+            Url::from_str("https://memoryleaks.ir/tag/%d8%a2%d8%b3%db%8c%d8%a8-%d9%be%d8%b0%db%8c%d8%b1%db%8c-%d8%af%d8%b1-%d8%b1%d8%a8%d8%a7%d8%aa-%d9%87%d8%a7%db%8c-%d8%aa%d9%84%da%af%d8%b1%d8%a7%d9%85/feed/").unwrap(),
+            Url::from_str("https://memoryleaks.ir/tag/%d8%af%d9%88%d8%b1-%d8%b2%d8%af%d9%86-%d9%85%da%a9%d8%a7%d9%86%db%8c%d8%b2%d9%85-%d8%aa%d8%b4%d8%ae%db%8c%d8%b5-%d8%af%d8%b3%d8%aa%da%af%d8%a7%d9%87-%d8%b1%d9%88%d8%aa-%d8%b4%d8%af%d9%87/feed/").unwrap()
+        );
+
+        assert_eq!(
+            Url::from_str("http://aktuelles.haufe.de/eagle_kp_webapp/login/login.action;jsessionid=2acc8603184240a22e4fa5fe3525").unwrap(),
+            Url::from_str("http://aktuelles.haufe.de/eagle_kp_webapp/login/login.action;jsessionid=2b0107dc883c28019e877799d07e").unwrap()
+        );
+
+        assert_eq!(
+            Url::from_str("https://memoryleaks.ir/category/%D9%88%DB%8C%D8%AF%D8%A6%D9%88-%D8%A2%D9%85%D9%88%D8%B2%D8%B4%DB%8C/page/2/").unwrap(),
+            Url::from_str("https://memoryleaks.ir/category/%d9%88%db%8c%d8%af%d8%a6%d9%88-%d8%a2%d9%85%d9%88%d8%b2%d8%b4%db%8c/page/2/").unwrap()
+        );
+
+        assert_eq!(
+            Url::from_str("https://memoryleaks.ir/category/%d8%a7%d8%b1%d8%aa%d9%82%d8%a7%d8%b9-%d8%af%d8%b3%d8%aa%d8%b1%d8%b3%db%8c/feed/").unwrap(),
+            Url::from_str("https://memoryleaks.ir/category/%d8%a7%d9%85%d9%86%db%8c%d8%aa-%d8%a7%d9%86%d8%af%d8%b1%d9%88%db%8c%d8%af/feed/").unwrap()
+        );
+
         assert_ne!(
             Url::from_str("https://a.com").unwrap(),
             Url::from_str("https://b.com").unwrap()
@@ -253,20 +260,13 @@ mod test {
             Url::from_str("https://a.com/").unwrap(),
             Url::from_str("https://a.com").unwrap()
         );
-        assert_eq!(
-            Url::from_str("https://a.com/a/b?mia=love").unwrap(),
-            Url::from_str("https://a.com/a").unwrap()
-        );
+
         assert_eq!(
             Url::from_str("https://a.com/a/b/c/").unwrap(),
             Url::from_str("https://a.com/a/d/c").unwrap()
         );
         assert_ne!(
             Url::from_str("https://a.com/a/b/c/").unwrap(),
-            Url::from_str("https://a.com/a/d/e").unwrap()
-        );
-        assert_eq!(
-            Url::from_str("https://a.com/a/").unwrap(),
             Url::from_str("https://a.com/a/d/e").unwrap()
         );
     }
@@ -277,64 +277,76 @@ mod test {
         use std::str::FromStr;
 
         let mut arr = vec![
-            Url::from_str("https://a.com/a/a.html").unwrap(),
-            Url::from_str("https://a.com/a/b.html").unwrap(),
+            Sub {
+                urls: vec![Url::from_str("https://a.com/a/a.html").unwrap()],
+                ..Default::default()
+            },
+            Sub {
+                urls: vec![Url::from_str("https://a.com/a/b.html").unwrap()],
+                ..Default::default()
+            },
         ];
-        arr.sort();
-        arr.dedup();
-        assert_eq!(arr, vec![Url::from_str("https://a.com/a/b.html").unwrap(),]);
+        let term = Arc::new(AtomicBool::new(false));
+        dedup(&mut arr, term.clone());
 
-        let mut arr = vec![
-            Url::from_str("https://a.com").unwrap(),
-            Url::from_str("https://b.com").unwrap(),
-            Url::from_str("https://a.com/").unwrap(),
-            Url::from_str("https://a.com").unwrap(),
-            Url::from_str("https://a.com/a/b?mia=love").unwrap(),
-            Url::from_str("https://a.com/a").unwrap(),
-            Url::from_str("https://a.com/a/b/c/").unwrap(),
-            Url::from_str("https://a.com/a/d/c").unwrap(),
-            Url::from_str("https://a.com/a/b/c/").unwrap(),
-            Url::from_str("https://a.com/a/d/e").unwrap(),
-            Url::from_str("https://a.com/a/").unwrap(),
-            Url::from_str("https://a.com/a/d/e").unwrap(),
-        ];
-        arr.sort();
-        arr.dedup();
         assert_eq!(
             arr,
-            vec![
-                Url::from_str("https://b.com").unwrap(),
-                Url::from_str("https://a.com/a/d/e").unwrap(),
-                Url::from_str("https://a.com/a/b?mia=love").unwrap(),
-                Url::from_str("https://a.com/a/b/c/").unwrap(),
-            ]
+            vec![Sub {
+                urls: vec![Url::from_str("https://a.com/a/a.html").unwrap()],
+                ..Default::default()
+            },]
         );
 
         let mut arr = vec![
-            Url::from_str("https://b.com").unwrap(),
-            Url::from_str("https://a.com/").unwrap(),
-            Url::from_str("https://a.com/a/b?mia=love").unwrap(),
-            Url::from_str("https://a.com/a").unwrap(),
-            Url::from_str("https://a.com/a/d/c").unwrap(),
-            Url::from_str("https://a.com/a/b/c/").unwrap(),
-            Url::from_str("https://a.com/a/d/e").unwrap(),
-            Url::from_str("https://a.com/a/b/e").unwrap(),
-            Url::from_str("https://a.com").unwrap(),
-            Url::from_str("https://a.com/a/").unwrap(),
-            Url::from_str("https://a.com/a/d/e").unwrap(),
-            Url::from_str("https://a.com").unwrap(),
-            Url::from_str("https://a.com/a/b/c/").unwrap(),
+            Sub {
+                urls: vec![Url::from_str("https://a.com").unwrap()],
+                ..Default::default()
+            },
+            Sub {
+                urls: vec![Url::from_str("https://a.com/a/b?mia=love").unwrap()],
+                ..Default::default()
+            },
         ];
-        arr.sort();
-        arr.dedup();
+        dedup(&mut arr, term.clone());
+        assert_ne!(
+            arr,
+            vec![Sub {
+                urls: vec![Url::from_str("https://a.com/a/b?mia=love").unwrap()],
+                ..Default::default()
+            }],
+        );
+
+        let mut arr = vec![
+                    Sub {
+                        urls: vec![Url::from_str("https://memoryleaks.ir/category/%D9%88%DB%8C%D8%AF%D8%A6%D9%88-%D8%A2%D9%85%D9%88%D8%B2%D8%B4%DB%8C/page/2/").unwrap(),],
+                        ..Default::default()
+                    },
+                    Sub {
+                        urls: vec![Url::from_str("https://memoryleaks.ir/category/%d8%a7%d8%b1%d8%aa%d9%82%d8%a7%d8%b9-%d8%af%d8%b3%d8%aa%d8%b1%d8%b3%db%8c/feed/").unwrap(),],
+                        ..Default::default()
+                    },
+                    Sub {
+                        urls: vec![Url::from_str("https://memoryleaks.ir/category/%d9%88%db%8c%d8%af%d8%a6%d9%88-%d8%a2%d9%85%d9%88%d8%b2%d8%b4%db%8c/page/2/").unwrap(),],
+                        ..Default::default()
+                    },
+                    Sub {
+                        urls: vec![Url::from_str("https://memoryleaks.ir/category/%d8%a7%d9%85%d9%86%db%8c%d8%aa-%d8%a7%d9%86%d8%af%d8%b1%d9%88%db%8c%d8%af/feed/").unwrap()],
+                        ..Default::default()
+                    }
+        ];
+        dedup(&mut arr, term);
+
         assert_eq!(
             arr,
-            vec![
-                Url::from_str("https://b.com").unwrap(),
-                Url::from_str("https://a.com/a/d/e").unwrap(),
-                Url::from_str("https://a.com/a/b?mia=love").unwrap(),
-                Url::from_str("https://a.com/a/b/c/").unwrap(),
-            ]
+            vec![Sub {
+                        urls: vec![Url::from_str("https://memoryleaks.ir/category/%d9%88%db%8c%d8%af%d8%a6%d9%88-%d8%a2%d9%85%d9%88%d8%b2%d8%b4%db%8c/page/2/").unwrap(),],
+                        ..Default::default()
+                    },
+                    Sub {
+                        urls: vec![Url::from_str("https://memoryleaks.ir/category/%d8%a7%d8%b1%d8%aa%d9%82%d8%a7%d8%b9-%d8%af%d8%b3%d8%aa%d8%b1%d8%b3%db%8c/feed/").unwrap(),],
+                        ..Default::default()
+                    }
+            ],
         );
     }
 }

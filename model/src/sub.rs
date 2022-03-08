@@ -46,7 +46,7 @@ impl Dedup for Sub {
             i -= 1;
 
             let b = b.hosts.swap_remove(i);
-            if let Some(a) = a.hosts.iter_mut().find(|a| &&b == a) {
+            if let Some(a) = a.hosts.par_iter_mut().find_any(|a| &&b == a) {
                 Host::same(b, a);
             } else {
                 a.hosts.push(b);
@@ -56,10 +56,14 @@ impl Dedup for Sub {
         let mut i = b.urls.len();
         while i > 0 {
             i -= 1;
-
             let b = b.urls.swap_remove(i);
-            if let Some(a) = a.urls.iter_mut().find(|a| &&b == a) {
+            if !b.url.host_str().map_or(false, |h| h.ends_with(&a.asset)) {
+                continue;
+            }
+            if let Some(a) = a.urls.par_iter_mut().find_any(|a| b.url == a.url) {
                 Url::same(b, a);
+            } else if a.urls.par_iter_mut().find_any(|a| &&b == a).is_some() {
+                continue;
             } else {
                 a.urls.push(b);
             }
@@ -92,19 +96,22 @@ impl Sub {
         a.update = a.update.max(b.update);
         a.start = a.start.min(b.start);
 
-        a.hosts.par_sort();
         for b in b.hosts {
-            if let Ok(i) = a.hosts.binary_search(&b) {
-                Host::same(b, &mut a.hosts[i]);
+            if let Some(a) = a.hosts.par_iter_mut().find_any(|a| &&b == a) {
+                Host::same(b, a);
             } else {
                 a.hosts.push(b);
             }
         }
 
-        a.urls.par_sort();
         for b in b.urls {
-            if let Ok(i) = a.urls.binary_search(&b) {
-                Url::same(b, &mut a.urls[i]);
+            if !b.url.host_str().map_or(false, |h| h.ends_with(&a.asset)) {
+                continue;
+            }
+            if let Some(a) = a.urls.par_iter_mut().find_any(|a| b.url == a.url) {
+                Url::same(b, a);
+            } else if a.urls.par_iter_mut().find_any(|a| &&b == a).is_some() {
+                continue;
             } else {
                 a.urls.push(b);
             }

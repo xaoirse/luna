@@ -98,7 +98,7 @@ impl Dedup for Scope {
             i -= 1;
 
             let b = b.subs.swap_remove(i);
-            if let Some(a) = a.subs.iter_mut().find(|a| &&b == a) {
+            if let Some(a) = a.subs.par_iter_mut().find_any(|a| &&b == a) {
                 Sub::same(b, a);
             } else {
                 a.subs.push(b);
@@ -131,7 +131,7 @@ impl Scope {
         a.start = a.start.min(b.start);
 
         for b in b.subs {
-            if let Some(a) = a.subs.iter_mut().find(|a| &&b == a) {
+            if let Some(a) = a.subs.par_iter_mut().find_any(|a| &&b == a) {
                 Sub::same(b, a);
             } else {
                 a.subs.push(b);

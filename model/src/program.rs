@@ -65,7 +65,7 @@ impl Dedup for Program {
             i -= 1;
 
             let b = b.scopes.swap_remove(i);
-            if let Some(a) = a.scopes.iter_mut().find(|a| &&b == a) {
+            if let Some(a) = a.scopes.par_iter_mut().find_any(|a| &&b == a) {
                 Scope::same(b, a);
             } else {
                 a.scopes.push(b);
@@ -105,7 +105,7 @@ impl Program {
         a.start = a.start.min(b.start);
 
         for b in b.scopes {
-            if let Some(a) = a.scopes.iter_mut().find(|a| &&b == a) {
+            if let Some(a) = a.scopes.par_iter_mut().find_any(|a| &&b == a) {
                 Scope::same(b, a);
             } else {
                 a.scopes.push(b);
