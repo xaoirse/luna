@@ -40,7 +40,7 @@ impl Dedup for Service {
         merge(&mut a.protocol, &mut b.protocol, new);
         merge(&mut a.banner, &mut b.banner, new);
     }
-    fn dedup(&mut self, _term: Arc<AtomicBool>) {}
+    fn dedup(&mut self) {}
     fn is_empty(&self) -> bool {
         self.port.is_empty()
     }

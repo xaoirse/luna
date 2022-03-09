@@ -157,8 +157,6 @@ impl Script {
                 .with_finish(ProgressFinish::WithMessage(self.command.clone().into()));
         }
 
-        pb.set_message(self.command.clone());
-
         elements
             .par_iter()
             .take(filter.n)
@@ -170,6 +168,8 @@ impl Script {
 
                 let cmd = self.command.replace(&self.field.substitution(), input);
                 debug!("Command: {}", &cmd);
+
+                pb.set_message(cmd.clone());
 
                 let child = match Command::new("sh")
                     .current_dir(&self.cd)
@@ -202,7 +202,6 @@ impl Script {
                         );
                     }
 
-                    pb.set_message(cmd);
                     pb.inc(1);
 
                     debug!("{:#?}", luna);
@@ -249,7 +248,7 @@ impl Scripts {
                     return;
                 }
 
-                luna.dedup(term.clone());
+                luna.dedup();
                 luna.save();
             })
     }

@@ -37,7 +37,7 @@ impl Dedup for Tag {
 
         a.values.append(&mut b.values);
     }
-    fn dedup(&mut self, _term: Arc<AtomicBool>) {
+    fn dedup(&mut self) {
         self.values.par_sort();
         self.values.dedup();
     }

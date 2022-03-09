@@ -105,8 +105,8 @@ impl Dedup for Scope {
             }
         }
     }
-    fn dedup(&mut self, term: Arc<AtomicBool>) {
-        dedup(&mut self.subs, term);
+    fn dedup(&mut self) {
+        dedup(&mut self.subs);
     }
     fn is_empty(&self) -> bool {
         self.asset == ScopeType::Empty && self.subs.is_empty()

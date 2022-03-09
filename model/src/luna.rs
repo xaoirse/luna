@@ -147,8 +147,8 @@ impl Luna {
         })
     }
 
-    pub fn dedup(&mut self, term: Arc<AtomicBool>) {
-        dedup(&mut self.programs, term);
+    pub fn dedup(&mut self) {
+        dedup(&mut self.programs);
         self.programs
             .par_iter_mut()
             .for_each(|p| p.scopes.retain(|s| s.asset != ScopeType::Empty));
@@ -958,8 +958,7 @@ mod test {
             };
             luna.append(l);
         }
-        let term = Arc::new(AtomicBool::new(false));
-        luna.dedup(term);
+        luna.dedup();
 
         assert_eq!(luna.programs.len(), 1);
         assert_eq!(luna.programs.first().unwrap().scopes.len(), 1);
@@ -1046,8 +1045,8 @@ mod test {
 
         a.append(b);
         a.append(c);
-        let term = Arc::new(AtomicBool::new(false));
-        a.dedup(term);
+
+        a.dedup();
 
         let c = Luna {
             programs: vec![

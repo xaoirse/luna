@@ -73,8 +73,8 @@ impl Dedup for Program {
         }
     }
 
-    fn dedup(&mut self, term: Arc<AtomicBool>) {
-        dedup(&mut self.scopes, term);
+    fn dedup(&mut self) {
+        dedup(&mut self.scopes);
     }
 
     fn is_empty(&self) -> bool {

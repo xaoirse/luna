@@ -70,9 +70,9 @@ impl Dedup for Sub {
         }
     }
 
-    fn dedup(&mut self, term: Arc<AtomicBool>) {
-        dedup(&mut self.hosts, term.clone());
-        dedup(&mut self.urls, term);
+    fn dedup(&mut self) {
+        dedup(&mut self.hosts.clone());
+        dedup(&mut self.urls);
     }
 
     fn is_empty(&self) -> bool {

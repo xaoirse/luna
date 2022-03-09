@@ -1,8 +1,5 @@
 use model::*;
-use std::{
-    str::FromStr,
-    sync::{atomic::AtomicBool, Arc},
-};
+use std::str::FromStr;
 
 pub fn dedup(n: i32) {
     let mut luna = Luna::default();
@@ -26,6 +23,5 @@ pub fn dedup(n: i32) {
         luna.append(l);
     }
 
-    let term = Arc::new(AtomicBool::new(false));
-    luna.dedup(term);
+    luna.dedup();
 }

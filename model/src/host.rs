@@ -39,8 +39,8 @@ impl Dedup for Host {
         }
     }
 
-    fn dedup(&mut self, term: Arc<AtomicBool>) {
-        dedup(&mut self.services, term);
+    fn dedup(&mut self) {
+        dedup(&mut self.services);
     }
 
     fn is_empty(&self) -> bool {

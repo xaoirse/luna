@@ -54,7 +54,7 @@ pub fn run() {
 
             let insert: Luna = (*insert).into();
             luna.append(insert);
-            luna.dedup(term);
+            luna.dedup();
             luna.save();
         }
 
@@ -94,7 +94,7 @@ pub fn run() {
 
             match script.parse() {
                 Ok(script) => {
-                    luna.dedup(term.clone());
+                    luna.dedup();
                     script.run(&mut luna, term);
                     info!("Scripts Executed.");
                 }
@@ -105,7 +105,7 @@ pub fn run() {
         Cli::Import { file } => match Luna::from_file(&file) {
             Ok(file) => {
                 luna.append(file);
-                luna.dedup(term);
+                luna.dedup();
                 luna.save();
             }
             Err(err) => error!("Can't import: {}", err),
@@ -116,7 +116,7 @@ pub fn run() {
 
             match Luna::from_file(input) {
                 Ok(mut luna) => {
-                    luna.dedup(term);
+                    luna.dedup();
                     println!("{} {}: {}", "[+]".green(), luna.stringify(1), input);
                     luna.save();
                 }

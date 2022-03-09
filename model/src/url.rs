@@ -52,8 +52,8 @@ impl Dedup for Url {
             }
         }
     }
-    fn dedup(&mut self, term: Arc<AtomicBool>) {
-        dedup(&mut self.tags, term);
+    fn dedup(&mut self) {
+        dedup(&mut self.tags);
     }
     fn is_empty(&self) -> bool {
         self.url == urlib::Url::parse("http://default.url").unwrap()
@@ -286,8 +286,7 @@ mod test {
                 ..Default::default()
             },
         ];
-        let term = Arc::new(AtomicBool::new(false));
-        dedup(&mut arr, term.clone());
+        dedup(&mut arr);
 
         assert_eq!(
             arr,
@@ -307,7 +306,7 @@ mod test {
                 ..Default::default()
             },
         ];
-        dedup(&mut arr, term.clone());
+        dedup(&mut arr);
         assert_ne!(
             arr,
             vec![Sub {
@@ -334,7 +333,7 @@ mod test {
                         ..Default::default()
                     }
         ];
-        dedup(&mut arr, term);
+        dedup(&mut arr);
 
         assert_eq!(
             arr,
