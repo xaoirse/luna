@@ -94,6 +94,12 @@ impl Tag {
                 self.severity.as_ref().map_or("", |s| s),
             ),
             2 => format!(
+                "{} [{}] [{}]",
+                self.name,
+                self.severity.as_ref().map_or("", |s| s),
+                self.values.join(", ")
+            ),
+            3 => format!(
                 "{} [{}]
     values:[{}{}
     Update: {}

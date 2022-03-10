@@ -792,17 +792,19 @@ impl From<Filter> for Luna {
 
         let tags = if tag_is_none {
             vec![]
+        } else if let Some(tag) = f.tag_value.take() {
+            vec![Tag {
+                name: f.tag.unwrap_or_default(),
+                severity: f.tag_severity,
+                values: tag.split(',').map(|s| s.to_string()).collect(),
+                update: Some(Utc::now()),
+                start: Some(Utc::now()),
+            }]
         } else {
             vec![Tag {
                 name: f.tag.unwrap_or_default(),
                 severity: f.tag_severity,
-                values: f
-                    .tag_value
-                    .take()
-                    .unwrap_or_default()
-                    .split(',')
-                    .map(|s| s.to_string())
-                    .collect(),
+                values: vec![],
                 update: Some(Utc::now()),
                 start: Some(Utc::now()),
             }]

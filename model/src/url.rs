@@ -152,7 +152,7 @@ impl Url {
                     .map_or("n".to_string(), |s| s.len().to_string()),
                 self.tags
                     .iter()
-                    .map(|s| format!("\n        {}", s.stringify(1)))
+                    .map(|s| format!("\n        {}", s.stringify(2)))
                     .collect::<Vec<String>>()
                     .join(""),
                 if self.tags.is_empty() { "]" } else { "\n    ]" },
