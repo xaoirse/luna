@@ -375,63 +375,49 @@ impl Luna {
 
     pub fn remove(&mut self, field: Fields, filter: &FilterRegex) -> bool {
         let len = self.find(field, filter, 0).len();
-        if len == 1 {
-            match field {
-                Fields::Program => self.programs.retain(|p| !p.matches(filter, true)),
-                Fields::Domain => self
-                    .programs(filter)
-                    .first_mut()
-                    .unwrap()
-                    .scopes
-                    .retain(|p| !p.matches(filter, true)),
-                Fields::Cidr => self
-                    .programs(filter)
-                    .first_mut()
-                    .unwrap()
-                    .scopes
-                    .retain(|p| !p.matches(filter, true)),
-                Fields::Sub => self
-                    .scopes(filter)
-                    .first_mut()
-                    .unwrap()
-                    .subs
-                    .retain(|s| !s.matches(filter, true)),
-                Fields::Url => self
-                    .subs(filter)
-                    .first_mut()
-                    .unwrap()
-                    .urls
-                    .retain(|s| !s.matches(filter, true)),
-                Fields::IP => self
-                    .subs(filter)
-                    .first_mut()
-                    .unwrap()
-                    .hosts
-                    .retain(|h| !h.matches(filter, true)),
-                Fields::Tag => self
-                    .urls(filter)
-                    .first_mut()
-                    .unwrap()
-                    .tags
-                    .retain(|t| !t.matches(filter, true)),
-                Fields::Service => self
-                    .hosts(filter)
-                    .first_mut()
-                    .unwrap()
-                    .services
-                    .retain(|t| !t.matches(filter, true)),
-                Fields::Keyword => todo!(),
-                Fields::None => error!("what are you trying to delete?"),
-                Fields::Luna => error!("Stupid! Do you want to delete Luna?"),
-            }
 
-            return true;
-        } else if len == 0 {
-            warn!("No items found!")
-        } else {
-            error!("For security reasons you can't delete multi fields at once!")
+        if len == 0 {
+            error!("No items found!");
+            return false;
         }
-        false
+
+        match field {
+            Fields::Program => self.programs.retain(|p| !p.matches(filter, true)),
+            Fields::Domain => self
+                .programs(filter)
+                .par_iter_mut()
+                .for_each(|p| p.scopes.retain(|p| !p.matches(filter, true))),
+            Fields::Cidr => self
+                .programs(filter)
+                .par_iter_mut()
+                .for_each(|p| p.scopes.retain(|p| !p.matches(filter, true))),
+            Fields::Sub => self
+                .scopes(filter)
+                .par_iter_mut()
+                .for_each(|s| s.subs.retain(|s| !s.matches(filter, true))),
+            Fields::Url => self
+                .subs(filter)
+                .par_iter_mut()
+                .for_each(|s| s.urls.retain(|s| !s.matches(filter, true))),
+            Fields::IP => self
+                .subs(filter)
+                .par_iter_mut()
+                .for_each(|s| s.hosts.retain(|h| !h.matches(filter, true))),
+            Fields::Tag => self
+                .urls(filter)
+                .par_iter_mut()
+                .for_each(|u| u.tags.retain(|t| !t.matches(filter, true))),
+            Fields::Service => self
+                .hosts(filter)
+                .par_iter_mut()
+                .for_each(|h| h.services.retain(|t| !t.matches(filter, true))),
+            Fields::Keyword => todo!(),
+            Fields::None => error!("What are you trying to delete?"),
+            Fields::Luna => error!("Stupid! Do you want to delete Luna?"),
+        }
+
+        info!("{} items removed!", len);
+        true
     }
 
     pub fn stringify(&self, v: u8) -> String {
