@@ -134,18 +134,18 @@ impl Program {
             1 => format!("{}  {} ", self.name, self.url.as_ref().map_or("", |s| s)),
             2 => format!(
                 "{}  {}
-    platform: {}
-    type: {}
-    handle: {}
-    bounty: {}
-    icon: {}
-    state: {}
-    scopes: {}
-    subs: {}
-    urls: {}
-    hosts: {}
-    update: {}
-    start: {}
+    Platform: {}
+    Type:     {}
+    Handle:   {}
+    Bounty:   {}
+    Icon:     {}
+    State:    {}
+    Scopes:   {}
+    Subs:     {}
+    Urls:     {}
+    Hosts:    {}
+    Update:   {}
+    Start:    {}
     ",
                 self.name,
                 self.url.as_ref().map_or("", |s| s),
@@ -179,18 +179,18 @@ impl Program {
             ),
             3 => format!(
                 "{}  {}
-    platform: {}
-    type: {}
-    handle: {}
-    bounty: {}
-    icon: {}
-    state: {}
-    scopes: [{}{}
-    subs: {}
-    urls: {}
-    hosts: {}
-    update: {}
-    start: {}
+    Platform: {}
+    Type:     {}
+    Handle:   {}
+    Bounty:   {}
+    Icon:     {}
+    State:    {}
+    Scopes: [{}{}
+    Subs:     {}
+    Urls:     {}
+    Hosts:    {}
+    Update:   {}
+    Start:    {}
     ",
                 self.name,
                 self.url.as_ref().map_or("", |s| s),

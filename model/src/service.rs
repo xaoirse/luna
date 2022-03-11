@@ -81,9 +81,9 @@ impl Service {
             1 => format!(
                 "{} - {}
     Protocol: {}
-    Banner: {}
-    Update: {}
-    Start: {}
+    Banner:   {}
+    Update:   {}
+    Start:    {}
     ",
                 self.port,
                 self.name.as_ref().map_or("", |s| s),

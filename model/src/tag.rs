@@ -101,9 +101,9 @@ impl Tag {
             ),
             3 => format!(
                 "{} [{}]
-    values:[{}{}
+    Values: [{}{}
     Update: {}
-    Start: {}
+    Start:  {}
     ",
                 self.name,
                 self.severity.as_ref().map_or("", |s| s),

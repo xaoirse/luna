@@ -421,17 +421,17 @@ impl Luna {
             1 => format!("{} {}", self.name, self.version),
             2 => format!(
                 "{}  {}
-    Status: {}
+    Status:   {}
     Programs: {}
-    Domains: {}
-    CIDRs: {}
-    Subs: {}
-    IPs: {}
-    URLs: {}
+    Domains:  {}
+    CIDRs:    {}
+    Subs:     {}
+    IPs:      {}
+    URLs:     {}
     Services: {}
-    Tags: {}
-    Update: {}
-    Start: {}
+    Tags:     {}
+    Update:   {}
+    Start:    {}
     ",
                 self.name,
                 self.version,
@@ -453,17 +453,17 @@ impl Luna {
             ),
             3 => format!(
                 "{}  {}
-    Status: {}
+    Status:   {}
     Programs: [{}{}
-    Domains: {}
-    CIDRs: {}
-    Subs: {}
-    IPs: {}
-    URLs: {}
+    Domains:  {}
+    CIDRs:    {}
+    Subs:     {}
+    IPs:      {}
+    URLs:     {}
     Services: {}
-    Tags: {}
-    Update: {}
-    Start: {}
+    Tags:     {}
+    Update:   {}
+    Start:    {}
     ",
                 self.name,
                 self.version,

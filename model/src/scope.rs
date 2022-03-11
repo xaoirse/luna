@@ -154,13 +154,13 @@ impl Scope {
             0 => self.asset.to_string(),
             1 => format!(
                 "{}
-    bounty: {}
-    severity: {}
-    subs: {}
-    urls: {}
-    hosts: {}
-    update: {}
-    start: {}
+    Bounty:   {}
+    Severity: {}
+    Subs:     {}
+    Urls:     {}
+    Hosts:    {}
+    Update:   {}
+    Start:    {}
     ",
                 self.asset,
                 self.bounty.as_ref().map_or("", |s| s),
@@ -176,14 +176,14 @@ impl Scope {
                     .to_rfc2822()),
             ),
             2 => format!(
-                "{},
-    bounty: {},
-    severity: {}
-    subs: [{}{}
-    urls: {}
-    hosts: {}
-    update: {}
-    start: {}
+                "{}
+    Bounty:   {}
+    Severity: {}
+    Subs: [{}{}
+    Urls:     {}
+    Hosts:    {}
+    Update:   {}
+    Start:    {}
     ",
                 self.asset,
                 self.bounty.as_ref().map_or("", |s| s),

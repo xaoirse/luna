@@ -133,11 +133,11 @@ impl Sub {
             0 => self.asset.to_string(),
             1 => format!(
                 "{}
-    type: {}
-    hosts: {}
-    urls: {}
+    Type:   {}
+    Hosts:  {}
+    Urls:   {}
     update: {}
-    start: {}
+    Start:  {}
     ",
                 self.asset,
                 self.typ.as_ref().map_or("", |s| s),
@@ -152,11 +152,11 @@ impl Sub {
             ),
             2 => format!(
                 "{}
-    type: {}
-    hosts: [{}{}
-    urls: [{}{}
-    update: {}
-    start: {}
+    Type:   {}
+    Hosts: [{}{}
+    Urls: [{}{}
+    Update: {}
+    Start:  {}
     ",
                 self.asset,
                 self.typ.as_ref().map_or("", |s| s),

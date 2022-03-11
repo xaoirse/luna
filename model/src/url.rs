@@ -116,11 +116,11 @@ impl Url {
             ),
             3 => format!(
                 "{} [{}]
-    Title: {}
-    Response length: {}
-    Tags: {}
+    Title:  {}
+    Length: {}
+    Tags:   {}
     Update: {}
-    Start: {}
+    Start:  {}
     ",
                 self.url,
                 self.status_code.as_ref().map_or("", |s| s),
@@ -138,11 +138,11 @@ impl Url {
             ),
             4 => format!(
                 "{} [{}]
-    Title: {}
-    Response length: {}
+    Title:  {}
+    Length: {}
     Tags: [{}{}
     Update: {}
-    Start: {}
+    Start:  {}
     ",
                 self.url,
                 self.status_code.as_ref().map_or("", |s| s),

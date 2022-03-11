@@ -91,8 +91,8 @@ impl Host {
             1 => format!(
                 "{}
     services: {}
-    update: {}
-    start: {}
+    update:   {}
+    Start:    {}
     ",
                 self.ip,
                 self.services.len(),
@@ -106,8 +106,8 @@ impl Host {
             2 => format!(
                 "{}
     services: [{}{}
-    update: {}
-    start: {}
+    update:   {}
+    Start:    {}
     ",
                 self.ip,
                 self.services
