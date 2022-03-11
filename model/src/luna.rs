@@ -19,9 +19,6 @@ pub struct Luna {
     #[clap(long)]
     pub version: String,
 
-    #[clap(skip)]
-    pub counter: i64,
-
     #[clap(short, long)]
     pub programs: Vec<Program>,
 
@@ -36,8 +33,6 @@ pub struct Luna {
 
 impl Luna {
     pub fn append(&mut self, other: Self) {
-        self.counter += other.counter;
-
         self.update = self.update.max(other.update);
         self.start = self.start.min(other.start);
 
@@ -427,7 +422,6 @@ impl Luna {
             2 => format!(
                 "{}  {}
     Status: {}
-    Counter: {}
     Programs: {}
     Domains: {}
     CIDRs: {}
@@ -442,7 +436,6 @@ impl Luna {
                 self.name,
                 self.version,
                 self.status,
-                self.counter,
                 self.programs.iter().filter(|p| !p.name.is_empty()).count(),
                 self.find(Fields::Domain, &FilterRegex::default(), 0).len(),
                 self.find(Fields::Cidr, &FilterRegex::default(), 0).len(),
@@ -461,7 +454,6 @@ impl Luna {
             3 => format!(
                 "{}  {}
     Status: {}
-    Counter: {}
     Programs: [{}{}
     Domains: {}
     CIDRs: {}
@@ -476,7 +468,6 @@ impl Luna {
                 self.name,
                 self.version,
                 self.status,
-                self.counter,
                 self.programs
                     .iter()
                     .filter(|p| !p.name.is_empty())
@@ -514,7 +505,6 @@ impl Default for Luna {
         Self {
             name: "Luna".to_string(),
             version: VERSION.to_string(),
-            counter: 1,
             programs: vec![],
             status: "The moon rider has arrived.".to_string(),
             update: Some(Utc::now()),
