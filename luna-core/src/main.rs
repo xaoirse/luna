@@ -50,51 +50,51 @@ pub fn run() {
 
     match opt.cli {
         Cli::Insert(insert) => {
-            debug!("{:#?}", insert);
+            let res = match *insert {
+                Insert::Program(p) => luna.insert_program(p.program),
+                Insert::Asset(a) => luna.insert_asset(a.asset, a.program),
+                Insert::Tag(t) => luna.insert_tag(t.tag, &t.asset),
+            };
 
-            let insert: Luna = (*insert).into();
-            luna.append(insert);
-            luna.dedup();
-            luna.save();
+            match res {
+                Ok(_) => luna.save(),
+                Err(err) => error!("{err}"),
+            }
         }
 
         Cli::Remove(find) => {
-            debug!("{:#?}", find);
-            let field = find.field;
+            todo!()
+            // debug!("{:#?}", find);
+            // let field = find.field;
 
-            match find.filter.try_into() {
-                Ok(filter) => {
-                    if luna.remove(field, &filter) {
-                        luna.save();
-                    }
-                }
-                Err(err) => error!("Use fucking correct patterns: {}", err),
-            }
+            // match find.filter.try_into() {
+            //     Ok(filter) => {
+            //         if luna.remove(field, &filter) {
+            //             luna.save();
+            //         }
+            //     }
+            //     Err(err) => error!("Use fucking correct patterns: {}", err),
+            // }
         }
 
         Cli::Find(find) => {
-            debug!("{:#?}", find);
+            // debug!("{:#?}", find);
             let field = find.field;
-            match find.filter.try_into() {
-                Ok(filter) => {
-                    let mut results = luna.find(field, &filter, find.verbose);
-                    results.par_sort();
-                    results.dedup();
-                    results
-                        .iter()
-                        .take(filter.n)
-                        .for_each(|r| println!("{}", r));
-                }
-                Err(err) => error!("Use fucking correct patterns: {}", err),
-            }
+
+            let mut results = luna.find(field, &find.filter, find.verbose);
+            results.par_sort();
+            results.dedup();
+            results
+                .iter()
+                .take(find.filter.n)
+                .for_each(|r| println!("{}", r));
         }
 
         Cli::Script(script) => {
-            debug!("{:#?}", script);
+            // debug!("{:#?}", script);
 
             match script.parse() {
                 Ok(script) => {
-                    luna.dedup();
                     script.run(&mut luna, term);
                     info!("Scripts Executed.");
                 }
@@ -102,21 +102,22 @@ pub fn run() {
             }
         }
 
-        Cli::Import { file } => match Luna::from_file(&file) {
-            Ok(file) => {
-                luna.append(file);
-                luna.dedup();
-                luna.save();
-            }
-            Err(err) => error!("Can't import: {}", err),
-        },
+        Cli::Import { file } => {
+            // match Luna::from_file(&file) {
+            todo!()
+            // Ok(file) => {
+            //     luna.append(file);
+            //     luna.dedup();
+            //     luna.save();
+            // }
+            // Err(err) => error!("Can't import: {}", err),
+        }
 
         Cli::Check(check) => {
             let input = &opt.input;
 
             match Luna::from_file(input) {
                 Ok(mut luna) => {
-                    luna.dedup();
                     println!("{} {}: {}", "[+]".green(), luna.stringify(1), input);
                     luna.save();
                 }
@@ -126,11 +127,15 @@ pub fn run() {
             if let Some(script_path) = check.script.as_ref() {
                 let script = ScriptCli {
                     verbose: 0,
-                    path: script_path.to_string(),
+                    path: script_path.to_path_buf(),
                     filter: Filter::default(),
                 };
                 match script.parse() {
-                    Ok(_) => println!("{} Script: {}", "[+]".green(), script_path),
+                    Ok(_) => println!(
+                        "{} Script: {}",
+                        "[+]".green(),
+                        script_path.to_string_lossy()
+                    ),
                     Err(err) => println!("{} {}", "[-]".red(), err),
                 }
             } else {

@@ -4,7 +4,7 @@
 
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.7.0
+  / / / / / / |/ / _ |  v0.8.0
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
@@ -26,7 +26,7 @@ minimum size:
 # Usage
 
 ```
-luna 0.7.0
+luna 0.8.0
 SA
 The moon rider has arived.
 
@@ -72,37 +72,7 @@ Example:
 - `subfinder -d ${domain}`
 
 ### <a name="regex-names"> </a>Available regex names:
-- program
-    - program_platform
-    - program_handle
-    - program_type
-    - program_url
-    - program_icon
-    - program_bounty
-    - program_state  
-
-- scope
-    - scope_bounty
-    - scop_severity
-
-- sub
-    - sub_type
-
-- ip
-
-- port
-    - service_name
-    - service_protocol
-    - service_banner
-
-- url
-    - title
-    - status_code
-    - response
-
-- tag
-    - tag-severity
-    - tag-value
+- asset
 
 Example:
 - `(?P<response>.+)`  
@@ -188,3 +158,4 @@ I want a standalone binary release from my code,
 - [ ] Update dependencies
 - [ ] Benchmarks
 - [ ] Tests
+- [ ] Job

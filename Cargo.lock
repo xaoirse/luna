@@ -3,6 +3,16 @@
 version = 3
 
 [[package]]
+name = "addr"
+version = "0.15.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4299322d87d6ae73d3bd74918983e712acc3a1b73c880258eb5a0b45895e7b85"
+dependencies = [
+ "psl",
+ "psl-types",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "0.7.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -82,6 +92,7 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits",
+ "serde",
  "time",
  "winapi",
 ]
@@ -431,8 +442,9 @@ dependencies = [
 
 [[package]]
 name = "luna"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
+ "addr",
  "chrono",
  "cidr",
  "clap 3.1.3",
@@ -489,6 +501,7 @@ dependencies = [
 name = "model"
 version = "0.1.0"
 dependencies = [
+ "addr",
  "chrono",
  "cidr",
  "clap 3.1.3",
@@ -668,6 +681,21 @@ checksum = "b9f5105d4fdaab20335ca9565e106a5d9b82b6219b5ba735731124ac6711d23d"
 dependencies = [
  "unicode-xid",
 ]
+
+[[package]]
+name = "psl"
+version = "2.0.81"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ede760a815fbdce487ecddf7c6f4e97f6b11376ed8603e70a10ef0877aecb72f"
+dependencies = [
+ "psl-types",
+]
+
+[[package]]
+name = "psl-types"
+version = "2.0.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8eda7c62d9ecaafdf8b62374c006de0adf61666ae96a96ba74a37134aa4e470"
 
 [[package]]
 name = "quote"

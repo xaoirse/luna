@@ -5,135 +5,72 @@ use log::{debug, error, warn};
 use rayon::prelude::*;
 use regex::bytes::Regex;
 use std::process::{Command, Stdio};
+use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use super::*;
 
-#[derive(Debug)]
-pub struct Data<'a> {
-    pub input: &'a str,
-    pub field: Fields,
-    pub output: &'a [u8],
-}
-impl<'a> Data<'a> {
-    fn parse(&self, regex: &Regex) -> Luna {
-        regex
-            .captures_iter(self.output)
-            .filter_map(|caps| {
-                let get = |key| {
-                    caps.name(key)
-                        .map(|v| String::from_utf8_lossy(v.as_bytes()).to_string())
-                };
+fn parse(text: &[u8], regex: &Regex) -> Vec<Asset> {
+    regex
+        .captures_iter(text)
+        .filter_map(|caps| {
+            let get = |key| {
+                caps.name(key)
+                    .map(|v| String::from_utf8_lossy(v.as_bytes()).to_string())
+            };
 
-                let mut luna = Filter {
-                    n: None,
-
-                    program: get("program"),
-                    program_platform: get("program_platform"),
-                    program_handle: get("program_handle"),
-                    program_type: get("program_type"),
-                    program_url: get("program_url"),
-                    program_icon: get("program_icon"),
-                    program_bounty: get("program_bounty"),
-                    program_state: get("program_state"),
-
-                    scope: get("scope"),
-                    scope_bounty: get("scope_bounty"),
-                    scope_severity: get("scop_severity"),
-
-                    sub: get("sub"),
-                    sub_type: get("sub_type"),
-
-                    ip: get("ip"),
-
-                    port: get("port"),
-                    service_name: get("service_name"),
-                    service_protocol: get("service_protocol"),
-                    service_banner: get("service_banner"),
-
-                    url: get("url"),
-                    title: get("title"),
-                    status_code: get("status_code"),
-                    response: get("response"),
-
-                    tag: get("tag"),
-                    tag_severity: get("tag_severity"),
-                    tag_value: get("tag_value"),
-
-                    updated_at: None,
-                    started_at: None,
-                };
-                let input = Some(self.input.to_string());
-                match self.field {
-                    Fields::Luna => (),
-                    Fields::Program => luna.program = input,
-                    Fields::Domain => luna.scope = input,
-                    Fields::Cidr => luna.scope = input,
-                    Fields::Sub => luna.sub = input,
-                    Fields::Url => luna.url = input,
-                    Fields::IP => luna.ip = input,
-                    Fields::Service => luna.port = input,
-                    Fields::Tag => luna.tag = input,
-                    Fields::Keyword => (),
-                    Fields::None => (),
-                }
-                debug!("{:#?}", luna);
-
-                // Filter orphan fields
-                if (luna.program.is_some()
-                    || luna.scope.is_some()
-                    || luna.sub.is_some()
-                    || luna.ip.is_some()
-                    || luna.url.is_some()
-                    || luna.program.is_some()
-                        == (luna.program_platform.is_some()
-                            || luna.program_handle.is_some()
-                            || luna.program_type.is_some()
-                            || luna.program_url.is_some()
-                            || luna.program_icon.is_some()
-                            || luna.program_bounty.is_some()
-                            || luna.program_state.is_some()))
-                    && (luna.scope.is_some()
-                        || luna.ip.is_some()
-                        || luna.url.is_some()
-                        || luna.scope.is_some()
-                        || luna.sub.is_none()
-                            == (luna.scope_bounty.is_some() || luna.scope_severity.is_some()))
-                    && (luna.sub.is_some()
-                        || luna.ip.is_some()
-                        || luna.url.is_some()
-                        || luna.sub.is_some() == luna.sub_type.is_some())
-                    && (luna.url.is_some()
-                        || luna.url.is_some()
-                            == (luna.title.is_some()
-                                || luna.status_code.is_some()
-                                || luna.response.is_some()))
-                {
-                    Some(luna.into())
+            let tags = if let Some(name) = get("tag") {
+                let values = if let Some(value) = get("value") {
+                    value.split(',').map(|s| s.to_string()).collect()
                 } else {
-                    warn!("Fucking Orphan detected: {:#?}", luna);
+                    vec![]
+                };
+                vec![Tag {
+                    name,
+                    severity: get("severity"),
+                    values,
+                    ..Default::default()
+                }]
+            } else {
+                vec![]
+            };
+
+            if let Some(name) = get("asset") {
+                if let Ok(mut name) = AssetName::from_str(&name) {
+                    if let AssetName::Url(req) = &mut name {
+                        req.title = get("title");
+                        req.sc = get("sc");
+                        req.resp = get("resp");
+                    }
+                    Some(Asset {
+                        name,
+                        tags,
+                        start: Time(Utc::now()),
+                        update: Time(Utc::now()),
+                    })
+                } else {
+                    warn!("Invalid asset: {}", name);
                     None
                 }
-            })
-            .fold(Luna::default(), |mut init, l| {
-                init.append(l);
-                init
-            })
-    }
+            } else {
+                warn!("No asset name!");
+                None
+            }
+        })
+        .collect()
 }
 
-#[derive(Debug)]
 pub struct Script {
     pub verbose: u8,
     pub cd: String,
     pub regex: Regex,
     pub command: String,
-    pub field: Fields,
+    pub field: Field,
 }
 
 impl Script {
-    fn execute(&self, luna: &Luna, filter: &FilterRegex, term: Arc<AtomicBool>) -> Luna {
+    fn execute(&self, luna: &mut Luna, filter: &Filter, term: Arc<AtomicBool>) {
         let elements = luna.find(self.field, filter, 0);
 
         let ps = ProgressStyle::default_bar()
@@ -142,7 +79,7 @@ impl Script {
                     ).unwrap()
                     .progress_chars("▓█░");
 
-        let pb = ProgressBar::new(elements.len().min(filter.n) as u64);
+        let pb = ProgressBar::new(elements.len() as u64);
 
         pb.set_style(ps);
 
@@ -157,9 +94,9 @@ impl Script {
                 .with_finish(ProgressFinish::WithMessage(self.command.clone().into()));
         }
 
+        let luna = std::sync::Mutex::new(luna);
         elements
             .par_iter()
-            .take(filter.n)
             .filter_map(|input| {
                 if term.load(Ordering::Relaxed) {
                     warn!("Command aborted! {} => {}", input, self.command);
@@ -189,46 +126,36 @@ impl Script {
                     const S: usize = 4096;
                     let mut buf: FixedBuf<S> = FixedBuf::new();
 
-                    let mut luna = Luna::default();
+                    let mut assets = vec![];
 
                     while let Ok(Some(bytes)) = buf.read_frame(&mut stdout, deframe_line) {
-                        luna.append(
-                            Data {
-                                input,
-                                field: self.field,
-                                output: bytes,
-                            }
-                            .parse(&self.regex),
-                        );
+                        assets.extend(parse(bytes, &self.regex));
                     }
 
                     pb.inc(1);
 
                     debug!("{:#?}", luna);
 
-                    Some(luna)
+                    Some(assets)
                 } else {
                     error!("Executing: {cmd}");
                     None
                 }
             })
-            .reduce(Luna::default, |mut init, l| {
-                init.append(l);
-
-                if term.load(Ordering::Relaxed) {
-                    return init;
+            .for_each(|assets| {
+                for asset in assets {
+                    if let Err(err) = luna.lock().unwrap().insert_asset(asset, None) {
+                        warn!("{err}");
+                    }
                 }
-
-                init
             })
     }
 }
 
-#[derive(Debug)]
 pub struct Scripts {
     pub scripts: Vec<Script>,
 
-    pub filter: FilterRegex,
+    pub filter: Filter,
 }
 
 impl Scripts {
@@ -239,28 +166,18 @@ impl Scripts {
                 if term.load(Ordering::Relaxed) {
                     return;
                 }
-                let l = script.execute(luna, &self.filter, term.clone());
+                script.execute(luna, &self.filter, term.clone());
 
-                luna.append(l);
-
-                if term.load(Ordering::Relaxed) {
-                    luna.save_as("backup.json").unwrap();
-                    return;
-                }
-
-                luna.dedup();
                 luna.save();
             })
     }
 }
 
-#[derive(Debug, Parser)]
+#[derive(Parser)]
 pub struct ScriptCli {
-    pub path: String,
-
+    pub path: std::path::PathBuf,
     #[clap(short, long, parse(from_occurrences), help = "Show progress bar")]
     pub verbose: u8,
-
     #[clap(flatten)]
     pub filter: Filter,
 }
@@ -279,7 +196,7 @@ impl ScriptCli {
         {
             if regex_pat.is_match(line.as_bytes()) {
                 regex = line
-                    .split_once("=")
+                    .split_once('=')
                     .map_or("".to_string(), |p| p.1.trim().to_string())
             } else if line.trim().chars().next().map_or(false, |c| {
                 c.is_ascii_alphabetic() || '.' == c || '/' == c || '\\' == c
@@ -289,30 +206,26 @@ impl ScriptCli {
                 }
 
                 let field = if line.contains("${program}") {
-                    Fields::Program
+                    Field::Program
                 } else if line.contains("${domain}") {
-                    Fields::Domain
+                    Field::Domain
                 } else if line.contains("${cidr}") {
-                    Fields::Cidr
+                    Field::Cidr
                 } else if line.contains("${sub}") {
-                    Fields::Sub
+                    Field::Sub
                 } else if line.contains("${url}") {
-                    Fields::Url
-                } else if line.contains("${ip}") {
-                    Fields::IP
-                } else if line.contains("${port}") {
-                    Fields::Service
+                    Field::Url
                 } else if line.contains("${tag}") {
-                    Fields::Tag
-                } else if line.contains("${keyword}") {
-                    Fields::Keyword
+                    Field::Tag
+                } else if line.contains("${value}") {
+                    Field::Value
                 } else {
                     // TODO check if ${invalid}
-                    Fields::None
+                    Field::None
                 };
 
                 if let Ok(regex) = Regex::new(&regex) {
-                    if !regex_check(&regex) {
+                    if !regex.capture_names().flatten().any(|x| x == "asset") {
                         return Err(
                         format!("Line {} regex \"{}\"  doesn't have necessery names \"program\", \"scope\", \"sub\", \"url\" or \"ip\""
                             ,n,regex).into(),
@@ -336,7 +249,6 @@ impl ScriptCli {
                         command: line.trim().to_string(),
                         field,
                     };
-                    debug!("{:#?}", script);
                     scripts.push(script)
                 } else {
                     error!("Fucking regex: {}", regex);
@@ -345,47 +257,9 @@ impl ScriptCli {
             }
         }
 
-        let filter: FilterRegex = self.filter.try_into()?;
-        Ok(Scripts { scripts, filter })
+        Ok(Scripts {
+            scripts,
+            filter: self.filter,
+        })
     }
-}
-fn regex_check(regex: &Regex) -> bool {
-    let names: Vec<_> = regex.capture_names().flatten().collect();
-
-    (names.contains(&"program")
-        || names.contains(&"scope")
-        || names.contains(&"sub")
-        || names.contains(&"ip")
-        || names.contains(&"url")
-        || names.contains(&"program")
-            == (names.contains(&"program_platform")
-                || names.contains(&"program_handle")
-                || names.contains(&"program_type")
-                || names.contains(&"program_url")
-                || names.contains(&"program_icon")
-                || names.contains(&"program_bounty")
-                || names.contains(&"program_state")))
-        && (names.contains(&"scope")
-            || names.contains(&"sub")
-            || names.contains(&"ip")
-            || names.contains(&"url")
-            || names.contains(&"scope")
-                == (names.contains(&"scope_bounty") || names.contains(&"scope_severity")))
-        && (names.contains(&"sub")
-            || names.contains(&"ip")
-            || names.contains(&"url")
-            || names.contains(&"sub") == names.contains(&"sub_type"))
-        && (names.contains(&"port")
-            || names.contains(&"port")
-                == (names.contains(&"service_name")
-                    || names.contains(&"service_protocol")
-                    || names.contains(&"service_banner")))
-        && (names.contains(&"url")
-            || names.contains(&"url")
-                == (names.contains(&"title")
-                    || names.contains(&"status_code")
-                    || names.contains(&"response")))
-        && (names.contains(&"tag")
-            || names.contains(&"tag")
-                == (names.contains(&"tag_severity") || names.contains(&"tag_value")))
 }

@@ -1,8 +1,9 @@
+use std::path::PathBuf;
+
 use super::*;
-use ::url as urlib;
 use clap::{Parser, Subcommand};
 
-#[derive(Debug, Parser)]
+#[derive(Parser)]
 #[clap(name = "Luna",author, version, about, long_about = None)]
 pub struct Opt {
     #[clap(short, long, global = true, help = "Quiet mode")]
@@ -25,15 +26,15 @@ pub struct Opt {
     pub cli: Cli,
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Subcommand)]
 pub enum Cli {
     #[clap(subcommand)]
     Insert(Box<Insert>),
-    Remove(Box<FindCli>),
-    Find(Box<FindCli>),
+    Remove(Box<Find>),
+    Find(Box<Find>),
     Script(Box<ScriptCli>),
     Import {
-        file: String,
+        file: PathBuf,
     },
     Check(Check),
     Stat(LunaStat),
@@ -42,14 +43,12 @@ pub enum Cli {
     Server(Server),
 }
 
-#[derive(Debug, Parser)]
-pub struct FindCli {
+#[derive(Parser)]
+pub struct Find {
     #[clap(arg_enum, ignore_case = true, help = "Case Insensitive")]
-    pub field: Fields,
-
+    pub field: Field,
     #[clap(short, long, parse(from_occurrences))]
     pub verbose: u8,
-
     #[clap(flatten)]
     pub filter: Filter,
 }
@@ -57,7 +56,7 @@ pub struct FindCli {
 #[derive(Debug, Parser)]
 pub struct Check {
     #[clap(short, long)]
-    pub script: Option<String>,
+    pub script: Option<PathBuf>,
 }
 
 #[derive(Debug, Parser)]
@@ -69,16 +68,8 @@ pub struct LunaStat {
 #[derive(Debug, Parser)]
 pub enum Insert {
     Program(InsertProgram),
-    Scope(InsertScope),
-    Scopes(InsertScopes),
-    Sub(InsertSub),
-    Subs(InsertSubs),
-    Url(InsertUrl),
-    Urls(InsertUrls),
-    Host(InsertHost),
-    Hosts(InsertHosts),
+    Asset(InsertAsset),
     Tag(InsertTag),
-    Service(InsertService),
 }
 
 #[derive(Debug, Parser)]
@@ -88,109 +79,18 @@ pub struct InsertProgram {
 }
 
 #[derive(Debug, Parser)]
-pub struct InsertScope {
+pub struct InsertAsset {
+    #[clap(short, long)]
+    pub program: Option<Program>,
     #[clap(flatten)]
-    pub scope: Scope,
-    #[clap(short, long)]
-    pub program: Option<String>,
+    pub asset: Asset,
 }
-
-#[derive(Debug, Parser)]
-pub struct InsertScopes {
-    pub scopes: Vec<Scope>,
-    #[clap(short, long)]
-    pub program: Option<String>,
-}
-
-#[derive(Debug, Parser)]
-pub struct InsertSub {
-    #[clap(flatten)]
-    pub sub: Sub,
-    #[clap(short, long)]
-    pub scope: Option<String>,
-    #[clap(short, long)]
-    pub program: Option<String>,
-}
-
-#[derive(Debug, Parser)]
-pub struct InsertSubs {
-    pub subs: Vec<Sub>,
-    #[clap(short, long)]
-    pub scope: Option<String>,
-    #[clap(short, long)]
-    pub program: Option<String>,
-}
-
-#[derive(Debug, Parser)]
-pub struct InsertUrl {
-    #[clap(flatten)]
-    pub url: Url,
-    #[clap(long)]
-    pub sub: Option<String>,
-    #[clap(short, long)]
-    pub scope: Option<String>,
-    #[clap(short, long)]
-    pub program: Option<String>,
-}
-#[derive(Debug, Parser)]
-pub struct InsertUrls {
-    pub urls: Vec<Url>,
-    #[clap(long)]
-    pub sub: Option<String>,
-    #[clap(short, long)]
-    pub scope: Option<String>,
-    #[clap(short, long)]
-    pub program: Option<String>,
-}
-
-#[derive(Debug, Parser)]
-pub struct InsertHost {
-    #[clap(flatten)]
-    pub host: Host,
-    #[clap(long)]
-    pub sub: Option<String>,
-    #[clap(short, long)]
-    pub scope: Option<String>,
-    #[clap(short, long)]
-    pub program: Option<String>,
-}
-#[derive(Debug, Parser)]
-pub struct InsertHosts {
-    pub hosts: Vec<Host>,
-    #[clap(long)]
-    pub sub: Option<String>,
-    #[clap(short, long)]
-    pub scope: Option<String>,
-    #[clap(short, long)]
-    pub program: Option<String>,
-}
-
 #[derive(Debug, Parser)]
 pub struct InsertTag {
+    #[clap(short, long)]
+    pub asset: AssetName,
     #[clap(flatten)]
     pub tag: Tag,
-    #[clap(long)]
-    pub url: urlib::Url,
-    #[clap(long)]
-    pub sub: Option<String>,
-    #[clap(short, long)]
-    pub scope: Option<String>,
-    #[clap(short, long)]
-    pub program: Option<String>,
-}
-
-#[derive(Debug, Parser)]
-pub struct InsertService {
-    #[clap(flatten)]
-    pub service: Service,
-    #[clap(long)]
-    pub host: std::net::IpAddr,
-    #[clap(long)]
-    pub sub: Option<String>,
-    #[clap(short, long)]
-    pub scope: Option<String>,
-    #[clap(short, long)]
-    pub program: Option<String>,
 }
 
 #[derive(Debug, Parser)]
