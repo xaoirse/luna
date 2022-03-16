@@ -1,4 +1,0 @@
-sadegh
-majedeh
-mia
-kourush
