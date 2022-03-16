@@ -1,9 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-mod dedup;
-mod execute;
+use criterion::{criterion_group, criterion_main, Criterion};
 
-fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("dedup", |b| b.iter(|| dedup::dedup(black_box(8000))));
+fn criterion_benchmark(_c: &mut Criterion) {
     // c.bench_function("execute", |b| b.iter(|| execute::exe(black_box(2000))));
 }
 

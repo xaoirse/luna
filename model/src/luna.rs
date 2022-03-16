@@ -1,10 +1,4 @@
 use super::*;
-use chrono::Utc;
-use clap::Parser;
-use log::{error, info, warn};
-use serde::{Deserialize, Serialize};
-use std::io::Write;
-use std::str::FromStr;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -32,6 +26,19 @@ impl Default for Luna {
 }
 
 impl Luna {
+    pub fn merge(&mut self, other: Self) {
+        self.update = self.update.max(other.update);
+        self.start = self.start.min(other.start);
+
+        for program in other.programs {
+            if let Some(self_program) = self.programs.iter_mut().find(|t| t.name == program.name) {
+                self_program.merge(program);
+            } else {
+                self.programs.push(program);
+            }
+        }
+    }
+
     pub fn insert_program(&mut self, program: Program) -> Result<(), Errors> {
         if let Some(p) = self.program_by_name(&program.name) {
             p.merge(program);
@@ -143,6 +150,14 @@ impl Luna {
             .take(filter.n)
             .collect()
     }
+    pub fn programs_mut(&mut self, filter: &Filter) -> Vec<&mut Program> {
+        self.programs
+            .iter_mut()
+            .filter(|p| filter.program(p))
+            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .take(filter.n)
+            .collect()
+    }
     pub fn assets(&self, field: Field, filter: &Filter) -> Vec<&Asset> {
         self.programs
             .iter()
@@ -163,6 +178,27 @@ impl Luna {
             .take(filter.n)
             .collect()
     }
+    pub fn assets_mut(&mut self, field: Field, filter: &Filter) -> Vec<&mut Asset> {
+        self.programs
+            .iter_mut()
+            .filter(|p| filter.program(p))
+            .flat_map(|p| &mut p.assets)
+            .filter(|a| {
+                matches!(
+                    (&a.name, field),
+                    (AssetName::Domain(_), Field::Domain)
+                        | (AssetName::Subdomain(_), Field::Sub)
+                        | (AssetName::Url(_), Field::Url)
+                        | (AssetName::Cidr(_), Field::Cidr)
+                        | (_, Field::Asset)
+                )
+            })
+            .filter(|a| filter.asset(a))
+            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .take(filter.n)
+            .collect()
+    }
+
     pub fn tags(&self, filter: &Filter) -> Vec<&Tag> {
         self.programs
             .iter()
@@ -175,8 +211,21 @@ impl Luna {
             .take(filter.n)
             .collect()
     }
+    pub fn tags_mut(&mut self, filter: &Filter) -> Vec<&mut Tag> {
+        self.programs
+            .iter_mut()
+            .filter(|p| filter.program(p))
+            .flat_map(|p| &mut p.assets)
+            .filter(|a| filter.asset(a))
+            .flat_map(|a| &mut a.tags)
+            .filter(|t| filter.tag(t))
+            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .take(filter.n)
+            .collect()
+    }
     pub fn find(&self, field: Field, filter: &Filter, v: u8) -> Vec<String> {
         match field {
+            Field::Luna => vec![self.stringify(v)],
             Field::Program => self
                 .programs(filter)
                 .iter()
@@ -196,20 +245,58 @@ impl Luna {
                 .collect(),
         }
     }
-    pub fn save_as(&self, path: &str) -> Result<usize, Errors> {
+
+    pub fn remove(&mut self, field: Field, filter: &Filter) {
+        match field {
+            Field::Luna => error!("WTF!"),
+            Field::Program => self.programs.retain(|p| !filter.program(p)),
+            Field::None => debug!("!"),
+            Field::Tag => self
+                .assets_mut(field, filter)
+                .iter_mut()
+                .for_each(|a| a.tags.retain(|t| !filter.tag(t))),
+            Field::Value => self
+                .tags_mut(filter)
+                .iter_mut()
+                .for_each(|t| t.values.retain(|v| !filter.value(v))),
+            _ => self
+                .programs_mut(filter)
+                .iter_mut()
+                .for_each(|p| p.assets.retain(|a| !filter.asset(a))),
+        }
+    }
+
+    pub fn save_as(&self, path: &Path, backup: bool) -> Result<usize, Errors> {
         let str = serde_json::to_string(&self)?;
 
-        if !Opt::parse().no_backup && std::path::Path::new(path).exists() {
-            let copy_path = match path.rsplit_once('.') {
-                Some((a, b)) => format!("{}_{}.{}", a, chrono::Local::now().to_rfc2822(), b),
-                None => format!("{}_{}", path, Utc::now().to_rfc2822()),
+        if backup && path.exists() {
+            let to = if let Some(ex) = path.extension() {
+                format!(
+                    "{}_{}.{}",
+                    path.file_stem()
+                        .unwrap_or_default()
+                        .to_str()
+                        .unwrap_or("luna"),
+                    Local::now().to_rfc3339(),
+                    ex.to_string_lossy()
+                )
+            } else {
+                format!(
+                    "{}_{}",
+                    path.file_stem()
+                        .unwrap_or_default()
+                        .to_str()
+                        .unwrap_or("luna"),
+                    Local::now().to_rfc3339()
+                )
             };
-            std::fs::copy(path, copy_path)?;
+
+            std::fs::copy(&path, to)?;
         }
         match std::fs::File::options()
             .write(true)
             .truncate(true)
-            .open(path)
+            .open(&path)
         {
             Ok(mut file) => Ok(file.write(str.as_bytes())?),
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
@@ -219,26 +306,23 @@ impl Luna {
         }
     }
 
-    pub fn save(&self) {
-        let opt = Opt::parse();
-        let output = opt.output.as_ref().unwrap_or(&opt.input);
+    pub fn save(&self, path: &Path, backup: bool) {
+        let output = path;
 
-        if let Err(err) = self.save_as(output) {
+        if let Err(err) = self.save_as(output, backup) {
             error!("Error while saving: {}", err);
         } else {
-            info!("Saved in \"{}\" successfully.", output);
+            info!("Saved in \"{}\" successfully.", output.display());
         }
     }
 
-    pub fn from_file(path: &str) -> Result<Self, Errors> {
+    pub fn from_file(path: &Path) -> Result<Self, Errors> {
         let file = std::fs::read_to_string(path)?;
         Ok(serde_json::from_str(&file)?)
     }
 
-    pub fn parse() -> Luna {
-        let opt = Opt::parse();
-
-        match Luna::from_file(&opt.input) {
+    pub fn parse(path: &Path) -> Luna {
+        match Luna::from_file(path) {
             Ok(luna) => {
                 info!("Luna loaded successfully.");
                 luna
@@ -254,10 +338,6 @@ impl Luna {
         }
     }
 
-    pub fn remove() {
-        todo!()
-    }
-
     pub fn stringify(&self, v: u8) -> String {
         match v {
             0 => self.name.to_string(),
@@ -266,6 +346,7 @@ impl Luna {
                 "{}  {}
     Status:   {}
     Programs: {}
+    Asset:    {}
     Domains:  {}
     CIDRs:    {}
     Subs:     {}
@@ -278,6 +359,7 @@ impl Luna {
                 self.version,
                 self.status,
                 self.programs.len(),
+                self.find(Field::Asset, &Filter::default(), 0).len(),
                 self.find(Field::Domain, &Filter::default(), 0).len(),
                 self.find(Field::Cidr, &Filter::default(), 0).len(),
                 self.find(Field::Sub, &Filter::default(), 0).len(),
@@ -290,6 +372,7 @@ impl Luna {
                 "{}  {}
     Status:   {}
     Programs: [{}{}
+    Asset:    {}
     Domains:  {}
     CIDRs:    {}
     Subs:     {}
@@ -312,6 +395,7 @@ impl Luna {
                 } else {
                     "\n    ]"
                 },
+                self.find(Field::Asset, &Filter::default(), 0).len(),
                 self.find(Field::Domain, &Filter::default(), 0).len(),
                 self.find(Field::Cidr, &Filter::default(), 0).len(),
                 self.find(Field::Sub, &Filter::default(), 0).len(),

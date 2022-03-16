@@ -11,11 +11,11 @@ repository = "https://github.com/xaoirse/luna"
 [workspace]
 members = [
     "model",
-    "luna-core"
+    "luna-cli"
 ]
 
 [[bin]]
-path = "luna-core/src/main.rs"
+path = "luna-cli/src/main.rs"
 name = "luna"
 
 [lib]

@@ -1,5 +1,4 @@
-use cidr::IpCidr;
-use std::net::IpAddr;
+use super::*;
 
 use serde::{self, Deserialize, Deserializer, Serializer};
 

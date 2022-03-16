@@ -1,8 +1,4 @@
-use std::str::FromStr;
-
 use super::*;
-use clap::Parser;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Parser, Deserialize, Serialize, Default)]
 pub struct Program {
@@ -62,6 +58,24 @@ impl Program {
             }
         }
     }
+    pub fn assets(&self, field: Field, filter: &Filter) -> Vec<&Asset> {
+        self.assets
+            .iter()
+            .filter(|a| {
+                matches!(
+                    (&a.name, field),
+                    (AssetName::Domain(_), Field::Domain)
+                        | (AssetName::Subdomain(_), Field::Sub)
+                        | (AssetName::Url(_), Field::Url)
+                        | (AssetName::Cidr(_), Field::Cidr)
+                        | (_, Field::Asset)
+                )
+            })
+            .filter(|a| filter.asset(a))
+            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .take(filter.n)
+            .collect()
+    }
 
     pub fn stringify(&self, v: u8) -> String {
         match v {
@@ -74,7 +88,12 @@ impl Program {
     Handle:   {}
     Bounty:   {}
     State:    {}
-    assets:   {}
+    Asset:    {}
+    Domains:  {}
+    CIDRs:    {}
+    Subs:     {}
+    URLs:     {}
+    Tags:     {}
     Update:   {}
     Start:    {}
     ",
@@ -86,6 +105,11 @@ impl Program {
                 self.bounty.as_ref().map_or("", |s| s),
                 self.state.as_ref().map_or("", |s| s),
                 self.assets.len(),
+                self.assets(Field::Domain, &Filter::default()).len(),
+                self.assets(Field::Cidr, &Filter::default()).len(),
+                self.assets(Field::Sub, &Filter::default()).len(),
+                self.assets(Field::Url, &Filter::default()).len(),
+                self.assets(Field::Tag, &Filter::default()).len(),
                 self.update.0.to_rfc2822(),
                 self.start.0.to_rfc2822(),
             ),
@@ -96,7 +120,11 @@ impl Program {
     Handle:   {}
     Bounty:   {}
     State:    {}
-    Assets: [{}{}
+    Domains: [{}{}
+    CIDRs:    {}
+    Subs:     {}
+    URLs:     {}
+    Tags:     {}
     Update:   {}
     Start:    {}
     ",
@@ -107,16 +135,20 @@ impl Program {
                 self.handle.as_ref().map_or("", |s| s),
                 self.bounty.as_ref().map_or("", |s| s),
                 self.state.as_ref().map_or("", |s| s),
-                self.assets
+                self.assets(Field::Domain, &Filter::default())
                     .iter()
                     .map(|s| format!("\n        {}", s.stringify(0)))
                     .collect::<Vec<String>>()
                     .join(""),
-                if self.assets.is_empty() {
+                if self.assets(Field::Domain, &Filter::default()).is_empty() {
                     "]"
                 } else {
                     "\n    ]"
                 },
+                self.assets(Field::Cidr, &Filter::default()).len(),
+                self.assets(Field::Sub, &Filter::default()).len(),
+                self.assets(Field::Url, &Filter::default()).len(),
+                self.assets(Field::Tag, &Filter::default()).len(),
                 self.update.0.to_rfc2822(),
                 self.start.0.to_rfc2822(),
             ),

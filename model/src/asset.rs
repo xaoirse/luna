@@ -1,19 +1,9 @@
 use super::*;
-use super::{Errors, Time};
-use cidr::IpCidr;
-use clap::{ArgEnum, Parser};
-use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashSet,
-    fmt::{self, Display},
-    str::FromStr,
-};
-use url::Host;
 
 #[derive(Debug, Clone, Parser, Deserialize, Serialize)]
 pub struct Asset {
     pub name: AssetName,
-    #[clap(long)]
+    #[clap(long, short)]
     pub tags: Vec<Tag>,
 
     #[clap(skip)]
@@ -178,94 +168,6 @@ impl FromStr for AssetName {
     }
 }
 
-// #[derive(Debug, Clone, Serialize, Deserialize, Parser)]
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Request {
-    pub url: url::Url,
-    pub title: Option<String>,
-    pub sc: Option<String>,
-    pub resp: Option<String>,
-}
-
-impl PartialEq for Request {
-    fn eq(&self, other: &Self) -> bool {
-        other.url[..url::Position::BeforePath] == self.url[..url::Position::BeforePath]
-            && (self.url.path() == other.url.path()
-                || match (other.url.path_segments(), self.url.path_segments()) {
-                    (Some(a), Some(b)) => {
-                        let a: HashSet<&str> = a
-                            .filter(|s| !s.is_empty() && s.parse::<usize>().is_err())
-                            .collect();
-                        let b: HashSet<&str> = b
-                            .filter(|s| !s.is_empty() && s.parse::<usize>().is_err())
-                            .collect();
-
-                        let c = &a - &b;
-                        let d = &b - &a;
-
-                        c.len() < 2 && d.len() < 2
-                    }
-                    (None, None) => true,
-                    _ => false,
-                })
-            && {
-                if self.url.path().ends_with(".css") && other.url.path().ends_with(".css") {
-                    return true;
-                }
-                if self.url.path().ends_with(".js") && other.url.path().ends_with(".js") {
-                    return true;
-                }
-                true
-            }
-            && {
-                let a: HashSet<_> = other
-                    .url
-                    .query_pairs()
-                    .map(|(k, _)| k)
-                    .filter(|s| !s.is_empty())
-                    .collect();
-                let b: HashSet<_> = self
-                    .url
-                    .query_pairs()
-                    .map(|(k, _)| k)
-                    .filter(|s| !s.is_empty())
-                    .collect();
-
-                a == b
-            }
-    }
-}
-
-impl Eq for Request {}
-
-#[derive(Clone, ArgEnum, Copy)]
-pub enum Field {
-    Program,
-    Asset,
-    Domain,
-    Cidr,
-    Sub,
-    Url,
-    Tag,
-    Value,
-    None,
-}
-
-impl Field {
-    pub fn substitution(&self) -> String {
-        match self {
-            Field::Program => "{program}".to_string(),
-            Field::Asset => "{asset}".to_string(),
-            Field::Domain => "{domain}".to_string(),
-            Field::Cidr => "{cidr}".to_string(),
-            Field::Sub => "{sub}".to_string(),
-            Field::Url => "{url}".to_string(),
-            Field::Tag => "{tag}".to_string(),
-            Field::Value => "{value}".to_string(),
-            Field::None => "{none}".to_string(),
-        }
-    }
-}
 mod test {
 
     #[test]

@@ -1,10 +1,37 @@
-use cidr::IpCidr;
-use clap::Parser;
-use std::str::FromStr;
-
 use super::*;
 
-#[derive(Default, Parser)]
+#[derive(Clone, ArgEnum, Copy)]
+pub enum Field {
+    Luna,
+    Program,
+    Asset,
+    Domain,
+    Cidr,
+    Sub,
+    Url,
+    Tag,
+    Value,
+    None,
+}
+
+impl Field {
+    pub fn substitution(&self) -> &'static str {
+        match self {
+            Field::Luna => "${luna}",
+            Field::Program => "${program}",
+            Field::Asset => "${asset}",
+            Field::Domain => "${domain}",
+            Field::Cidr => "${cidr}",
+            Field::Sub => "${sub}",
+            Field::Url => "${url}",
+            Field::Tag => "${tag}",
+            Field::Value => "${value}",
+            Field::None => "${none}",
+        }
+    }
+}
+
+#[derive(Parser)]
 pub struct Filter {
     #[clap(short, default_value = "18446744073709551615")]
     pub n: usize,
@@ -41,6 +68,32 @@ pub struct Filter {
     #[clap(long)]
     pub start: Option<i64>,
 }
+
+impl Default for Filter {
+    fn default() -> Self {
+        Self {
+            n: 18446744073709551615,
+            program: Regex::None,
+            platform: Regex::None,
+            typ: Regex::None,
+            url: Regex::None,
+            handle: Regex::None,
+            bounty: Regex::None,
+            state: Regex::None,
+            asset: Regex::None,
+            sc: Regex::None,
+            title: Regex::None,
+            resp: Regex::None,
+            tag: Regex::None,
+            severity: Regex::None,
+            value: Regex::None,
+
+            update: None,
+            start: None,
+        }
+    }
+}
+
 pub enum Regex {
     None,
     Cidr(IpCidr),
@@ -114,5 +167,8 @@ impl Filter {
         self.tag.string_match(&tag.name)
             && self.tag.string_match(&tag.name)
             && tag.values.par_iter().any(|v| self.value.string_match(v))
+    }
+    pub fn value(&self, str: &str) -> bool {
+        self.value.string_match(str)
     }
 }

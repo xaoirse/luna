@@ -1,14 +1,3 @@
-use clap::Parser;
-use fixed_buffer::{deframe_line, FixedBuf};
-use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
-use log::{debug, error, warn};
-use rayon::prelude::*;
-use regex::bytes::Regex;
-use std::process::{Command, Stdio};
-use std::str::FromStr;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-
 use super::*;
 
 fn parse(text: &[u8], regex: &Regex) -> Vec<Asset> {
@@ -154,22 +143,19 @@ impl Script {
 
 pub struct Scripts {
     pub scripts: Vec<Script>,
-
     pub filter: Filter,
 }
 
 impl Scripts {
-    pub fn run(self, luna: &mut Luna, term: Arc<AtomicBool>) {
-        self.scripts
-            .into_iter() // No parallel here for preserving order of scripts
-            .for_each(|script| {
-                if term.load(Ordering::Relaxed) {
-                    return;
-                }
-                script.execute(luna, &self.filter, term.clone());
+    pub fn run(self, luna: &mut Luna, path: &Path, backup: bool, term: Arc<AtomicBool>) {
+        for script in self.scripts {
+            if term.load(Ordering::Relaxed) {
+                return;
+            }
+            script.execute(luna, &self.filter, term.clone());
 
-                luna.save();
-            })
+            luna.save(path, backup);
+        }
     }
 }
 
@@ -220,14 +206,13 @@ impl ScriptCli {
                 } else if line.contains("${value}") {
                     Field::Value
                 } else {
-                    // TODO check if ${invalid}
                     Field::None
                 };
 
                 if let Ok(regex) = Regex::new(&regex) {
-                    if !regex.capture_names().flatten().any(|x| x == "asset") {
+                    if !is_valid(&regex) {
                         return Err(
-                        format!("Line {} regex \"{}\"  doesn't have necessery names \"program\", \"scope\", \"sub\", \"url\" or \"ip\""
+                        format!("Line {} regex \"{}\"  Doesn't have necessery names \"asset\" or \"tag\""
                             ,n,regex).into(),
                     );
                     }
@@ -262,4 +247,11 @@ impl ScriptCli {
             filter: self.filter,
         })
     }
+}
+
+fn is_valid(regex: &Regex) -> bool {
+    regex.capture_names().flatten().any(|x| x == "asset")
+        && (regex.capture_names().flatten().any(|x| x == "tag")
+            == (regex.capture_names().flatten().any(|x| x == "severity")
+                || regex.capture_names().flatten().any(|x| x == "value")))
 }

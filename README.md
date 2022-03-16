@@ -63,9 +63,6 @@ SUBCOMMANDS:
 - ${cidr}
 - ${sub}
 - ${url}
-- ${ip}
-- ${port}
-- ${keyword}
 
 Example:
 - `curl -I ${url}`
@@ -73,9 +70,15 @@ Example:
 
 ### <a name="regex-names"> </a>Available regex names:
 - asset
+    - title
+    - sc
+    - response
+- tag
+    - severity
+    - value
 
 Example:
-- `(?P<response>.+)`  
+- `(?P<asset>.+)`  
 
 [Test your regex](https://rustexp.lpil.uk/)
 
@@ -85,20 +88,20 @@ Example:
 [ commands [see this](#available-keywords)]
 (Be carfull when using tools with colorful output)
 ```bash
-regex = (?P<sub>.+)
-subfinder -d ${scope} # sub1.sample.com -> sub
+regex = (?P<asset>.+)
+subfinder -d ${sub} # sub1.sample.com -> sub
 
-regex = (?P<url>(?:\w+)://\S+) \[(?P<status_code>\d*)\] \[(?P<title>[^\]]*)\] \[(?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3})\] \[(?P<tech>[^\]]*)\]
+regex = (?P<asset>(?:\w+)://\S+) \[(?P<sc>\d*)\] \[(?P<title>[^\]]*)\] \[(?P<tag>[^\]]*)\]
 echo ${sub} | ./httpx -nc -silent -sc -title -ip -td 
 ```
 2. Insert some scopes (see helps):  
-`luna insert scope --asset google.com`
+`luna insert asset google.com -p google`
 3. Run script:  
 `luna script script.sh`  
 4. Find subs (regex):  
-`luna find sub --scope ^google.com`
+`luna find sub --program google`
 5. log levels: debug, error, info  
-`RUST_LOG=error luna insert program --name blah`
+`RUST_LOG=error luna insert asset blah`
 
 
 # Built With
