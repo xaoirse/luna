@@ -2,10 +2,9 @@
 // Developed by SAoirse
 // xaoirse.github.com
 
-pub mod run;
+mod run;
 
 use log::debug;
-
 use run::run;
 
 fn main() {

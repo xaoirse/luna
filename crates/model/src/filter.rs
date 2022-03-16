@@ -63,9 +63,9 @@ pub struct Filter {
     pub severity: Regex,
     #[clap(long, default_value = "")]
     pub value: Regex,
-    #[clap(long)]
+    #[clap(long, short)]
     pub update: Option<i64>,
-    #[clap(long)]
+    #[clap(long, short)]
     pub start: Option<i64>,
 }
 

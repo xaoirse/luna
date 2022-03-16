@@ -10,17 +10,9 @@ repository = "https://github.com/xaoirse/luna"
 
 [workspace]
 members = [
-    "model",
-    "luna-cli"
+    "crates/model",
+    "crates/dnsgen"
 ]
-
-[[bin]]
-path = "luna-cli/src/main.rs"
-name = "luna"
-
-[lib]
-name = "model"
-path = "model/src/lib.rs"
 
 [dependencies]
 openssl = { version = "*", features = ["vendored"] } # https://docs.rs/openssl/0.10.36/openssl/#vendored
@@ -31,7 +23,7 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "3.1", features = ["derive","suggestions", "color","wrap_help" ] }
 regex = "1.5.4"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.68"
+serde_json = "1.0"
 rayon = "1.5"
 cidr = "0.2.1"
 signal-hook = "*"
@@ -39,6 +31,9 @@ indicatif = {version = "0.17.0-rc.5", features = ["rayon"]}
 url = { version = "2.2", features = ["serde"] }
 fixed-buffer = "0.3.1"
 addr = "*"
+itertools = "*"
+model = {path = "crates/model"}
+dnsgen =  {path = "crates/dnsgen"}
 
 [dev-dependencies]
 criterion = "0.3"
@@ -50,3 +45,7 @@ harness = false
 [[test]]
 name = "integration"
 path = "tests/integration_tests.rs"
+
+[[bin]]
+name = "luna"
+path = "crates/cli/main.rs"

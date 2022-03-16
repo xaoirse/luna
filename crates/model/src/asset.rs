@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Clone, Parser, Deserialize, Serialize)]
 pub struct Asset {
     pub name: AssetName,
-    #[clap(long, short)]
+    #[clap(long)]
     pub tags: Vec<Tag>,
 
     #[clap(skip)]
