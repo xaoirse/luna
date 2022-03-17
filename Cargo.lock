@@ -275,10 +275,9 @@ dependencies = [
 
 [[package]]
 name = "dnsgen"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "addr",
- "itertools",
 ]
 
 [[package]]
@@ -461,8 +460,6 @@ dependencies = [
  "model",
  "openssl",
  "rayon",
- "serde",
- "serde_json",
  "signal-hook",
  "url",
 ]

@@ -240,9 +240,8 @@ pub fn run() {
                     asset: sub,
                     ..Default::default()
                 };
-                luna.find(Field::Sub, &filter, 0)
+                dnsgen(luna.find(Field::Sub, &filter, 0), wl)
                     .into_iter()
-                    .flat_map(|s| dnsgen(s, wl.clone()))
                     .for_each(|s| println!("{s}"))
             }
         }
