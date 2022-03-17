@@ -7,6 +7,7 @@ pub struct Luna {
     pub name: String,
     pub version: String,
     pub status: String,
+
     pub programs: Vec<Program>,
 
     pub update: Time,
@@ -63,10 +64,10 @@ impl Luna {
                             }
                         }
                     }
-                    return Err("oos".into());
+                    return Err(format!("oos: {}", request.url).into());
                 }
 
-                AssetName::Subdomain(_) => {
+                AssetName::Subdomain(s) => {
                     if let Some(domain) = asset.name.domain() {
                         if let Some(pr) = self.program_by_asset(&domain) {
                             pr.assets.push(asset);
@@ -74,10 +75,10 @@ impl Luna {
                         }
                     }
 
-                    return Err("oos".into());
+                    return Err(format!("oos: {}", s).into());
                 }
 
-                AssetName::Domain(_) => {
+                AssetName::Domain(d) => {
                     if let Some(mut pr) = program {
                         if let Some(pr) = self.program_by_name(&pr.name) {
                             pr.assets.push(asset);
@@ -87,9 +88,9 @@ impl Luna {
                         }
                         return Ok(());
                     }
-                    return Err("oop".into());
+                    return Err(format!("oop: {}", d).into());
                 }
-                AssetName::Cidr(_) => {
+                AssetName::Cidr(c) => {
                     if let Some(mut pr) = program {
                         if let Some(pr) = self.program_by_name(&pr.name) {
                             pr.assets.push(asset);
@@ -99,7 +100,7 @@ impl Luna {
                         }
                         return Ok(());
                     }
-                    return Err("oop".into());
+                    return Err(format!("oop: {}", c).into());
                 }
             }
         }
@@ -108,7 +109,8 @@ impl Luna {
 
     pub fn insert_tag(&mut self, tag: Tag, asset: &AssetName) -> Result<(), Errors> {
         if let Some(asset) = self.asset_by_name(asset) {
-            asset.tags.push(tag);
+            asset.insert_tag(dbg!(tag));
+            Ok(())
         } else if let Some(domain) = asset.domain() {
             if let Some(pr) = self.program_by_asset(&domain) {
                 let asset = Asset {
@@ -118,11 +120,13 @@ impl Luna {
                     start: Time::default(),
                 };
                 pr.assets.push(asset);
-                return Ok(());
+                Ok(())
+            } else {
+                Err("oos".into())
             }
+        } else {
+            Err("oop".into())
         }
-
-        Err("oop".into())
     }
 
     pub fn program_by_name(&mut self, name: &str) -> Option<&mut Program> {
@@ -146,7 +150,7 @@ impl Luna {
         self.programs
             .iter()
             .filter(|p| filter.program(p))
-            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .filter(|a| date(&a.update, &filter.update) && date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -154,7 +158,7 @@ impl Luna {
         self.programs
             .iter_mut()
             .filter(|p| filter.program(p))
-            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .filter(|a| date(&a.update, &filter.update) && date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -174,7 +178,7 @@ impl Luna {
                 )
             })
             .filter(|a| filter.asset(a))
-            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .filter(|a| date(&a.update, &filter.update) && date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -194,7 +198,7 @@ impl Luna {
                 )
             })
             .filter(|a| filter.asset(a))
-            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .filter(|a| date(&a.update, &filter.update) && date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -207,7 +211,7 @@ impl Luna {
             .filter(|a| filter.asset(a))
             .flat_map(|a| &a.tags)
             .filter(|t| filter.tag(t))
-            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .filter(|t| date(&t.update, &filter.update) && date(&t.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -219,7 +223,7 @@ impl Luna {
             .filter(|a| filter.asset(a))
             .flat_map(|a| &mut a.tags)
             .filter(|t| filter.tag(t))
-            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .filter(|a| date(&a.update, &filter.update) && date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -233,11 +237,7 @@ impl Luna {
                 .collect(),
             Field::None => vec!["".to_string()],
             Field::Tag => self.tags(filter).iter().map(|f| f.stringify(v)).collect(),
-            Field::Value => self
-                .programs(filter)
-                .iter()
-                .map(|f| f.stringify(v))
-                .collect(),
+            Field::Value => self.tags(filter).iter().map(|f| f.stringify(v)).collect(),
             _ => self
                 .assets(field, filter)
                 .iter()
@@ -252,7 +252,7 @@ impl Luna {
             Field::Program => self.programs.retain(|p| !filter.program(p)),
             Field::None => debug!("!"),
             Field::Tag => self
-                .assets_mut(field, filter)
+                .assets_mut(Field::Asset, filter)
                 .iter_mut()
                 .for_each(|a| a.tags.retain(|t| !filter.tag(t))),
             Field::Value => self
@@ -365,8 +365,14 @@ impl Luna {
                 self.find(Field::Sub, &Filter::default(), 0).len(),
                 self.find(Field::Url, &Filter::default(), 0).len(),
                 self.find(Field::Tag, &Filter::default(), 0).len(),
-                self.update.0.to_rfc2822(),
-                self.start.0.to_rfc2822(),
+                self.update
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
+                self.start
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
             ),
             3 => format!(
                 "{}  {}
@@ -401,8 +407,14 @@ impl Luna {
                 self.find(Field::Sub, &Filter::default(), 0).len(),
                 self.find(Field::Url, &Filter::default(), 0).len(),
                 self.find(Field::Tag, &Filter::default(), 0).len(),
-                self.update.0.to_rfc2822(),
-                self.start.0.to_rfc2822(),
+                self.update
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
+                self.start
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
             ),
             _ => format!("{:#?}", self),
         }

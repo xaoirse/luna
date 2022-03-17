@@ -123,8 +123,6 @@ impl Script {
 
                     pb.inc(1);
 
-                    debug!("{:#?}", luna);
-
                     Some(assets)
                 } else {
                     error!("Executing: {cmd}");
@@ -133,6 +131,7 @@ impl Script {
             })
             .for_each(|assets| {
                 for asset in assets {
+                    debug!("Insert: {}", asset.stringify(2));
                     if let Err(err) = luna.lock().unwrap().insert_asset(asset, None) {
                         warn!("{err}");
                     }

@@ -19,19 +19,12 @@ openssl = { version = "*", features = ["vendored"] } # https://docs.rs/openssl/0
 log = "0.4"
 env_logger = "0.8.4"
 colored = "2"
-chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "3.1", features = ["derive","suggestions", "color","wrap_help" ] }
-regex = "1.5.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rayon = "1.5"
-cidr = "0.2.1"
 signal-hook = "*"
-indicatif = {version = "0.17.0-rc.5", features = ["rayon"]}
 url = { version = "2.2", features = ["serde"] }
-fixed-buffer = "0.3.1"
-addr = "*"
-itertools = "*"
 model = {path = "crates/model"}
 dnsgen =  {path = "crates/dnsgen"}
 

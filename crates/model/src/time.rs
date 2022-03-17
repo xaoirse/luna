@@ -8,7 +8,7 @@ impl FromStr for Time {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match DateTime::parse_from_rfc3339(s) {
             Ok(date) => Ok(Self(date.with_timezone(&Utc::now().timezone()))),
-            Err(_) => Err("Parse error".into()),
+            Err(err) => Err(err.into()),
         }
     }
 }

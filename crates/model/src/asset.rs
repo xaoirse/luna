@@ -3,6 +3,7 @@ use super::*;
 #[derive(Debug, Clone, Parser, Deserialize, Serialize)]
 pub struct Asset {
     pub name: AssetName,
+
     #[clap(long)]
     pub tags: Vec<Tag>,
 
@@ -53,12 +54,9 @@ impl Asset {
     pub fn stringify(&self, v: u8) -> String {
         match v {
             0 => self.name.to_string(),
-
             1 => format!(
                 "{}
     Tags:  [{}{}
-    Update: {}
-    Start:  {}
     ",
                 self.name,
                 self.tags
@@ -67,8 +65,40 @@ impl Asset {
                     .collect::<Vec<String>>()
                     .join(""),
                 if self.tags.is_empty() { "]" } else { "\n    ]" },
-                self.update.0.to_rfc2822(),
-                self.start.0.to_rfc2822(),
+            ),
+            2 => format!(
+                "{}
+    Tags:  [{}{}
+    ",
+                self.name,
+                self.tags
+                    .iter()
+                    .map(|s| format!("\n        {}", s.stringify(2)))
+                    .collect::<Vec<String>>()
+                    .join(""),
+                if self.tags.is_empty() { "]" } else { "\n    ]" },
+            ),
+            3 => format!(
+                "{}
+    Tags:  [{}{}
+    Update: {}
+    Start:  {}
+    ",
+                self.name,
+                self.tags
+                    .iter()
+                    .map(|s| format!("\n        {}", s.stringify(2)))
+                    .collect::<Vec<String>>()
+                    .join(""),
+                if self.tags.is_empty() { "]" } else { "\n    ]" },
+                self.update
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
+                self.start
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
             ),
 
             _ => format!("{:#?}", self),

@@ -5,6 +5,7 @@ pub struct Tag {
     pub name: String,
     #[clap(long)]
     pub severity: Option<String>,
+
     #[clap(long)]
     pub values: Vec<String>,
 
@@ -75,8 +76,14 @@ impl Tag {
                 } else {
                     "\n    ]"
                 },
-                self.update.0.to_rfc2822(),
-                self.start.0.to_rfc2822(),
+                self.update
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
+                self.start
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
             ),
 
             _ => format!("{:#?}", self),

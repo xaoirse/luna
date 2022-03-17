@@ -119,6 +119,10 @@ impl FromStr for Regex {
     }
 }
 impl Regex {
+    pub fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+
     fn string_match(&self, str: &str) -> bool {
         if let Self::Some(regex) = self {
             regex.is_match(str)
@@ -159,16 +163,30 @@ impl Filter {
             && self.handle.option_match(&program.handle)
             && self.bounty.option_match(&program.bounty)
             && self.state.option_match(&program.state)
+            && (self.asset_is_none() || program.assets.par_iter().any(|a| self.asset(a)))
     }
     pub fn asset(&self, asset: &Asset) -> bool {
         self.asset.asset_match(&asset.name)
+            && (self.tag_is_none() || asset.tags.par_iter().any(|t| self.tag(t)))
     }
     pub fn tag(&self, tag: &Tag) -> bool {
         self.tag.string_match(&tag.name)
-            && self.tag.string_match(&tag.name)
-            && tag.values.par_iter().any(|v| self.value.string_match(v))
+            && self.severity.option_match(&tag.severity)
+            && (self.value.is_none() || tag.values.par_iter().any(|v| self.value.string_match(v)))
     }
     pub fn value(&self, str: &str) -> bool {
         self.value.string_match(str)
+    }
+
+    pub fn asset_is_none(&self) -> bool {
+        self.asset.is_none()
+            && self.url.is_none()
+            && self.sc.is_none()
+            && self.title.is_none()
+            && self.resp.is_none()
+            && self.tag_is_none()
+    }
+    pub fn tag_is_none(&self) -> bool {
+        self.tag.is_none() && self.severity.is_none() && self.value.is_none()
     }
 }

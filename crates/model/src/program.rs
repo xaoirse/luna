@@ -110,8 +110,14 @@ impl Program {
                 self.assets(Field::Sub, &Filter::default()).len(),
                 self.assets(Field::Url, &Filter::default()).len(),
                 self.assets(Field::Tag, &Filter::default()).len(),
-                self.update.0.to_rfc2822(),
-                self.start.0.to_rfc2822(),
+                self.update
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
+                self.start
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
             ),
             3 => format!(
                 "{}  {}
@@ -149,8 +155,14 @@ impl Program {
                 self.assets(Field::Sub, &Filter::default()).len(),
                 self.assets(Field::Url, &Filter::default()).len(),
                 self.assets(Field::Tag, &Filter::default()).len(),
-                self.update.0.to_rfc2822(),
-                self.start.0.to_rfc2822(),
+                self.update
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
+                self.start
+                    .0
+                    .with_timezone(&Local::now().timezone())
+                    .to_rfc2822(),
             ),
             _ => format!("{:#?}", self),
         }
