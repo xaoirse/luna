@@ -6,7 +6,11 @@ pub fn serialize<S>(cidr: &IpCidr, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    serializer.serialize_str(&cidr.to_string())
+    if cidr.network_length() == 32 {
+        serializer.serialize_str(&format!("{}/32", &cidr.to_string()))
+    } else {
+        serializer.serialize_str(&cidr.to_string())
+    }
 }
 
 pub fn deserialize<'de, D>(deserializer: D) -> Result<IpCidr, D::Error>
