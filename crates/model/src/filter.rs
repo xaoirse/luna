@@ -114,7 +114,7 @@ impl FromStr for Regex {
         } else if let Ok(cidr) = s.parse::<IpCidr>() {
             Ok(Self::Cidr(cidr))
         } else {
-            Ok(Self::Some(regex::Regex::new(s)?))
+            Ok(Self::Some(regex::Regex::new(&format!("(?i){}", s))?))
         }
     }
 }

@@ -98,7 +98,7 @@ echo ${sub} | ./httpx -nc -silent -sc -title -ip -td
 `luna insert asset google.com -p google`
 3. Run script:  
 `luna script script.sh`  
-4. Find subs (regex):  
+4. Find subs with regex (use `(?-a)` for case sensitive):  
 `luna find sub --program google`
 5. log levels: debug, error, info  
 `RUST_LOG=error luna insert asset blah`

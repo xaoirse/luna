@@ -7,7 +7,7 @@ pub struct Program {
     pub platform: Option<String>,
     #[clap(long)]
     pub handle: Option<String>,
-    #[clap(long)]
+    #[clap(long = "type")]
     pub typ: Option<String>,
     #[clap(long)]
     pub url: Option<String>,
@@ -16,7 +16,7 @@ pub struct Program {
     #[clap(long)]
     pub state: Option<String>,
 
-    #[clap(long)]
+    #[clap(long, short, multiple_values = true)]
     pub assets: Vec<Asset>,
 
     #[clap(skip)]

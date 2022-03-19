@@ -4,7 +4,7 @@ use super::*;
 pub struct Asset {
     pub name: AssetName,
 
-    #[clap(long)]
+    #[clap(long, short, multiple_values = true)]
     pub tags: Vec<Tag>,
 
     #[clap(skip)]

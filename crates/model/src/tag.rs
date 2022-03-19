@@ -6,7 +6,7 @@ pub struct Tag {
     #[clap(long)]
     pub severity: Option<String>,
 
-    #[clap(long)]
+    #[clap(long, multiple_values = true)]
     pub values: Vec<String>,
 
     #[clap(skip)]
