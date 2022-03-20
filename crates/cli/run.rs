@@ -158,7 +158,7 @@ pub fn run() {
 
             match res {
                 Ok(_) => luna.save(output, !opt.no_backup),
-                Err(err) => error!("{err}"),
+                Err(err) => warn!("{err}"),
             }
         }
 
