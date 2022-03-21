@@ -251,6 +251,6 @@ impl ScriptCli {
 fn is_valid(regex: &Regex) -> bool {
     regex.capture_names().flatten().any(|x| x == "asset")
         && (regex.capture_names().flatten().any(|x| x == "tag")
-            == (regex.capture_names().flatten().any(|x| x == "severity")
+            || !(regex.capture_names().flatten().any(|x| x == "severity")
                 || regex.capture_names().flatten().any(|x| x == "value")))
 }

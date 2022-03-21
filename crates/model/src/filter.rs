@@ -57,7 +57,7 @@ pub struct Filter {
     pub title: Regex,
     #[clap(long, default_value = "")]
     pub resp: Regex,
-    #[clap(long, short, default_value = "")]
+    #[clap(long, default_value = "")]
     pub tag: Regex,
     #[clap(long, default_value = "")]
     pub severity: Regex,
