@@ -35,11 +35,11 @@ impl Field {
 pub struct Filter {
     #[clap(short, default_value = "18446744073709551615")]
     pub n: usize,
-    #[clap(long, default_value = "")]
+    #[clap(long, short, default_value = "")]
     pub program: Regex,
     #[clap(long, default_value = "")]
     pub platform: Regex,
-    #[clap(long, default_value = "")]
+    #[clap(long = "type", default_value = "")]
     pub typ: Regex,
     #[clap(long, default_value = "")]
     pub url: Regex,
@@ -49,7 +49,7 @@ pub struct Filter {
     pub bounty: Regex,
     #[clap(long, default_value = "")]
     pub state: Regex,
-    #[clap(long, default_value = "")]
+    #[clap(long, short, default_value = "")]
     pub asset: Regex,
     #[clap(long, default_value = "")]
     pub sc: Regex,
@@ -57,7 +57,7 @@ pub struct Filter {
     pub title: Regex,
     #[clap(long, default_value = "")]
     pub resp: Regex,
-    #[clap(long, default_value = "")]
+    #[clap(long, short, default_value = "")]
     pub tag: Regex,
     #[clap(long, default_value = "")]
     pub severity: Regex,
