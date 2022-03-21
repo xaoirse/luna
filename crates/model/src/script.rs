@@ -15,12 +15,15 @@ fn parse(text: &[u8], regex: &Regex) -> Vec<Asset> {
                 } else {
                     vec![]
                 };
-                vec![Tag {
-                    name,
-                    severity: get("severity"),
-                    values,
-                    ..Default::default()
-                }]
+
+                name.split(',')
+                    .map(|name| Tag {
+                        name: name.to_string(),
+                        severity: get("severity"),
+                        values: values.clone(),
+                        ..Default::default()
+                    })
+                    .collect()
             } else {
                 vec![]
             };
