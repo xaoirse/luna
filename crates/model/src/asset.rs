@@ -54,11 +54,36 @@ impl Asset {
     pub fn stringify(&self, v: u8) -> String {
         match v {
             0 => self.name.to_string(),
-            1 => format!(
+            1 => match &self.name {
+                AssetName::Url(req) => format!(
+                    "{} [{}]",
+                    req.url,
+                    req.sc.as_ref().unwrap_or(&"".to_string())
+                ),
+                name => name.to_string(),
+            },
+            2 => match &self.name {
+                AssetName::Url(req) => format!(
+                    "{} [{}] [{}]",
+                    req.url,
+                    req.sc.as_ref().unwrap_or(&"".to_string()),
+                    req.title.as_ref().unwrap_or(&"".to_string())
+                ),
+                name => name.to_string(),
+            },
+            3 => format!(
                 "{}
     Tags:  [{}{}
     ",
-                self.name,
+                match &self.name {
+                    AssetName::Url(req) => format!(
+                        "{} [{}] [{}]",
+                        req.url,
+                        req.sc.as_ref().unwrap_or(&"".to_string()),
+                        req.title.as_ref().unwrap_or(&"".to_string())
+                    ),
+                    name => name.to_string(),
+                },
                 self.tags
                     .iter()
                     .map(|s| format!("\n        {}", s.stringify(1)))
@@ -66,7 +91,7 @@ impl Asset {
                     .join(""),
                 if self.tags.is_empty() { "]" } else { "\n    ]" },
             ),
-            2 => format!(
+            4 => format!(
                 "{}
     Tags:  [{}{}
     ",
@@ -78,7 +103,7 @@ impl Asset {
                     .join(""),
                 if self.tags.is_empty() { "]" } else { "\n    ]" },
             ),
-            3 => format!(
+            5 => format!(
                 "{}
     Tags:  [{}{}
     Update: {}
