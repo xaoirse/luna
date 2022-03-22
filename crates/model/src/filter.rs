@@ -73,20 +73,20 @@ impl Default for Filter {
     fn default() -> Self {
         Self {
             n: 18446744073709551615,
-            program: Regex::None,
-            platform: Regex::None,
-            typ: Regex::None,
-            url: Regex::None,
-            handle: Regex::None,
-            bounty: Regex::None,
-            state: Regex::None,
-            asset: Regex::None,
-            sc: Regex::None,
-            title: Regex::None,
-            resp: Regex::None,
-            tag: Regex::None,
-            severity: Regex::None,
-            value: Regex::None,
+            program: Regex::default(),
+            platform: Regex::default(),
+            typ: Regex::default(),
+            url: Regex::default(),
+            handle: Regex::default(),
+            bounty: Regex::default(),
+            state: Regex::default(),
+            asset: Regex::default(),
+            sc: Regex::default(),
+            title: Regex::default(),
+            resp: Regex::default(),
+            tag: Regex::default(),
+            severity: Regex::default(),
+            value: Regex::default(),
 
             update: None,
             start: None,
@@ -94,61 +94,53 @@ impl Default for Filter {
     }
 }
 
-pub enum Regex {
-    None,
-    Cidr(IpCidr),
-    Some(regex::Regex),
-}
-impl Default for Regex {
-    fn default() -> Self {
-        Self::None
-    }
+#[derive(Default)]
+pub struct Regex {
+    pub cidr: Option<IpCidr>,
+    pub regex: Option<regex::Regex>,
 }
 
 impl FromStr for Regex {
     type Err = Errors;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            Ok(Self::None)
-        } else if let Ok(cidr) = s.parse::<IpCidr>() {
-            Ok(Self::Cidr(cidr))
-        } else {
-            Ok(Self::Some(regex::Regex::new(&format!("(?i){}", s))?))
-        }
+        Ok(Self {
+            regex: if s.is_empty() {
+                None
+            } else {
+                regex::Regex::new(&format!("(?i){}", s)).ok()
+            },
+            cidr: s.parse::<IpCidr>().ok(),
+        })
     }
 }
 impl Regex {
     pub fn is_none(&self) -> bool {
-        matches!(self, Self::None)
+        self.cidr.is_none() && self.regex.is_none()
+    }
+
+    fn cidr_match(&self, cidr: &IpCidr) -> bool {
+        if let Some(fcidr) = self.cidr {
+            fcidr.contains(&cidr.first_address()) || cidr.contains(&fcidr.first_address())
+        } else if let Some(re) = &self.regex {
+            re.is_match(&cidr.to_string())
+        } else {
+            true
+        }
     }
 
     fn string_match(&self, str: &str) -> bool {
-        if let Self::Some(regex) = self {
-            regex.is_match(str)
+        if let Some(re) = &self.regex {
+            re.is_match(str)
         } else {
-            matches!(self, Self::None)
+            true
         }
     }
 
     fn option_match(&self, str: &Option<String>) -> bool {
-        match (self, str) {
-            (Self::Some(re), Some(str)) => re.is_match(str),
-            (Self::None, _) => true,
-            _ => false,
-        }
-    }
-
-    fn asset_match(&self, asset: &AssetName) -> bool {
-        match (self, asset) {
-            (Regex::None, _) => true,
-            (Self::Some(re), AssetName::Domain(d)) => re.is_match(d),
-            (Regex::Some(re), AssetName::Subdomain(h)) => re.is_match(&h.to_string()),
-            (Regex::Some(re), AssetName::Url(req)) => re.is_match(req.url.as_str()),
-            (Regex::Some(re), AssetName::Cidr(cidr)) => re.is_match(&cidr.to_string()),
-            (Regex::Cidr(a), AssetName::Cidr(b)) => {
-                a.contains(&b.first_address()) || b.contains(&a.first_address())
-            }
+        match (&self.regex, str) {
+            (Some(re), Some(str)) => re.is_match(str),
+            (None, _) => true,
             _ => false,
         }
     }
@@ -166,8 +158,17 @@ impl Filter {
             && (self.asset_is_none() || program.assets.par_iter().any(|a| self.asset(a)))
     }
     pub fn asset(&self, asset: &Asset) -> bool {
-        self.asset.asset_match(&asset.name)
-            && (self.tag_is_none() || asset.tags.par_iter().any(|t| self.tag(t)))
+        match &asset.name {
+            AssetName::Domain(d) => self.asset.string_match(d),
+            AssetName::Subdomain(h) => self.asset.string_match(&h.to_string()),
+            AssetName::Url(req) => {
+                self.asset.string_match(req.url.as_str())
+                    && self.sc.option_match(&req.sc)
+                    && self.title.option_match(&req.title)
+                    && self.resp.option_match(&req.resp)
+            }
+            AssetName::Cidr(c) => self.asset.cidr_match(c),
+        }
     }
     pub fn tag(&self, tag: &Tag) -> bool {
         self.tag.string_match(&tag.name)
@@ -188,5 +189,33 @@ impl Filter {
     }
     pub fn tag_is_none(&self) -> bool {
         self.tag.is_none() && self.severity.is_none() && self.value.is_none()
+    }
+}
+
+mod test {
+
+    #[test]
+    fn regex_match() {
+        use super::*;
+
+        let str = "Mia";
+        let regex = Regex::from_str("m").unwrap();
+        assert!(regex.string_match(str));
+
+        let str = "123";
+        let regex = Regex::from_str("2").unwrap();
+        assert!(regex.string_match(str));
+
+        let str = "123";
+        let regex = Regex::from_str("5").unwrap();
+        assert!(!regex.string_match(str));
+
+        let c = "1.1.1.0/24".parse::<IpCidr>().unwrap();
+        let regex = Regex::from_str("1.1.1.1/32").unwrap();
+        assert!(regex.cidr_match(&c));
+
+        let str = "1.1.5.0/24";
+        let regex = Regex::from_str("1.1.1.1/32").unwrap();
+        assert!(!regex.string_match(str))
     }
 }

@@ -461,7 +461,6 @@ dependencies = [
  "openssl",
  "rayon",
  "signal-hook",
- "url",
 ]
 
 [[package]]

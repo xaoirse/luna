@@ -22,7 +22,6 @@ colored = "2"
 clap = { version = "3.1", features = ["derive","suggestions", "color","wrap_help" ] }
 rayon = "1.5"
 signal-hook = "*"
-url = { version = "2.2", features = ["serde"] }
 model = {path = "crates/model"}
 dnsgen =  {path = "crates/dnsgen"}
 
