@@ -231,8 +231,10 @@ mod test {
         use crate::asset::AssetName;
         use std::str::FromStr;
 
-        let cidr = "192.168.1.0/32".parse::<IpCidr>().unwrap();
-        dbg!(cidr);
+        assert_eq!(
+            AssetName::from_str("192.168.1.0/32").unwrap(),
+            AssetName::Cidr("192.168.1.0/32".parse::<IpCidr>().unwrap())
+        );
 
         assert_eq!(
             AssetName::from_str("google.com").unwrap(),
@@ -241,6 +243,16 @@ mod test {
         assert_eq!(
             AssetName::from_str("sub.google.com").unwrap(),
             AssetName::Subdomain(url::Host::parse("sub.google.com").unwrap())
+        );
+
+        assert_eq!(
+            AssetName::from_str("https://sub.google.com").unwrap(),
+            AssetName::Url(Request {
+                url: url::Url::parse("https://sub.google.com").unwrap(),
+                resp: None,
+                sc: None,
+                title: None
+            })
         );
     }
 }

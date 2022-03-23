@@ -1,3 +1,5 @@
+use std::sync::Mutex;
+
 use super::*;
 
 fn parse(text: &[u8], regex: &Regex) -> Vec<Asset> {
@@ -86,7 +88,7 @@ impl Script {
                 .with_finish(ProgressFinish::WithMessage(self.command.clone().into()));
         }
 
-        let luna = std::sync::Mutex::new(luna);
+        let luna = Arc::new(Mutex::new(luna));
         elements
             .par_iter()
             .filter_map(|input| {
