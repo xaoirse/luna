@@ -158,7 +158,7 @@ impl Filter {
             && (self.asset_is_none() || program.assets.par_iter().any(|a| self.asset(a)))
     }
     pub fn asset(&self, asset: &Asset) -> bool {
-        match &asset.name {
+        (match &asset.name {
             AssetName::Domain(d) => self.asset.string_match(d),
             AssetName::Subdomain(h) => self.asset.string_match(&h.to_string()),
             AssetName::Url(req) => {
@@ -168,7 +168,7 @@ impl Filter {
                     && self.resp.option_match(&req.resp)
             }
             AssetName::Cidr(c) => self.asset.cidr_match(c),
-        }
+        }) && (self.tag_is_none() || asset.tags.par_iter().any(|a| self.tag(a)))
     }
     pub fn tag(&self, tag: &Tag) -> bool {
         self.tag.string_match(&tag.name)

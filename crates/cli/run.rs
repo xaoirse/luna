@@ -25,7 +25,7 @@ pub struct Opt {
     pub input: PathBuf,
     #[clap(short, long, global = true, help = "Default output is input!")]
     pub output: Option<PathBuf>,
-    #[clap(long, global = true, help = "Save without backup")]
+    #[clap(long, global = true, help = "Save without backup!")]
     pub no_backup: bool,
     #[clap(short, long, global = true, help = "Number of threads")]
     pub threads: Option<usize>,
@@ -46,7 +46,7 @@ pub enum Cli {
     Check(Check),
     Stat(LunaStat),
     Dnsgen(Dnsgen),
-    Report,
+    Report(Report),
     #[clap(subcommand)]
     Server(Server),
 }
@@ -109,8 +109,16 @@ pub struct Dnsgen {
 }
 
 #[derive(Debug, Parser)]
+pub struct Report {
+    #[clap(short, long, default_value = ".")]
+    pub path: PathBuf,
+    #[clap(short, default_value = "md")]
+    pub format: String,
+}
+
+#[derive(Debug, Parser)]
 pub enum Server {
-    Start,
+    Start { ip: String, port: u16 },
     Check,
     Report,
     Status,
@@ -126,10 +134,10 @@ const BANNER: &str = r"
 pub fn run() {
     let term = Arc::new(AtomicBool::new(false));
     match signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&term)) {
-        Ok(s) => info!("Luna has Graceful shutdown :) , SigId: {:#?}", s),
+        Ok(s) => info!("Luna has Graceful shutdown :), SigId: {:?}", s),
         Err(err) => {
-            error!("Error in making signal-hook : {}", err);
-            warn!("Luna will continue without Graceful shutdown");
+            error!("Error in making signal-hook: {}", err);
+            warn!("Luna will continue without Graceful shutdown!");
         }
     }
 
@@ -245,7 +253,7 @@ pub fn run() {
                     .for_each(|s| println!("{s}"))
             }
         }
-        Cli::Report => todo!(),
+        Cli::Report(_) => todo!(),
         Cli::Server(_) => todo!(),
     }
 }

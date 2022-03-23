@@ -7,18 +7,17 @@ use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use regex::bytes::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use std::net::IpAddr;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
 use std::{
+    collections::HashSet,
     fmt::{self, Display},
     io::Write,
     path::Path,
     process::{Command, Stdio},
     str::FromStr,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 use url::Host;
 

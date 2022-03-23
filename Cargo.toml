@@ -2,7 +2,7 @@
 name = "luna"
 version = "0.8.0"
 authors = ["SAoirse <https://github.com/xaoirse>"]
-description = "A Recon Tool"
+description = "A Reconnaissance Tool"
 readme = "README.md"
 edition = "2021"
 repository = "https://github.com/xaoirse/luna"

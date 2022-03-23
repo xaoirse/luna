@@ -26,56 +26,55 @@ minimum size:
 # Usage
 
 ```
-luna 0.8.0
-SA
-The moon rider has arived.
+Luna 0.8.0
+SAoirse <https://github.com/xaoirse>
+A Reconnaissance Tool
 
 USAGE:
-    luna [FLAGS] [OPTIONS] <SUBCOMMAND>
-
-FLAGS:
-    -h, --help         Prints help information
-        --no-backup    Save without backup
-    -q, --quiet        Quiet mode
-    -V, --version      Prints version information
+    luna [OPTIONS] <SUBCOMMAND>
 
 OPTIONS:
-    -i, --input <input>        Json file's path [default: luna.json]
-    -o, --output <output>      Default output is input!
-    -t, --threads <threads>    Number of threads
+    -h, --help                 Print help information
+    -i, --input <INPUT>        Json file's path [default: luna.json]
+        --no-backup            Save without backup!
+    -o, --output <OUTPUT>      Default output is input!
+    -q, --quiet                Quiet mode
+    -t, --threads <THREADS>    Number of threads
+    -V, --version              Print version information
 
 SUBCOMMANDS:
     check     
+    dnsgen    
     find      
-    help      Prints this message or the help of the given subcommand(s)
+    help      Print this message or the help of the given subcommand(s)
     import    
     insert    
     remove    
     report    
     script    
     server    
-    stat      
+    stat
 ```
 ## Features
 ### <a name="available-keywords"> </a>Available keywords:
-- ${program}
-- ${domain}
-- ${cidr}
-- ${sub}
-- ${url}
+- `${program}`
+- `${domain}`
+- `${cidr}`
+- `${sub}`
+- `${url}`
 
 Example:
 - `curl -I ${url}`
 - `subfinder -d ${domain}`
 
 ### <a name="regex-names"> </a>Available regex names:
-- asset
-    - title
-    - sc
-    - response
-- tag
-    - severity
-    - value
+- `asset`
+    - `title`
+    - `sc`
+    - `response`
+- `tag`
+    - `severity`
+    - `value`
 
 Example:
 - `(?P<asset>.+)`  
@@ -141,7 +140,7 @@ I want a standalone binary release from my code,
 - [x] Limit for parallel requests to prevent rate limit  
 - [ ] Worldlist
 - [x] Custom inputs for script
-- [ ] Save bash file scripts in json or each field? jom model
+- [ ] Save bash file scripts in json or each field? job model
 - [ ] Regex test tool (subcommand)
 - [ ] Reduce release size
 - [x] Filter by date
