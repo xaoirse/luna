@@ -41,7 +41,6 @@ fn parse(text: &[u8], regex: &Regex) -> Vec<Asset> {
                         name,
                         tags,
                         start: Time(Utc::now()),
-                        update: Time(Utc::now()),
                     })
                 } else {
                     warn!("Invalid asset: {}", name);

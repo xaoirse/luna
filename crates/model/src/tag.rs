@@ -10,8 +10,6 @@ pub struct Tag {
     pub values: Vec<String>,
 
     #[clap(skip)]
-    pub update: Time,
-    #[clap(skip)]
     pub start: Time,
 }
 
@@ -23,18 +21,16 @@ impl FromStr for Tag {
             name: s.to_string(),
             severity: None,
             values: vec![],
-            update: Time::default(),
             start: Time::default(),
         })
     }
 }
 impl Tag {
     pub fn merge(&mut self, other: Self) {
-        let new = self.update < other.update;
+        let new = self.start < other.start;
 
         merge(&mut self.severity, other.severity, new);
 
-        self.update = self.update.max(other.update);
         self.start = self.start.min(other.start);
 
         for value in other.values {
@@ -61,7 +57,6 @@ impl Tag {
             3 => format!(
                 "{} [{}]
     Values: [{}{}
-    Update: {}
     Start:  {}
     ",
                 self.name,
@@ -76,10 +71,6 @@ impl Tag {
                 } else {
                     "\n    ]"
                 },
-                self.update
-                    .0
-                    .with_timezone(&Local::now().timezone())
-                    .to_rfc2822(),
                 self.start
                     .0
                     .with_timezone(&Local::now().timezone())

@@ -20,8 +20,6 @@ pub struct Program {
     pub assets: Vec<Asset>,
 
     #[clap(skip)]
-    pub update: Time,
-    #[clap(skip)]
     pub start: Time,
 }
 
@@ -38,7 +36,7 @@ impl FromStr for Program {
 
 impl Program {
     pub fn merge(&mut self, other: Self) {
-        let new = self.update < other.update;
+        let new = self.start < other.start;
 
         merge(&mut self.platform, other.platform, new);
         merge(&mut self.handle, other.handle, new);
@@ -47,7 +45,6 @@ impl Program {
         merge(&mut self.bounty, other.bounty, new);
         merge(&mut self.state, other.state, new);
 
-        self.update = self.update.max(other.update);
         self.start = self.start.min(other.start);
 
         for asset in other.assets {
@@ -72,7 +69,7 @@ impl Program {
                 )
             })
             .filter(|a| filter.asset(a))
-            .filter(|a| date(&a.update, &filter.update) || date(&a.start, &filter.start))
+            .filter(|a| date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -94,7 +91,6 @@ impl Program {
     Subs:     {}
     URLs:     {}
     Tags:     {}
-    Update:   {}
     Start:    {}
     ",
                 self.name,
@@ -110,10 +106,6 @@ impl Program {
                 self.assets(Field::Sub, &Filter::default()).len(),
                 self.assets(Field::Url, &Filter::default()).len(),
                 self.assets(Field::Tag, &Filter::default()).len(),
-                self.update
-                    .0
-                    .with_timezone(&Local::now().timezone())
-                    .to_rfc2822(),
                 self.start
                     .0
                     .with_timezone(&Local::now().timezone())
@@ -131,7 +123,6 @@ impl Program {
     Subs:     {}
     URLs:     {}
     Tags:     {}
-    Update:   {}
     Start:    {}
     ",
                 self.name,
@@ -155,10 +146,6 @@ impl Program {
                 self.assets(Field::Sub, &Filter::default()).len(),
                 self.assets(Field::Url, &Filter::default()).len(),
                 self.assets(Field::Tag, &Filter::default()).len(),
-                self.update
-                    .0
-                    .with_timezone(&Local::now().timezone())
-                    .to_rfc2822(),
                 self.start
                     .0
                     .with_timezone(&Local::now().timezone())

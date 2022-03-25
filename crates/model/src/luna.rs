@@ -10,7 +10,6 @@ pub struct Luna {
 
     pub programs: Vec<Program>,
 
-    pub update: Time,
     pub start: Time,
 }
 impl Default for Luna {
@@ -20,7 +19,6 @@ impl Default for Luna {
             version: VERSION.to_string(),
             status: "In the service of Selemene".to_string(),
             programs: vec![],
-            update: Time::default(),
             start: Time::default(),
         }
     }
@@ -28,7 +26,6 @@ impl Default for Luna {
 
 impl Luna {
     pub fn merge(&mut self, other: Self) {
-        self.update = self.update.max(other.update);
         self.start = self.start.min(other.start);
 
         for program in other.programs {
@@ -56,8 +53,8 @@ impl Luna {
             match &asset.name {
                 AssetName::Url(request) => {
                     if let Some(host) = request.url.host_str() {
-                        self.insert_asset(Asset::from_str(host)?, None)?;
                         if let Some(domain) = asset.name.domain() {
+                            self.insert_asset(Asset::from_str(host)?, None)?;
                             if let Some(pr) = self.program_by_asset(&domain) {
                                 pr.assets.push(asset);
                                 return Ok(());
@@ -116,7 +113,6 @@ impl Luna {
                 let asset = Asset {
                     name: asset.to_owned(),
                     tags: vec![tag],
-                    update: Time::default(),
                     start: Time::default(),
                 };
                 pr.assets.push(asset);
@@ -150,7 +146,7 @@ impl Luna {
         self.programs
             .iter()
             .filter(|p| filter.program(p))
-            .filter(|a| date(&a.update, &filter.update) && date(&a.start, &filter.start))
+            .filter(|a| date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -158,7 +154,7 @@ impl Luna {
         self.programs
             .iter_mut()
             .filter(|p| filter.program(p))
-            .filter(|a| date(&a.update, &filter.update) && date(&a.start, &filter.start))
+            .filter(|a| date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -178,7 +174,7 @@ impl Luna {
                 )
             })
             .filter(|a| filter.asset(a))
-            .filter(|a| date(&a.update, &filter.update) && date(&a.start, &filter.start))
+            .filter(|a| date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -198,7 +194,7 @@ impl Luna {
                 )
             })
             .filter(|a| filter.asset(a))
-            .filter(|a| date(&a.update, &filter.update) && date(&a.start, &filter.start))
+            .filter(|a| date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -211,7 +207,7 @@ impl Luna {
             .filter(|a| filter.asset(a))
             .flat_map(|a| &a.tags)
             .filter(|t| filter.tag(t))
-            .filter(|t| date(&t.update, &filter.update) && date(&t.start, &filter.start))
+            .filter(|t| date(&t.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -223,7 +219,7 @@ impl Luna {
             .filter(|a| filter.asset(a))
             .flat_map(|a| &mut a.tags)
             .filter(|t| filter.tag(t))
-            .filter(|a| date(&a.update, &filter.update) && date(&a.start, &filter.start))
+            .filter(|a| date(&a.start, &filter.start))
             .take(filter.n)
             .collect()
     }
@@ -352,7 +348,6 @@ impl Luna {
     Subs:     {}
     URLs:     {}
     Tags:     {}
-    Update:   {}
     Start:    {}
     ",
                 self.name,
@@ -365,10 +360,6 @@ impl Luna {
                 self.find(Field::Sub, &Filter::default(), 0).len(),
                 self.find(Field::Url, &Filter::default(), 0).len(),
                 self.find(Field::Tag, &Filter::default(), 0).len(),
-                self.update
-                    .0
-                    .with_timezone(&Local::now().timezone())
-                    .to_rfc2822(),
                 self.start
                     .0
                     .with_timezone(&Local::now().timezone())
@@ -384,7 +375,6 @@ impl Luna {
     Subs:     {}
     URLs:     {}
     Tags:     {}
-    Update:   {}
     Start:    {}
     ",
                 self.name,
@@ -407,10 +397,6 @@ impl Luna {
                 self.find(Field::Sub, &Filter::default(), 0).len(),
                 self.find(Field::Url, &Filter::default(), 0).len(),
                 self.find(Field::Tag, &Filter::default(), 0).len(),
-                self.update
-                    .0
-                    .with_timezone(&Local::now().timezone())
-                    .to_rfc2822(),
                 self.start
                     .0
                     .with_timezone(&Local::now().timezone())

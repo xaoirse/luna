@@ -8,8 +8,6 @@ pub struct Asset {
     pub tags: Vec<Tag>,
 
     #[clap(skip)]
-    pub update: Time,
-    #[clap(skip)]
     pub start: Time,
 }
 
@@ -20,7 +18,6 @@ impl FromStr for Asset {
         Ok(Self {
             name: AssetName::from_str(s)?,
             tags: vec![],
-            update: Time::default(),
             start: Time::default(),
         })
     }
@@ -28,7 +25,6 @@ impl FromStr for Asset {
 
 impl Asset {
     pub fn merge(&mut self, other: Self) {
-        self.update = self.update.max(other.update);
         self.start = self.start.min(other.start);
 
         for tag in other.tags {
@@ -106,7 +102,6 @@ impl Asset {
             5 => format!(
                 "{}
     Tags:  [{}{}
-    Update: {}
     Start:  {}
     ",
                 self.name,
@@ -116,10 +111,6 @@ impl Asset {
                     .collect::<Vec<String>>()
                     .join(""),
                 if self.tags.is_empty() { "]" } else { "\n    ]" },
-                self.update
-                    .0
-                    .with_timezone(&Local::now().timezone())
-                    .to_rfc2822(),
                 self.start
                     .0
                     .with_timezone(&Local::now().timezone())

@@ -150,7 +150,7 @@ I want a standalone binary release from my code,
 - [x] Label or tag for vulnerabilities   
 - [x] Import file
 - [x] Number of urls, subs and ... for each program stringify
-- [ ] Update_at updates every time!
+- [x] Update_at updates every time!
 - [ ] Global search
 - [ ] Insert from file
 - [x] Graceful shutdown

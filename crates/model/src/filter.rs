@@ -35,6 +35,7 @@ impl Field {
 pub struct Filter {
     #[clap(short, default_value = "18446744073709551615")]
     pub n: usize,
+
     #[clap(long, short, default_value = "")]
     pub program: Regex,
     #[clap(long, default_value = "")]
@@ -63,8 +64,7 @@ pub struct Filter {
     pub severity: Regex,
     #[clap(long, default_value = "")]
     pub value: Regex,
-    #[clap(long, short)]
-    pub update: Option<i64>,
+
     #[clap(long, short)]
     pub start: Option<i64>,
 }
@@ -88,7 +88,6 @@ impl Default for Filter {
             severity: Regex::default(),
             value: Regex::default(),
 
-            update: None,
             start: None,
         }
     }
