@@ -42,14 +42,6 @@ pub use time::Time;
 
 pub type Errors = Box<dyn std::error::Error + Sync + Send>;
 
-pub fn date(date: &Time, hours: &Option<i64>) -> bool {
-    if let Some(h) = hours {
-        Utc::now() - chrono::Duration::hours(*h) < date.0
-    } else {
-        true
-    }
-}
-
 fn merge<T>(a: &mut Option<T>, b: Option<T>, new: bool) {
     if b.is_none() || !new && !a.is_none() {
         return;

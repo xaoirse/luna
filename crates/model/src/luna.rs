@@ -146,7 +146,7 @@ impl Luna {
         self.programs
             .iter()
             .filter(|p| filter.program(p))
-            .filter(|a| date(&a.start, &filter.start))
+            .filter(|a| filter.start.map_or(true, |t| t < a.start))
             .take(filter.n)
             .collect()
     }
@@ -154,7 +154,7 @@ impl Luna {
         self.programs
             .iter_mut()
             .filter(|p| filter.program(p))
-            .filter(|a| date(&a.start, &filter.start))
+            .filter(|a| filter.start.map_or(true, |t| t < a.start))
             .take(filter.n)
             .collect()
     }
@@ -174,7 +174,7 @@ impl Luna {
                 )
             })
             .filter(|a| filter.asset(a))
-            .filter(|a| date(&a.start, &filter.start))
+            .filter(|a| filter.start.map_or(true, |t| t < a.start))
             .take(filter.n)
             .collect()
     }
@@ -194,7 +194,7 @@ impl Luna {
                 )
             })
             .filter(|a| filter.asset(a))
-            .filter(|a| date(&a.start, &filter.start))
+            .filter(|a| filter.start.map_or(true, |t| t < a.start))
             .take(filter.n)
             .collect()
     }
@@ -207,7 +207,7 @@ impl Luna {
             .filter(|a| filter.asset(a))
             .flat_map(|a| &a.tags)
             .filter(|t| filter.tag(t))
-            .filter(|t| date(&t.start, &filter.start))
+            .filter(|a| filter.start.map_or(true, |t| t < a.start))
             .take(filter.n)
             .collect()
     }
@@ -219,7 +219,7 @@ impl Luna {
             .filter(|a| filter.asset(a))
             .flat_map(|a| &mut a.tags)
             .filter(|t| filter.tag(t))
-            .filter(|a| date(&a.start, &filter.start))
+            .filter(|a| filter.start.map_or(true, |t| t < a.start))
             .take(filter.n)
             .collect()
     }

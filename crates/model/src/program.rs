@@ -69,7 +69,7 @@ impl Program {
                 )
             })
             .filter(|a| filter.asset(a))
-            .filter(|a| date(&a.start, &filter.start))
+            .filter(|a| filter.start.map_or(true, |t| t < a.start))
             .take(filter.n)
             .collect()
     }

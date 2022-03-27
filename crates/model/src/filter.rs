@@ -60,13 +60,13 @@ pub struct Filter {
     pub resp: Option<Regex>,
     #[clap(long)]
     pub tag: Option<Regex>,
-    #[clap(long)]
+    #[clap(long = "sv")]
     pub severity: Option<Regex>,
     #[clap(long)]
     pub value: Option<Regex>,
 
-    #[clap(long, short)]
-    pub start: Option<i64>,
+    #[clap(long, short, name = "HOURS", help = "How many hours ago?")]
+    pub start: Option<Time>,
 }
 
 impl Default for Filter {
@@ -88,7 +88,7 @@ impl Default for Filter {
             severity: None,
             value: None,
 
-            start: None,
+            start: Some(Time::from_str(&i64::MAX.to_string()).unwrap()),
         }
     }
 }

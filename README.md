@@ -71,7 +71,7 @@ Example:
 - `asset`
     - `title`
     - `sc`
-    - `response`
+    - `resp`
 - `tag`
     - `severity`
     - `value`
