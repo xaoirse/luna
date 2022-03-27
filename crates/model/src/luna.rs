@@ -342,7 +342,7 @@ impl Luna {
                 "{}  {}
     Status:   {}
     Programs: {}
-    Asset:    {}
+    Assets:   {}
     Domains:  {}
     CIDRs:    {}
     Subs:     {}
@@ -369,7 +369,7 @@ impl Luna {
                 "{}  {}
     Status:   {}
     Programs: [{}{}
-    Asset:    {}
+    Assets:   {}
     Domains:  {}
     CIDRs:    {}
     Subs:     {}

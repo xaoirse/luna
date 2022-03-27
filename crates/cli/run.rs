@@ -245,7 +245,7 @@ pub fn run() {
                 };
 
                 let filter = Filter {
-                    asset: sub,
+                    asset: Some(sub),
                     ..Default::default()
                 };
                 dnsgen(luna.find(Field::Sub, &filter, 0), wl)

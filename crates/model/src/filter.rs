@@ -36,34 +36,34 @@ pub struct Filter {
     #[clap(short, default_value = "18446744073709551615")]
     pub n: usize,
 
-    #[clap(long, short, default_value = "")]
-    pub program: Regex,
-    #[clap(long, default_value = "")]
-    pub platform: Regex,
-    #[clap(long = "type", default_value = "")]
-    pub typ: Regex,
-    #[clap(long, default_value = "")]
-    pub url: Regex,
-    #[clap(long, default_value = "")]
-    pub handle: Regex,
-    #[clap(long, default_value = "")]
-    pub bounty: Regex,
-    #[clap(long, default_value = "")]
-    pub state: Regex,
-    #[clap(long, short, default_value = "")]
-    pub asset: Regex,
-    #[clap(long, default_value = "")]
-    pub sc: Regex,
-    #[clap(long, default_value = "")]
-    pub title: Regex,
-    #[clap(long, default_value = "")]
-    pub resp: Regex,
-    #[clap(long, default_value = "")]
-    pub tag: Regex,
-    #[clap(long, default_value = "")]
-    pub severity: Regex,
-    #[clap(long, default_value = "")]
-    pub value: Regex,
+    #[clap(long, short)]
+    pub program: Option<Regex>,
+    #[clap(long)]
+    pub platform: Option<Regex>,
+    #[clap(long = "type")]
+    pub typ: Option<Regex>,
+    #[clap(long)]
+    pub url: Option<Regex>,
+    #[clap(long)]
+    pub handle: Option<Regex>,
+    #[clap(long)]
+    pub bounty: Option<Regex>,
+    #[clap(long)]
+    pub state: Option<Regex>,
+    #[clap(long, short)]
+    pub asset: Option<Regex>,
+    #[clap(long, name = "STATUS CODE")]
+    pub sc: Option<Regex>,
+    #[clap(long)]
+    pub title: Option<Regex>,
+    #[clap(long, name = "RESPONSE")]
+    pub resp: Option<Regex>,
+    #[clap(long)]
+    pub tag: Option<Regex>,
+    #[clap(long)]
+    pub severity: Option<Regex>,
+    #[clap(long)]
+    pub value: Option<Regex>,
 
     #[clap(long, short)]
     pub start: Option<i64>,
@@ -73,20 +73,20 @@ impl Default for Filter {
     fn default() -> Self {
         Self {
             n: 18446744073709551615,
-            program: Regex::default(),
-            platform: Regex::default(),
-            typ: Regex::default(),
-            url: Regex::default(),
-            handle: Regex::default(),
-            bounty: Regex::default(),
-            state: Regex::default(),
-            asset: Regex::default(),
-            sc: Regex::default(),
-            title: Regex::default(),
-            resp: Regex::default(),
-            tag: Regex::default(),
-            severity: Regex::default(),
-            value: Regex::default(),
+            program: None,
+            platform: None,
+            typ: None,
+            url: None,
+            handle: None,
+            bounty: None,
+            state: None,
+            asset: None,
+            sc: None,
+            title: None,
+            resp: None,
+            tag: None,
+            severity: None,
+            value: None,
 
             start: None,
         }
@@ -113,34 +113,57 @@ impl FromStr for Regex {
         })
     }
 }
-impl Regex {
-    pub fn is_none(&self) -> bool {
-        self.cidr.is_none() && self.regex.is_none()
+
+trait RegexOpt {
+    fn is_none(&self) -> bool;
+    fn cidr_match(&self, cidr: &IpCidr) -> bool;
+    fn string_match(&self, str: &str) -> bool;
+    fn option_match(&self, str: &Option<String>) -> bool;
+}
+impl RegexOpt for Option<Regex> {
+    fn is_none(&self) -> bool {
+        if let Some(re) = self {
+            re.cidr.is_none() && re.regex.is_none()
+        } else {
+            true
+        }
     }
 
     fn cidr_match(&self, cidr: &IpCidr) -> bool {
-        if let Some(fcidr) = self.cidr {
-            fcidr.contains(&cidr.first_address()) || cidr.contains(&fcidr.first_address())
-        } else if let Some(re) = &self.regex {
-            re.is_match(&cidr.to_string())
+        if let Some(re) = self {
+            if let Some(fcidr) = re.cidr {
+                fcidr.contains(&cidr.first_address()) || cidr.contains(&fcidr.first_address())
+            } else if let Some(re) = &re.regex {
+                re.is_match(&cidr.to_string())
+            } else {
+                true
+            }
         } else {
             true
         }
     }
 
     fn string_match(&self, str: &str) -> bool {
-        if let Some(re) = &self.regex {
-            re.is_match(str)
+        if let Some(re) = self {
+            if let Some(re) = &re.regex {
+                re.is_match(str)
+            } else {
+                true
+            }
         } else {
             true
         }
     }
 
     fn option_match(&self, str: &Option<String>) -> bool {
-        match (&self.regex, str) {
-            (Some(re), Some(str)) => re.is_match(str),
-            (None, _) => true,
-            _ => false,
+        if let Some(re) = self {
+            match (&re.regex, str) {
+                (Some(re), Some(str)) => re.is_match(str),
+                (None, _) => true,
+                _ => false,
+            }
+        } else {
+            true
         }
     }
 }
@@ -198,23 +221,23 @@ mod test {
         use super::*;
 
         let str = "Mia";
-        let regex = Regex::from_str("m").unwrap();
+        let regex = Some(Regex::from_str("m").unwrap());
         assert!(regex.string_match(str));
 
         let str = "123";
-        let regex = Regex::from_str("2").unwrap();
+        let regex = Some(Regex::from_str("2").unwrap());
         assert!(regex.string_match(str));
 
         let str = "123";
-        let regex = Regex::from_str("5").unwrap();
+        let regex = Some(Regex::from_str("5").unwrap());
         assert!(!regex.string_match(str));
 
         let c = "1.1.1.0/24".parse::<IpCidr>().unwrap();
-        let regex = Regex::from_str("1.1.1.1/32").unwrap();
+        let regex = Some(Regex::from_str("1.1.1.1/32").unwrap());
         assert!(regex.cidr_match(&c));
 
         let str = "1.1.5.0/24";
-        let regex = Regex::from_str("1.1.1.1/32").unwrap();
+        let regex = Some(Regex::from_str("1.1.1.1/32").unwrap());
         assert!(!regex.string_match(str))
     }
 }

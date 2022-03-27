@@ -85,7 +85,7 @@ impl Program {
     Handle:   {}
     Bounty:   {}
     State:    {}
-    Asset:    {}
+    Assets:   {}
     Domains:  {}
     CIDRs:    {}
     Subs:     {}
@@ -118,6 +118,7 @@ impl Program {
     Handle:   {}
     Bounty:   {}
     State:    {}
+    Assets:   {}
     Domains: [{}{}
     CIDRs:    {}
     Subs:     {}
@@ -132,6 +133,7 @@ impl Program {
                 self.handle.as_ref().map_or("", |s| s),
                 self.bounty.as_ref().map_or("", |s| s),
                 self.state.as_ref().map_or("", |s| s),
+                self.assets.len(),
                 self.assets(Field::Domain, &Filter::default())
                     .iter()
                     .map(|s| format!("\n        {}", s.stringify(0)))
