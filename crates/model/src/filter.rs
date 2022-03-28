@@ -88,7 +88,7 @@ impl Default for Filter {
             severity: None,
             value: None,
 
-            start: Some(Time::from_str(&i64::MAX.to_string()).unwrap()),
+            start: Some(Time(Utc::now() - chrono::Duration::weeks(5400))),
         }
     }
 }
