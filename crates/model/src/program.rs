@@ -119,8 +119,8 @@ impl Program {
     Bounty:   {}
     State:    {}
     Assets:   {}
-    Domains: [{}{}
-    CIDRs:    {}
+    Domains:  [{}{}
+    CIDRs:    [{}{}
     Subs:     {}
     URLs:     {}
     Tags:     {}
@@ -144,7 +144,16 @@ impl Program {
                 } else {
                     "\n    ]"
                 },
-                self.assets(Field::Cidr, &Filter::default()).len(),
+                self.assets(Field::Cidr, &Filter::default())
+                    .iter()
+                    .map(|s| format!("\n        {}", s.stringify(0)))
+                    .collect::<Vec<String>>()
+                    .join(""),
+                if self.assets(Field::Cidr, &Filter::default()).is_empty() {
+                    "]"
+                } else {
+                    "\n    ]"
+                },
                 self.assets(Field::Sub, &Filter::default()).len(),
                 self.assets(Field::Url, &Filter::default()).len(),
                 self.assets(Field::Tag, &Filter::default()).len(),

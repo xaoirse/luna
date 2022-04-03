@@ -126,7 +126,9 @@ impl Luna {
     }
 
     pub fn program_by_name(&mut self, name: &str) -> Option<&mut Program> {
-        self.programs.par_iter_mut().find_any(|p| p.name == name)
+        self.programs
+            .par_iter_mut()
+            .find_any(|p| p.name.to_lowercase() == name.to_lowercase())
     }
     pub fn program_by_asset(&mut self, asset: &AssetName) -> Option<&mut Program> {
         self.programs.par_iter_mut().find_any(|p| {

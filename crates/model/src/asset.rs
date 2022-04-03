@@ -101,7 +101,7 @@ impl Asset {
             ),
             5 => format!(
                 "{}
-    Tags:  [{}{}
+    Tags:   [{}{}
     Start:  {}
     ",
                 self.name,
