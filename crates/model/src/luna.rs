@@ -37,7 +37,15 @@ impl Luna {
         }
     }
 
-    pub fn insert_program(&mut self, program: Program) -> Result<(), Errors> {
+    pub fn insert_program(&mut self, mut program: Program) -> Result<(), Errors> {
+        for asset in std::mem::take(&mut program.assets) {
+            if let Some(a) = self.asset_by_name(&asset.name) {
+                a.merge(asset);
+            } else {
+                program.assets.push(asset);
+            }
+        }
+
         if let Some(p) = self.program_by_name(&program.name) {
             p.merge(program);
         } else {
@@ -61,7 +69,7 @@ impl Luna {
                             }
                         }
                     }
-                    return Err(format!("oos: {}", request.url).into());
+                    return Err(format!("OOS: {}", request.url).into());
                 }
 
                 AssetName::Subdomain(s) => {
@@ -72,7 +80,7 @@ impl Luna {
                         }
                     }
 
-                    return Err(format!("oos: {}", s).into());
+                    return Err(format!("OOS: {}", s).into());
                 }
 
                 AssetName::Domain(d) => {
@@ -85,7 +93,7 @@ impl Luna {
                         }
                         return Ok(());
                     }
-                    return Err(format!("oop: {}", d).into());
+                    return Err(format!("OOP: {}", d).into());
                 }
                 AssetName::Cidr(c) => {
                     if let Some(mut pr) = program {
@@ -97,7 +105,7 @@ impl Luna {
                         }
                         return Ok(());
                     }
-                    return Err(format!("oop: {}", c).into());
+                    return Err(format!("OOP: {}", c).into());
                 }
             }
         }
@@ -118,10 +126,10 @@ impl Luna {
                 pr.assets.push(asset);
                 Ok(())
             } else {
-                Err("oos".into())
+                Err("OOS".into())
             }
         } else {
-            Err("oop".into())
+            Err("OOP".into())
         }
     }
 

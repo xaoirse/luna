@@ -7,6 +7,7 @@ use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use regex::bytes::Regex;
 use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
 use std::{
     collections::HashSet,
     fmt::{self, Display},

@@ -1,5 +1,3 @@
-use std::sync::Mutex;
-
 use super::*;
 
 fn parse(text: &[u8], regex: &Regex) -> Vec<Asset> {
@@ -64,6 +62,8 @@ pub struct Script {
 
 impl Script {
     fn execute(&self, luna: &mut Luna, filter: &Filter, term: Arc<AtomicBool>) {
+        debug!("{}", self.command);
+
         let elements = luna.find(self.field, filter, 0);
 
         let ps = ProgressStyle::default_bar()
@@ -87,7 +87,8 @@ impl Script {
                 .with_finish(ProgressFinish::WithMessage(self.command.clone().into()));
         }
 
-        let luna = Arc::new(Mutex::new(luna));
+        let luna = Mutex::new(luna);
+
         elements
             .par_iter()
             .filter_map(|input| {
@@ -125,6 +126,8 @@ impl Script {
                         assets.extend(parse(bytes, &self.regex));
                     }
 
+                    debug!("Stdout assets len: {} {}", &assets.len(), cmd);
+
                     pb.inc(1);
 
                     Some(assets)
@@ -134,13 +137,14 @@ impl Script {
                 }
             })
             .for_each(|assets| {
+                let mut luna = luna.lock().unwrap();
                 for asset in assets {
                     debug!("Insert: {}", asset.stringify(2));
-                    if let Err(err) = luna.lock().unwrap().insert_asset(asset, None) {
+                    if let Err(err) = luna.insert_asset(asset, None) {
                         warn!("{err}");
-                    }
+                    };
                 }
-            })
+            });
     }
 }
 
