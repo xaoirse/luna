@@ -102,7 +102,7 @@ impl Script {
 
                 pb.set_message(cmd.clone());
 
-                let child = match Command::new("sh")
+                let mut child = match Command::new("sh")
                     .current_dir(&self.cd)
                     .arg("-c")
                     .arg(&cmd)
@@ -116,7 +116,7 @@ impl Script {
                     }
                 };
 
-                if let Some(mut stdout) = child.stdout {
+                let assets = if let Some(mut stdout) = child.stdout.take() {
                     const S: usize = 4096;
                     let mut buf: FixedBuf<S> = FixedBuf::new();
 
@@ -134,7 +134,14 @@ impl Script {
                 } else {
                     error!("Executing: {cmd}");
                     None
+                };
+
+                match child.wait() {
+                    Ok(stat) => debug!("Exitstatus: {stat} {cmd}"),
+                    Err(err) => debug!("ExitError: {err} {cmd}"),
                 }
+
+                assets
             })
             .for_each(|assets| {
                 let mut luna = luna.lock().unwrap();
