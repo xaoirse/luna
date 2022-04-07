@@ -2,11 +2,9 @@ use clap::{Parser, Subcommand};
 use colored::*;
 use dnsgen::dnsgen;
 use log::{debug, error, info, warn};
-use model::filter::Regex;
 use model::*;
 use std::{
     path::PathBuf,
-    str::FromStr,
     sync::{atomic::AtomicBool, Arc},
 };
 
@@ -45,7 +43,7 @@ pub enum Cli {
     },
     Check(Check),
     Stat(LunaStat),
-    Dnsgen(Dnsgen),
+    Dnsgen(Box<Dnsgen>),
     Report(Report),
     #[clap(subcommand)]
     Server(Server),
@@ -101,11 +99,12 @@ pub struct InsertTag {
     pub tag: Tag,
 }
 
-#[derive(Debug, Parser)]
+#[derive(Parser)]
 pub struct Dnsgen {
-    pub sub: String,
     #[clap(short, long)]
     pub wl: Option<PathBuf>,
+    #[clap(flatten)]
+    pub filter: Filter,
 }
 
 #[derive(Debug, Parser)]
@@ -233,25 +232,19 @@ pub fn run() {
         }
         Cli::Stat(s) => println!("{}", luna.stringify(s.verbose + 2)),
         Cli::Dnsgen(dg) => {
-            if let Ok(sub) = Regex::from_str(&dg.sub) {
-                let wl = if let Some(path) = dg.wl {
-                    std::fs::read_to_string(path)
-                        .unwrap()
-                        .split_ascii_whitespace()
-                        .map(String::from)
-                        .collect()
-                } else {
-                    vec!["dev".to_string(), "test".to_string()]
-                };
+            let wl = if let Some(path) = dg.wl {
+                std::fs::read_to_string(path)
+                    .unwrap()
+                    .split_ascii_whitespace()
+                    .map(String::from)
+                    .collect()
+            } else {
+                vec!["dev".to_string(), "test".to_string()]
+            };
 
-                let filter = Filter {
-                    asset: Some(sub),
-                    ..Default::default()
-                };
-                dnsgen(luna.find(Field::Sub, &filter, 0), wl)
-                    .into_iter()
-                    .for_each(|s| println!("{s}"))
-            }
+            dnsgen(luna.find(Field::Sub, &dg.filter, 0), wl)
+                .into_iter()
+                .for_each(|s| println!("{s}"))
         }
         Cli::Report(_) => todo!(),
         Cli::Server(_) => todo!(),

@@ -161,4 +161,4 @@ I want a standalone binary release from my code,
 - [ ] Benchmarks
 - [ ] Tests
 - [ ] Job
-- [ ] Concurrent access? Lock luna.json?
+- [ ] [High] Concurrent access? Lock luna.json?
