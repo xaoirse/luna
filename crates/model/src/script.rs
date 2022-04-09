@@ -89,61 +89,45 @@ impl Script {
 
         let luna = Mutex::new(luna);
 
-        elements
-            .par_iter()
-            .filter_map(|input| {
-                if term.load(Ordering::Relaxed) {
-                    warn!("Command aborted! {} => {}", input, self.command);
-                    return None;
+        elements.par_iter().for_each(|input| {
+            if term.load(Ordering::Relaxed) {
+                warn!("Command aborted! {} => {}", input, self.command);
+                return;
+            }
+
+            let cmd = self.command.replace(&self.field.substitution(), input);
+            debug!("Command: {}", &cmd);
+
+            pb.set_message(cmd.clone());
+
+            let mut child = match Command::new("sh")
+                .current_dir(&self.cd)
+                .arg("-c")
+                .arg(&cmd)
+                .stdout(Stdio::piped())
+                .spawn()
+            {
+                Ok(child) => child,
+                Err(err) => {
+                    error!("{err}");
+                    return;
+                }
+            };
+
+            if let Some(mut stdout) = child.stdout.take() {
+                const S: usize = 4096;
+                let mut buf: FixedBuf<S> = FixedBuf::new();
+
+                let mut assets = vec![];
+
+                while let Ok(Some(bytes)) = buf.read_frame(&mut stdout, deframe_line) {
+                    assets.extend(parse(bytes, &self.regex));
                 }
 
-                let cmd = self.command.replace(&self.field.substitution(), input);
-                debug!("Command: {}", &cmd);
+                debug!("Stdout assets len: {} {}", &assets.len(), cmd);
 
-                pb.set_message(cmd.clone());
+                pb.inc(1);
 
-                let mut child = match Command::new("sh")
-                    .current_dir(&self.cd)
-                    .arg("-c")
-                    .arg(&cmd)
-                    .stdout(Stdio::piped())
-                    .spawn()
-                {
-                    Ok(child) => child,
-                    Err(err) => {
-                        error!("{err}");
-                        return None;
-                    }
-                };
-
-                let assets = if let Some(mut stdout) = child.stdout.take() {
-                    const S: usize = 4096;
-                    let mut buf: FixedBuf<S> = FixedBuf::new();
-
-                    let mut assets = vec![];
-
-                    while let Ok(Some(bytes)) = buf.read_frame(&mut stdout, deframe_line) {
-                        assets.extend(parse(bytes, &self.regex));
-                    }
-
-                    debug!("Stdout assets len: {} {}", &assets.len(), cmd);
-
-                    pb.inc(1);
-
-                    Some(assets)
-                } else {
-                    error!("Executing: {cmd}");
-                    None
-                };
-
-                match child.wait() {
-                    Ok(stat) => debug!("Exitstatus: {stat} {cmd}"),
-                    Err(err) => debug!("ExitError: {err} {cmd}"),
-                }
-
-                assets
-            })
-            .for_each(|assets| {
                 let mut luna = luna.lock().unwrap();
                 for asset in assets {
                     debug!("Insert: {}", asset.stringify(2));
@@ -151,7 +135,15 @@ impl Script {
                         warn!("{err}");
                     };
                 }
-            });
+            } else {
+                error!("Executing: {cmd}");
+            }
+
+            match child.wait() {
+                Ok(stat) => debug!("Exitstatus: {stat} {cmd}"),
+                Err(err) => debug!("ExitError: {err} {cmd}"),
+            };
+        });
     }
 }
 
