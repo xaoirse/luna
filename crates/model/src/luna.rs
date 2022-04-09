@@ -265,10 +265,15 @@ impl Luna {
                 .tags_mut(filter)
                 .iter_mut()
                 .for_each(|t| t.values.retain(|v| !filter.value(v))),
-            _ => self
-                .programs_mut(filter)
-                .iter_mut()
-                .for_each(|p| p.assets.retain(|a| !filter.asset(a))),
+            _ => self.programs_mut(filter).iter_mut().for_each(|p| {
+                p.assets.retain(|a| match (field, &a.name) {
+                    (Field::Domain, AssetName::Domain(_)) => !filter.asset(a),
+                    (Field::Sub, AssetName::Subdomain(_)) => !filter.asset(a),
+                    (Field::Url, AssetName::Url(_)) => !filter.asset(a),
+                    (Field::Cidr, AssetName::Cidr(_)) => !filter.asset(a),
+                    _ => true,
+                })
+            }),
         }
     }
 

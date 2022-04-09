@@ -105,7 +105,7 @@ impl Program {
                 self.assets(Field::Cidr, &Filter::default()).len(),
                 self.assets(Field::Sub, &Filter::default()).len(),
                 self.assets(Field::Url, &Filter::default()).len(),
-                self.assets(Field::Tag, &Filter::default()).len(),
+                self.assets.iter().flat_map(|a| &a.tags).count(),
                 self.start
                     .0
                     .with_timezone(&Local::now().timezone())
@@ -156,7 +156,7 @@ impl Program {
                 },
                 self.assets(Field::Sub, &Filter::default()).len(),
                 self.assets(Field::Url, &Filter::default()).len(),
-                self.assets(Field::Tag, &Filter::default()).len(),
+                self.assets.iter().flat_map(|a| &a.tags).count(),
                 self.start
                     .0
                     .with_timezone(&Local::now().timezone())
