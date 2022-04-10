@@ -100,7 +100,7 @@ impl Script {
 
             pb.set_message(cmd.clone());
 
-            let mut child = match Command::new("sh")
+            let child = match Command::new("sh")
                 .current_dir(&self.cd)
                 .arg("-c")
                 .arg(&cmd)
@@ -114,35 +114,27 @@ impl Script {
                 }
             };
 
-            if let Some(mut stdout) = child.stdout.take() {
-                const S: usize = 4096;
-                let mut buf: FixedBuf<S> = FixedBuf::new();
-
-                let mut assets = vec![];
-
-                while let Ok(Some(bytes)) = buf.read_frame(&mut stdout, deframe_line) {
-                    assets.extend(parse(bytes, &self.regex));
+            let output = match child.wait_with_output() {
+                Ok(output) => output,
+                Err(err) => {
+                    debug!("Error on waiting for output: {err} {cmd}");
+                    return;
                 }
-
-                debug!("Stdout assets len: {} {}", &assets.len(), cmd);
-
-                pb.inc(1);
-
-                let mut luna = luna.lock().unwrap();
-                for asset in assets {
-                    debug!("Insert: {}", asset.stringify(2));
-                    if let Err(err) = luna.insert_asset(asset, None) {
-                        warn!("{err}");
-                    };
-                }
-            } else {
-                error!("Executing: {cmd}");
-            }
-
-            match child.wait() {
-                Ok(stat) => debug!("Exitstatus: {stat} {cmd}"),
-                Err(err) => debug!("ExitError: {err} {cmd}"),
             };
+
+            let assets = parse(&output.stdout, &self.regex);
+
+            debug!("Stdout assets len: {} {}", &assets.len(), cmd);
+
+            pb.inc(1);
+
+            let mut luna = luna.lock().unwrap();
+            for asset in assets {
+                debug!("Insert: {}", asset.stringify(2));
+                if let Err(err) = luna.insert_asset(asset, None) {
+                    warn!("{err}");
+                };
+            }
         });
     }
 }

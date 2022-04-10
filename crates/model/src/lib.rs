@@ -1,7 +1,6 @@
 use chrono::{DateTime, Local, Utc};
 use cidr::IpCidr;
 use clap::{ArgEnum, Parser};
-use fixed_buffer::{deframe_line, FixedBuf};
 use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
