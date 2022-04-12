@@ -93,37 +93,45 @@ impl Default for Filter {
     }
 }
 
-#[derive(Default)]
-pub struct Regex {
-    pub cidr: Option<IpCidr>,
-    pub regex: Option<regex::Regex>,
+pub enum Regex {
+    Cidr(IpCidr),
+    Regex(regex::Regex),
+    Empty,
+}
+impl Default for Regex {
+    fn default() -> Regex {
+        Regex::Empty
+    }
 }
 
 impl FromStr for Regex {
     type Err = Errors;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {
-            regex: if s.is_empty() {
-                None
+        if s.is_empty() {
+            Ok(Self::Empty)
+        } else if s.contains('.') {
+            if let Ok(cidr) = s.parse::<IpCidr>() {
+                Ok(Self::Cidr(cidr))
             } else {
-                regex::Regex::new(&format!("(?i){}", s)).ok()
-            },
-            cidr: s.parse::<IpCidr>().ok(),
-        })
+                Ok(Self::Regex(regex::Regex::new(&format!("(?i){}", s))?))
+            }
+        } else {
+            Ok(Self::Regex(regex::Regex::new(&format!("(?i){}", s))?))
+        }
     }
 }
 
 trait RegexOpt {
-    fn is_none(&self) -> bool;
+    fn is_empty(&self) -> bool;
     fn cidr_match(&self, cidr: &IpCidr) -> bool;
     fn string_match(&self, str: &str) -> bool;
     fn option_match(&self, str: &Option<String>) -> bool;
 }
 impl RegexOpt for Option<Regex> {
-    fn is_none(&self) -> bool {
+    fn is_empty(&self) -> bool {
         if let Some(re) = self {
-            re.cidr.is_none() && re.regex.is_none()
+            matches!(re, Regex::Empty)
         } else {
             true
         }
@@ -131,12 +139,12 @@ impl RegexOpt for Option<Regex> {
 
     fn cidr_match(&self, cidr: &IpCidr) -> bool {
         if let Some(re) = self {
-            if let Some(fcidr) = re.cidr {
-                fcidr.contains(&cidr.first_address()) || cidr.contains(&fcidr.first_address())
-            } else if let Some(re) = &re.regex {
-                re.is_match(&cidr.to_string())
-            } else {
-                true
+            match re {
+                Regex::Cidr(fcidr) => {
+                    fcidr.contains(&cidr.first_address()) || cidr.contains(&fcidr.first_address())
+                }
+                Regex::Regex(_) => false,
+                Regex::Empty => true,
             }
         } else {
             true
@@ -145,10 +153,10 @@ impl RegexOpt for Option<Regex> {
 
     fn string_match(&self, str: &str) -> bool {
         if let Some(re) = self {
-            if let Some(re) = &re.regex {
-                re.is_match(str)
-            } else {
-                true
+            match re {
+                Regex::Cidr(_) => false,
+                Regex::Regex(re) => re.is_match(str),
+                Regex::Empty => true,
             }
         } else {
             true
@@ -157,10 +165,10 @@ impl RegexOpt for Option<Regex> {
 
     fn option_match(&self, str: &Option<String>) -> bool {
         if let Some(re) = self {
-            match (&re.regex, str) {
-                (Some(re), Some(str)) => re.is_match(str),
-                (None, _) => true,
-                _ => false,
+            match (re, str) {
+                (Regex::Cidr(_), _) => false,
+                (Regex::Regex(re), Some(str)) => re.is_match(str),
+                _ => true,
             }
         } else {
             true
