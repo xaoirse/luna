@@ -168,6 +168,7 @@ impl RegexOpt for Option<Regex> {
             match (re, str) {
                 (Regex::Cidr(_), _) => false,
                 (Regex::Regex(re), Some(str)) => re.is_match(str),
+                (Regex::Regex(_), None) => false,
                 _ => true,
             }
         } else {
@@ -185,7 +186,7 @@ impl Filter {
             && self.handle.option_match(&program.handle)
             && self.bounty.option_match(&program.bounty)
             && self.state.option_match(&program.state)
-            && (self.asset_is_none() || program.assets.par_iter().any(|a| self.asset(a)))
+            && (self.asset_is_empty() || program.assets.par_iter().any(|a| self.asset(a)))
     }
     pub fn asset(&self, asset: &Asset) -> bool {
         (match &asset.name {
@@ -198,31 +199,88 @@ impl Filter {
                     && self.resp.option_match(&req.resp)
             }
             AssetName::Cidr(c) => self.asset.cidr_match(c),
-        }) && (self.tag_is_none() || asset.tags.par_iter().any(|a| self.tag(a)))
+        }) && (self.tag_is_empty() || asset.tags.par_iter().any(|a| self.tag(a)))
     }
     pub fn tag(&self, tag: &Tag) -> bool {
         self.tag.string_match(&tag.name)
             && self.severity.option_match(&tag.severity)
-            && (self.value.is_none() || tag.values.par_iter().any(|v| self.value.string_match(v)))
+            && (self.value.is_empty() || tag.values.par_iter().any(|v| self.value.string_match(v)))
     }
     pub fn value(&self, str: &str) -> bool {
         self.value.string_match(str)
     }
 
-    pub fn asset_is_none(&self) -> bool {
-        self.asset.is_none()
-            && self.url.is_none()
-            && self.sc.is_none()
-            && self.title.is_none()
-            && self.resp.is_none()
-            && self.tag_is_none()
+    pub fn asset_is_empty(&self) -> bool {
+        self.asset.is_empty()
+            && self.url.is_empty()
+            && self.sc.is_empty()
+            && self.title.is_empty()
+            && self.resp.is_empty()
+            && self.tag_is_empty()
     }
-    pub fn tag_is_none(&self) -> bool {
-        self.tag.is_none() && self.severity.is_none() && self.value.is_none()
+    pub fn tag_is_empty(&self) -> bool {
+        self.tag.is_empty() && self.severity.is_empty() && self.value.is_empty()
     }
 }
 
 mod test {
+
+    #[test]
+    fn asset() {
+        use super::*;
+
+        let mut asset = Asset::from_str("google.com").unwrap();
+
+        asset.tags.push(Tag {
+            name: "sql".to_string(),
+            severity: Some("High".to_string()),
+            ..Default::default()
+        });
+
+        let filter1 = Filter {
+            asset: Some(Regex::from_str("goo").unwrap()),
+            ..Default::default()
+        };
+        assert!(filter1.asset(&asset));
+
+        let filter2 = Filter {
+            severity: Some(Regex::from_str("Hi").unwrap()),
+            ..Default::default()
+        };
+        assert!(filter2.asset(&asset));
+
+        let filter3 = Filter {
+            severity: Some(Regex::from_str("L").unwrap()),
+            ..Default::default()
+        };
+        assert!(!filter3.asset(&asset));
+    }
+
+    #[test]
+    fn asset_is_empty() {
+        use super::*;
+        let f = Filter {
+            asset: Some(Regex::from_str("mia").unwrap()),
+            ..Default::default()
+        };
+        assert!(!f.asset_is_empty());
+        assert!(f.tag_is_empty());
+
+        let f = Filter {
+            asset: Some(Regex::from_str("mia").unwrap()),
+            severity: Some(Regex::from_str("mia").unwrap()),
+            ..Default::default()
+        };
+        assert!(!f.asset_is_empty());
+        assert!(!f.tag_is_empty());
+
+        let f = Filter {
+            severity: Some(Regex::from_str("mia").unwrap()),
+            ..Default::default()
+        };
+        assert!(!f.asset_is_empty());
+        assert!(!f.tag_is_empty());
+    }
 
     #[test]
     fn regex_match() {

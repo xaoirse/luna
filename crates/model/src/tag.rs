@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Clone, Parser, Default, Deserialize, Serialize)]
 pub struct Tag {
     pub name: String,
-    #[clap(long)]
+    #[clap(long = "sv")]
     pub severity: Option<String>,
 
     #[clap(long, multiple_values = true)]

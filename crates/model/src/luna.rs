@@ -421,3 +421,44 @@ impl Luna {
         }
     }
 }
+
+mod test {
+    use super::*;
+    fn get_luna() -> Luna {
+        let mut luna = Luna::default();
+
+        let mut program = Program::from_str("google").unwrap();
+
+        let mut asset = Asset::from_str("google.com").unwrap();
+
+        let mut tag = Tag::from_str("sql").unwrap();
+
+        tag.severity = Some("high".to_string());
+
+        asset.tags.push(tag);
+
+        program.assets.push(asset);
+
+        luna.insert_program(program).unwrap();
+
+        luna
+    }
+    #[test]
+    fn find() {
+        let luna = get_luna();
+
+        let filter = Filter {
+            severity: Some(filter::Regex::from_str("high").unwrap()),
+            ..Default::default()
+        };
+        let res = luna.find(Field::Asset, &filter, 0);
+        assert_eq!(res, vec!["google.com"]);
+
+        let filter = Filter {
+            severity: Some(filter::Regex::from_str("low").unwrap()),
+            ..Default::default()
+        };
+        let res = luna.find(Field::Asset, &filter, 0);
+        assert!(res.is_empty());
+    }
+}
