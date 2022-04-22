@@ -44,7 +44,7 @@ impl Asset {
         }
     }
     pub fn tag_by_name(&mut self, name: &str) -> Option<&mut Tag> {
-        self.tags.par_iter_mut().find_any(|t| t.name == name)
+        self.tags.iter_mut().find(|t| t.name == name)
     }
 
     pub fn stringify(&self, v: u8) -> String {

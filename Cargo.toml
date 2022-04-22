@@ -1,6 +1,6 @@
 [package]
 name = "luna"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["SAoirse <https://github.com/xaoirse>"]
 description = "A Reconnaissance Tool"
 readme = "README.md"
@@ -20,7 +20,7 @@ log = "0.4"
 env_logger = "0.8.4"
 colored = "2"
 clap = { version = "3.1", features = ["derive","suggestions", "color","wrap_help" ] }
-rayon = "1.5"
+rayon = "1.5.2"
 signal-hook = "*"
 model = {path = "crates/model"}
 dnsgen =  {path = "crates/dnsgen"}

@@ -109,6 +109,7 @@ impl Luna {
                 }
             }
         }
+
         Ok(())
     }
 
@@ -135,21 +136,19 @@ impl Luna {
 
     pub fn program_by_name(&mut self, name: &str) -> Option<&mut Program> {
         self.programs
-            .par_iter_mut()
-            .find_any(|p| p.name.to_lowercase() == name.to_lowercase())
+            .iter_mut()
+            .find(|p| p.name.to_lowercase() == name.to_lowercase())
     }
     pub fn program_by_asset(&mut self, asset: &AssetName) -> Option<&mut Program> {
-        self.programs.par_iter_mut().find_any(|p| {
-            p.assets
-                .par_iter()
-                .any(|a| a.name.domain() == asset.domain())
-        })
+        self.programs
+            .iter_mut()
+            .find(|p| p.assets.iter().any(|a| a.name.domain() == asset.domain()))
     }
     pub fn asset_by_name(&mut self, name: &AssetName) -> Option<&mut Asset> {
         self.programs
-            .par_iter_mut()
+            .iter_mut()
             .flat_map(|p| &mut p.assets)
-            .find_any(|a| &a.name == name)
+            .find(|a| &a.name == name)
     }
 
     pub fn programs(&self, filter: &Filter) -> Vec<&Program> {
@@ -424,6 +423,39 @@ impl Luna {
 
 mod test {
     use super::*;
+
+    // https://github.com/rayon-rs/rayon/issues/592#issue-357025113
+    #[test]
+    fn insert() {
+        let mut luna = Luna::default();
+        let mut program = Program::from_str("test").unwrap();
+        let asset = Asset::from_str("test.com").unwrap();
+        program.assets.push(asset);
+        luna.programs.push(program);
+
+        let i = 0;
+        let i = Mutex::new(i);
+
+        let luna = Arc::new(Mutex::new(luna));
+
+        for _ in 0..100 {
+            (0..10).into_par_iter().for_each(|_| {
+                let asset = Asset::from_str("a.test.com").unwrap();
+                let mut i = i.lock().unwrap();
+
+                println!("{} s", i);
+
+                if let Err(err) = luna.lock().unwrap().insert_asset(asset, None) {
+                    assert_eq!(err.to_string(), "OOS: a.test.com".to_string())
+                };
+
+                println!("{i} e");
+                *i += 1;
+            });
+        }
+    }
+
+    #[allow(dead_code)]
     fn get_luna() -> Luna {
         let mut luna = Luna::default();
 

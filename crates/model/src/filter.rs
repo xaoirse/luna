@@ -186,7 +186,7 @@ impl Filter {
             && self.handle.option_match(&program.handle)
             && self.bounty.option_match(&program.bounty)
             && self.state.option_match(&program.state)
-            && (self.asset_is_empty() || program.assets.par_iter().any(|a| self.asset(a)))
+            && (self.asset_is_empty() || program.assets.iter().any(|a| self.asset(a)))
     }
     pub fn asset(&self, asset: &Asset) -> bool {
         (match &asset.name {
@@ -199,12 +199,12 @@ impl Filter {
                     && self.resp.option_match(&req.resp)
             }
             AssetName::Cidr(c) => self.asset.cidr_match(c),
-        }) && (self.tag_is_empty() || asset.tags.par_iter().any(|a| self.tag(a)))
+        }) && (self.tag_is_empty() || asset.tags.iter().any(|a| self.tag(a)))
     }
     pub fn tag(&self, tag: &Tag) -> bool {
         self.tag.string_match(&tag.name)
             && self.severity.option_match(&tag.severity)
-            && (self.value.is_empty() || tag.values.par_iter().any(|v| self.value.string_match(v)))
+            && (self.value.is_empty() || tag.values.iter().any(|v| self.value.string_match(v)))
     }
     pub fn value(&self, str: &str) -> bool {
         self.value.string_match(str)

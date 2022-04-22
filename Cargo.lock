@@ -386,13 +386,12 @@ dependencies = [
 
 [[package]]
 name = "indicatif"
-version = "0.17.0-rc.5"
+version = "0.17.0-rc.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04a9b1bacd1a40927c953c5c4485089d8ecc9642cb03e7734eac8a74e8c5b508"
+checksum = "088977cb4de4e09ea0232bd51c844490475ad94344fb0c60784f1fb380059b6d"
 dependencies = [
  "console",
  "number_prefix",
- "rayon",
  "unicode-width",
 ]
 
@@ -443,7 +442,7 @@ dependencies = [
 
 [[package]]
 name = "luna"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "clap 3.1.3",
  "colored",
@@ -480,7 +479,7 @@ dependencies = [
 
 [[package]]
 name = "model"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "addr",
  "chrono",
@@ -688,9 +687,9 @@ dependencies = [
 
 [[package]]
 name = "rayon"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c06aca804d41dbc8ba42dfd964f0d01334eceb64314b9ecf7c5fad5188a06d90"
+checksum = "fd249e82c21598a9a426a4e00dd7adc1d640b22445ec8545feef801d1a74c221"
 dependencies = [
  "autocfg",
  "crossbeam-deque",
@@ -700,14 +699,13 @@ dependencies = [
 
 [[package]]
 name = "rayon-core"
-version = "1.9.1"
+version = "1.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d78120e2c850279833f1dd3582f730c4ab53ed95aeaaaa862a2a5c71b1656d8e"
+checksum = "9f51245e1e62e1f1629cbfec37b5793bbabcaeb90f30e94d2ba03564687353e4"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-deque",
  "crossbeam-utils",
- "lazy_static",
  "num_cpus",
 ]
 
