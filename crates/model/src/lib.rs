@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local, Utc};
-use cidr::IpCidr;
 use clap::{ArgEnum, Parser};
 use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
+use ipnet::IpNet;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use regex::bytes::Regex;
@@ -27,7 +27,6 @@ pub mod luna;
 pub mod program;
 pub mod request;
 pub mod script;
-pub mod serde_cidr;
 pub mod tag;
 pub mod time;
 

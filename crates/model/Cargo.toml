@@ -16,3 +16,4 @@ cidr = "0.2.1"
 indicatif = {version = "0.17.0-rc.10"}
 url = { version = "2.2", features = ["serde"] }
 addr = "*"
+ipnet = { version = "2.5", features = ["serde"] }

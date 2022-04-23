@@ -55,6 +55,31 @@ impl Program {
             }
         }
     }
+
+    pub fn aggregate(&mut self) {
+        let nets = self
+            .assets
+            .iter()
+            .filter_map(|a| match a.name {
+                AssetName::Cidr(c) => Some(c),
+                _ => None,
+            })
+            .collect();
+
+        self.assets
+            .retain(|a| !matches!(a.name, AssetName::Cidr(_)));
+
+        let nets = IpNet::aggregate(&nets);
+
+        for n in nets {
+            self.assets.push(Asset {
+                name: AssetName::Cidr(n),
+                tags: vec![],
+                start: time::Time::default(),
+            });
+        }
+    }
+
     pub fn assets(&self, field: Field, filter: &Filter) -> Vec<&Asset> {
         self.assets
             .iter()

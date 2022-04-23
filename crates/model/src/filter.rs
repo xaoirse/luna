@@ -94,7 +94,7 @@ impl Default for Filter {
 }
 
 pub enum Regex {
-    Cidr(IpCidr),
+    Cidr(IpNet),
     Regex(regex::Regex),
     Empty,
 }
@@ -111,7 +111,7 @@ impl FromStr for Regex {
         if s.is_empty() {
             Ok(Self::Empty)
         } else if s.contains('.') {
-            if let Ok(cidr) = s.parse::<IpCidr>() {
+            if let Ok(cidr) = s.parse::<IpNet>() {
                 Ok(Self::Cidr(cidr))
             } else {
                 Ok(Self::Regex(regex::Regex::new(&format!("(?i){}", s))?))
@@ -124,7 +124,7 @@ impl FromStr for Regex {
 
 trait RegexOpt {
     fn is_empty(&self) -> bool;
-    fn cidr_match(&self, cidr: &IpCidr) -> bool;
+    fn cidr_match(&self, cidr: &IpNet) -> bool;
     fn string_match(&self, str: &str) -> bool;
     fn option_match(&self, str: &Option<String>) -> bool;
 }
@@ -137,12 +137,10 @@ impl RegexOpt for Option<Regex> {
         }
     }
 
-    fn cidr_match(&self, cidr: &IpCidr) -> bool {
+    fn cidr_match(&self, cidr: &IpNet) -> bool {
         if let Some(re) = self {
             match re {
-                Regex::Cidr(fcidr) => {
-                    fcidr.contains(&cidr.first_address()) || cidr.contains(&fcidr.first_address())
-                }
+                Regex::Cidr(fcidr) => fcidr.contains(cidr) || cidr.contains(fcidr),
                 Regex::Regex(_) => false,
                 Regex::Empty => true,
             }
@@ -298,7 +296,7 @@ mod test {
         let regex = Some(Regex::from_str("5").unwrap());
         assert!(!regex.string_match(str));
 
-        let c = "1.1.1.0/24".parse::<IpCidr>().unwrap();
+        let c = "1.1.1.0/24".parse::<IpNet>().unwrap();
         let regex = Some(Regex::from_str("1.1.1.1/32").unwrap());
         assert!(regex.cidr_match(&c));
 

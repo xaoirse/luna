@@ -3,10 +3,8 @@ use super::*;
 #[derive(Debug, Clone, Parser, Deserialize, Serialize)]
 pub struct Asset {
     pub name: AssetName,
-
     #[clap(long, short, multiple_values = true)]
     pub tags: Vec<Tag>,
-
     #[clap(skip)]
     pub start: Time,
 }
@@ -127,8 +125,7 @@ pub enum AssetName {
     Domain(String),
     Subdomain(Host),
     Url(Request),
-    #[serde(with = "super::serde_cidr")]
-    Cidr(IpCidr),
+    Cidr(IpNet),
 }
 
 impl AssetName {
@@ -189,7 +186,9 @@ impl FromStr for AssetName {
     type Err = Errors;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(cidr) = s.parse::<IpCidr>() {
+        if let Ok(cidr) = s.parse::<IpNet>() {
+            Ok(AssetName::Cidr(cidr))
+        } else if let Ok(cidr) = format!("{s}/32").parse::<IpNet>() {
             Ok(AssetName::Cidr(cidr))
         } else if let Ok(url) = url::Url::parse(s) {
             Ok(AssetName::Url(Request {
@@ -224,7 +223,7 @@ mod test {
 
         assert_eq!(
             AssetName::from_str("192.168.1.0/32").unwrap(),
-            AssetName::Cidr("192.168.1.0/32".parse::<IpCidr>().unwrap())
+            AssetName::Cidr("192.168.1.0/32".parse::<IpNet>().unwrap())
         );
 
         assert_eq!(

@@ -48,9 +48,12 @@ impl Luna {
 
         if let Some(p) = self.program_by_name(&program.name) {
             p.merge(program);
+            p.aggregate();
         } else {
+            program.aggregate();
             self.programs.push(program);
         }
+
         Ok(())
     }
 
@@ -99,8 +102,10 @@ impl Luna {
                     if let Some(mut pr) = program {
                         if let Some(pr) = self.program_by_name(&pr.name) {
                             pr.assets.push(asset);
+                            pr.aggregate();
                         } else {
                             pr.assets.push(asset);
+                            pr.aggregate();
                             self.insert_program(pr)?;
                         }
                         return Ok(());

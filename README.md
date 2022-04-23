@@ -1,10 +1,10 @@
 # Luna 
 (preparing for stable version)
-### **Reconnaissance** tool, Powered by **Rust**, built with 💖  
+### **Reconnaissance** tool, Powered by **Rust**, Built with 💖  
 
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.8.0
+  / / / / / / |/ / _ |  v0.9.0
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
@@ -26,7 +26,7 @@ minimum size:
 # Usage
 
 ```
-Luna 0.8.0
+Luna 0.9.0
 SAoirse <https://github.com/xaoirse>
 A Reconnaissance Tool
 
@@ -162,3 +162,4 @@ I want a standalone binary release from my code,
 - [ ] Tests
 - [ ] Job
 - [ ] [High] Concurrent access? Lock luna.json?
+- [ ] Aggregating Cidrs should aggregate tags or seprate cidrs from assets
