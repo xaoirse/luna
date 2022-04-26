@@ -163,7 +163,11 @@ impl Display for Sub {
         self.segments.iter().for_each(|s| match s {
             Segment::Alph(s) => str.push_str(s),
             Segment::Num(s) => str.push_str(s),
-            Segment::Char(s) => str.push_str(s),
+            Segment::Char(s) => {
+                if !str.is_empty() {
+                    str.push_str(s)
+                }
+            }
         });
 
         write!(f, "{}", str)
@@ -171,6 +175,23 @@ impl Display for Sub {
 }
 
 mod test {
+    #[test]
+    fn to_string() {
+        use super::*;
+
+        let s = Sub {
+            segments: vec![
+                Segment::Char("-".to_string()),
+                Segment::Num("2".to_string()),
+                Segment::Char(".".to_string()),
+                Segment::Alph("b".to_string()),
+                Segment::Alph("c".to_string()),
+            ],
+        };
+
+        assert_eq!(s.to_string(), "2.bc");
+    }
+
     #[test]
     fn split() {
         use super::*;
