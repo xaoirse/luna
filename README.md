@@ -1,5 +1,5 @@
 # Luna 
-(preparing for stable version)
+(preparing for stable release)
 ### **Reconnaissance** tool, Powered by **Rust**, Built with 💖  
 
 ```
@@ -10,7 +10,7 @@
 
 ```
  
-Luna can run any bunch of bash scripts in **Parallel**, collect results, save them as JSON format and find them with **Regex**.
+Luna can run any batch of bash scripts in **Parallel**, collect results, store them in JSON format and find them with **Regex**.
 
 
 # Installation   
@@ -82,10 +82,10 @@ Example:
 [Test your regex](https://rustexp.lpil.uk/)
 
 # Simple Using
-1. Create script file like `script.sh`:  
+1. Create a script file like `script.sh`:  
 ( regex for parsing results [see this](#regex-names) )  
 [ commands [see this](#available-keywords)]
-(Be carfull when using tools with colorful output)
+(Be cautious when using tools that produce colorful output)
 ```bash
 regex = (?P<asset>.+)
 subfinder -d ${sub} # sub1.sample.com -> sub
@@ -108,14 +108,14 @@ echo ${sub} | ./httpx -nc -silent -sc -title -ip -td
 : Command Line Argument Parser for Rust.
 - [**Rayon**](https://github.com/rayon-rs/rayon): A data-parallelism library for Rust.
 - [**Regex**](https://github.com/rust-lang/regex
-): A library for parsing, compiling, and executing regular expressions.
+): A library for parsing, compiling and executing regular expressions.
 - ...
 
 # FAQ
-### Is it works?
-Yes, I am using it. but it may has bugs so I try to fix them.
+### Does it work?
+Yes, I use it. There may be bugs, so I try to fix them.
 ### Why Rust?
-I want a standalone binary release from my code,
+I want a standalone binary release of my code.
 
 
 # Contribute
@@ -126,7 +126,7 @@ I want a standalone binary release from my code,
 - ...
 
 ## In Progress
-- Enhanece Performance
+- Enhance Performance
 - Tests
 - Comments
 
@@ -161,5 +161,5 @@ I want a standalone binary release from my code,
 - [ ] Benchmarks
 - [ ] Tests
 - [ ] Job
-- [ ] [High] Concurrent access? Lock luna.json?
-- [ ] Aggregating Cidrs should aggregate tags or seprate cidrs from assets
+- [ ] [High] Concurrent access? Lock luna.json and then import?
+- [ ] Aggregating Cidrs should aggregate tags or separate cidrs from assets
