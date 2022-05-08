@@ -135,8 +135,8 @@ pub fn run() {
     match signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&term)) {
         Ok(s) => info!("Luna has Graceful shutdown :), SigId: {:?}", s),
         Err(err) => {
-            error!("Error in making signal-hook: {}", err);
-            warn!("Luna will continue without Graceful shutdown!");
+            error!("An error occurred while making the signal-hook: {}", err);
+            warn!("Luna will continue running without Graceful-shutdown!");
         }
     }
 
@@ -182,7 +182,7 @@ pub fn run() {
 
         Cli::Script(script) => match script.parse() {
             Ok(script) => {
-                script.run(&mut luna, output, opt.no_backup, term);
+                script.run(&mut luna, output, !opt.no_backup, term);
                 info!("Scripts Executed.");
             }
             Err(err) => error!("Error in parsing file: {}", err),
@@ -207,7 +207,6 @@ pub fn run() {
                         luna.stringify(1),
                         input.display()
                     );
-                    luna.save(output, !opt.no_backup)
                 }
                 Err(err) => println!("{} Error in loading luna: {}", "[-]".red(), err),
             }

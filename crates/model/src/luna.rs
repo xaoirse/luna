@@ -12,6 +12,7 @@ pub struct Luna {
 
     pub start: Time,
 }
+
 impl Default for Luna {
     fn default() -> Self {
         Self {
@@ -212,7 +213,6 @@ impl Luna {
             .take(filter.n)
             .collect()
     }
-
     pub fn tags(&self, filter: &Filter) -> Vec<&Tag> {
         self.programs
             .iter()
@@ -344,7 +344,7 @@ impl Luna {
             }
             Err(err) => {
                 if err.to_string() == "No such file or directory (os error 2)" {
-                    warn!("Can't load Luna from file! New filw will be generated.")
+                    warn!("Can't load Luna from file! New file will be generated.")
                 } else {
                     error!("Can't load Luna from file!: {}", err);
                 }

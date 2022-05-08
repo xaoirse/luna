@@ -17,13 +17,13 @@ members = [
 [dependencies]
 openssl = { version = "*", features = ["vendored"] } # https://docs.rs/openssl/0.10.36/openssl/#vendored
 log = "0.4"
-env_logger = "0.8.4"
+env_logger = "0.9"
 colored = "2"
-clap = { version = "3.1", features = ["derive","suggestions", "color","wrap_help" ] }
-rayon = "1.5.2"
+clap = { version = "3.1", features = ["derive", "suggestions", "color", "wrap_help"] }
+rayon = "1.5"
 signal-hook = "*"
-model = {path = "crates/model"}
-dnsgen =  {path = "crates/dnsgen"}
+model = { path = "crates/model" }
+dnsgen =  { path = "crates/dnsgen" }
 
 [dev-dependencies]
 criterion = "0.3"

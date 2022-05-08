@@ -117,7 +117,7 @@ impl Script {
             let output = match child.wait_with_output() {
                 Ok(output) => output,
                 Err(err) => {
-                    debug!("Error on waiting for output: {err} {cmd}");
+                    debug!("An error occurred while waiting for output: {err} {cmd}");
                     return;
                 }
             };
@@ -248,8 +248,9 @@ impl ScriptCli {
 }
 
 fn is_valid(regex: &Regex) -> bool {
-    regex.capture_names().flatten().any(|x| x == "asset")
-        && (regex.capture_names().flatten().any(|x| x == "tag")
-            || !(regex.capture_names().flatten().any(|x| x == "severity")
-                || regex.capture_names().flatten().any(|x| x == "value")))
+    regex.capture_names().len() == 0
+        || (regex.capture_names().flatten().any(|x| x == "asset")
+            && (regex.capture_names().flatten().any(|x| x == "tag")
+                || !(regex.capture_names().flatten().any(|x| x == "severity")
+                    || regex.capture_names().flatten().any(|x| x == "value"))))
 }

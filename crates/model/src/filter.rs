@@ -113,6 +113,8 @@ impl FromStr for Regex {
         } else if s.contains('.') {
             if let Ok(cidr) = s.parse::<IpNet>() {
                 Ok(Self::Cidr(cidr))
+            } else if let Ok(cidr) = format!("{}/32", s).parse::<IpNet>() {
+                Ok(Self::Cidr(cidr))
             } else {
                 Ok(Self::Regex(regex::Regex::new(&format!("(?i){}", s))?))
             }

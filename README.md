@@ -1,5 +1,5 @@
 # Luna 
-(preparing for stable release)
+(Preparing for stable release)
 ### **Reconnaissance** tool, Powered by **Rust**, Built with 💖  
 
 ```
@@ -128,7 +128,7 @@ I want a standalone binary release of my code.
 ## In Progress
 - Enhance Performance
 - Tests
-- Comments
+- Docs
 
 
 ## TODO
@@ -157,9 +157,10 @@ I want a standalone binary release of my code.
 - [ ] Pause and Resume (OMG!)
 - [x] Progress bar
 - [x] Remove tech
-- [ ] Update dependencies
+- [x] Update dependencies
 - [ ] Benchmarks
 - [ ] Tests
 - [ ] Job
 - [ ] [High] Concurrent access? Lock luna.json and then import?
 - [ ] Aggregating Cidrs should aggregate tags or separate cidrs from assets
+- [ ] Time-based auto-saving
