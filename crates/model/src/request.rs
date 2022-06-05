@@ -11,24 +11,25 @@ pub struct Request {
 impl PartialEq for Request {
     fn eq(&self, other: &Self) -> bool {
         other.url[..url::Position::BeforePath] == self.url[..url::Position::BeforePath]
-            && (self.url.path() == other.url.path()
-                || match (other.url.path_segments(), self.url.path_segments()) {
-                    (Some(a), Some(b)) => {
-                        let a: HashSet<&str> = a
-                            .filter(|s| !s.is_empty() && s.parse::<usize>().is_err())
-                            .collect();
-                        let b: HashSet<&str> = b
-                            .filter(|s| !s.is_empty() && s.parse::<usize>().is_err())
-                            .collect();
+            && match (self.url.path_segments(), other.url.path_segments()) {
+                (None, None) => true,
+                (None, Some(_)) => false,
+                (Some(_), None) => false,
+                (Some(s_path), Some(o_path)) => {
+                    let s_path: Vec<_> = s_path.collect();
+                    let o_path: Vec<_> = o_path.collect();
 
-                        let c = &a - &b;
-                        let d = &b - &a;
-
-                        c.len() < 2 && d.len() < 2
+                    if s_path.len() != o_path.len() {
+                        false
+                    } else if s_path.len() > 1
+                        && s_path.split_last().unwrap().1 != o_path.split_last().unwrap().1
+                    {
+                        s_path.split_last().unwrap().1 == o_path.split_last().unwrap().1
+                    } else {
+                        true
                     }
-                    (None, None) => true,
-                    _ => false,
-                })
+                }
+            }
             && {
                 if self.url.path().ends_with(".css") && other.url.path().ends_with(".css") {
                     return true;

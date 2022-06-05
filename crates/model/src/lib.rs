@@ -19,6 +19,7 @@ use std::{
         Arc,
     },
 };
+
 use url::Host;
 
 pub mod asset;

@@ -48,14 +48,21 @@ impl Program {
         self.start = self.start.min(other.start);
 
         for asset in other.assets {
-            if let Some(self_asset) = self.assets.iter_mut().find(|a| a.name == asset.name) {
-                self_asset.merge(asset);
-            } else {
-                self.assets.push(asset);
+            match self.assets.binary_search(&asset) {
+                Ok(i) => {
+                    if asset.name.to_string() != self.assets[i].name.to_string() {
+                        println!("{}", asset.name);
+                        println!("{}", self.assets[i].name);
+                        println!("{:?}", self.assets[i].cmp(&asset));
+                    }
+                    self.assets.get_mut(i).unwrap().merge(asset);
+                }
+                Err(i) => self.assets.insert(i, asset),
             }
         }
     }
 
+    // Aggregate CIDRs
     pub fn aggregate(&mut self) {
         let nets = self
             .assets

@@ -213,7 +213,237 @@ impl FromStr for AssetName {
     }
 }
 
+use std::cmp::Ordering;
+
+impl Ord for Asset {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (&self.name, &other.name) {
+            (AssetName::Domain(s), AssetName::Domain(o)) => s.cmp(o),
+            (AssetName::Domain(_), AssetName::Subdomain(_)) => Ordering::Greater,
+            (AssetName::Domain(_), AssetName::Url(_)) => Ordering::Greater,
+            (AssetName::Domain(_), AssetName::Cidr(_)) => Ordering::Less,
+            (AssetName::Subdomain(_), AssetName::Domain(_)) => Ordering::Less,
+            (AssetName::Subdomain(s), AssetName::Subdomain(o)) => s.cmp(o),
+            (AssetName::Subdomain(_), AssetName::Url(_)) => Ordering::Greater,
+            (AssetName::Subdomain(_), AssetName::Cidr(_)) => Ordering::Less,
+            (AssetName::Url(_), AssetName::Domain(_)) => Ordering::Less,
+            (AssetName::Url(_), AssetName::Subdomain(_)) => Ordering::Less,
+            (AssetName::Url(s), AssetName::Url(o)) => {
+                if self == other {
+                    return Ordering::Equal;
+                }
+
+                if s.url[..url::Position::BeforePath] != o.url[..url::Position::BeforePath] {
+                    return s.url[..url::Position::BeforePath]
+                        .cmp(&o.url[..url::Position::BeforePath]);
+                }
+
+                match (s.url.path_segments(), o.url.path_segments()) {
+                    (None, None) => (),
+                    (None, Some(_)) => return Ordering::Less,
+                    (Some(_), None) => return Ordering::Greater,
+                    (Some(s_path), Some(o_path)) => {
+                        let s_path: Vec<_> = s_path.collect();
+                        let o_path: Vec<_> = o_path.collect();
+
+                        if s_path.len() > o_path.len() {
+                            return Ordering::Greater;
+                        } else if s_path.len() < o_path.len() {
+                            return Ordering::Less;
+                        } else if s_path.len() > 1
+                            && s_path.split_last().unwrap().1 != o_path.split_last().unwrap().1
+                        {
+                            return s_path
+                                .split_last()
+                                .unwrap()
+                                .1
+                                .cmp(o_path.split_last().unwrap().1);
+                        }
+                    }
+                }
+
+                let mut s_params: Vec<_> = s
+                    .url
+                    .query_pairs()
+                    .map(|(k, _)| k)
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                let mut o_params: Vec<_> = o
+                    .url
+                    .query_pairs()
+                    .map(|(k, _)| k)
+                    .filter(|s| !s.is_empty())
+                    .collect();
+
+                if s_params.len() != o_params.len() {
+                    return s_params.len().cmp(&o_params.len());
+                }
+
+                if s_params.is_empty() {
+                    return Ordering::Equal;
+                }
+
+                s_params.sort();
+                o_params.sort();
+                let s = s_params.into_iter().collect::<String>();
+                let o = o_params.into_iter().collect::<String>();
+
+                s.cmp(&o)
+            }
+            (AssetName::Url(_), AssetName::Cidr(_)) => Ordering::Less,
+            (AssetName::Cidr(_), AssetName::Domain(_)) => Ordering::Greater,
+            (AssetName::Cidr(_), AssetName::Subdomain(_)) => Ordering::Greater,
+            (AssetName::Cidr(_), AssetName::Url(_)) => Ordering::Greater,
+            (AssetName::Cidr(s), AssetName::Cidr(o)) => s.cmp(o),
+        }
+    }
+}
+
+impl PartialOrd for Asset {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for Asset {}
+
+impl PartialEq for Asset {
+    fn eq(&self, other: &Self) -> bool {
+        self.name.eq(&other.name)
+    }
+}
+
 mod test {
+
+    #[test]
+    fn asset_ord_0() {
+        use super::*;
+
+        let mut assets = vec![
+            Asset::from_str("http://c.com").unwrap(),
+            Asset::from_str("http://a.com").unwrap(),
+            Asset::from_str("http://b.com").unwrap(),
+        ];
+        assets.sort();
+        assert_eq!(
+            assets,
+            vec![
+                Asset::from_str("http://a.com").unwrap(),
+                Asset::from_str("http://b.com").unwrap(),
+                Asset::from_str("http://c.com").unwrap(),
+            ]
+        );
+
+        let mut assets = vec![
+            Asset::from_str("http://a.com/x/y/z").unwrap(),
+            Asset::from_str("http://a.com/a/x/y").unwrap(),
+            Asset::from_str("http://a.com/x/b").unwrap(),
+        ];
+        assets.sort();
+        assert_eq!(
+            assets,
+            vec![
+                Asset::from_str("http://a.com/x/b").unwrap(),
+                Asset::from_str("http://a.com/a/x/y").unwrap(),
+                Asset::from_str("http://a.com/x/y/z").unwrap(),
+            ]
+        );
+
+        let mut assets = vec![
+            Asset::from_str("http://a.com/x/y/z?j=jisoo&l=lisa&r=rose").unwrap(),
+            Asset::from_str("http://a.com/x/y/z?l=lisa&j=jisoo&jen=jennie").unwrap(),
+            Asset::from_str("http://a.com/x/y/z?j=jisoo&l=lisa").unwrap(),
+        ];
+        assets.sort();
+        assert_eq!(
+            assets,
+            vec![
+                Asset::from_str("http://a.com/x/y/z?j=jisoo&l=lisa").unwrap(),
+                Asset::from_str("http://a.com/x/y/z?l=lisa&j=jisoo&jen=jennie").unwrap(),
+                Asset::from_str("http://a.com/x/y/z?j=jisoo&l=lisa&r=rose").unwrap(),
+            ]
+        );
+        assert_ne!(
+            assets,
+            vec![
+                Asset::from_str("http://a.com/x/y/z?j=jisoo&l=lisa").unwrap(),
+                Asset::from_str("http://a.com/x/y/z?j=jisoo&l=lisa&r=rose").unwrap(),
+                Asset::from_str("http://a.com/x/y/z?l=lisa&j=jisoo&jen=jennie").unwrap(),
+            ]
+        );
+    }
+
+    #[test]
+    fn asset_ord_1() {
+        use super::*;
+
+        assert_ne!(
+            Asset::from_str("http://x.com/feature/printableindex.ch2").unwrap(),
+            Asset::from_str("http://x.com/contactus/index.ch2").unwrap(),
+        );
+
+        assert_ne!(
+            Asset::from_str("http://x.com/upload/locationpageimage1/21-skyline2.jpg").unwrap(),
+            Asset::from_str("http://x.com/feature/printableindex.ch2").unwrap(),
+        );
+
+        assert_ne!(
+            Asset::from_str("http://x.com/a/b/c/e/f").unwrap(),
+            Asset::from_str("http://x.com/a/b/d/c").unwrap(),
+        );
+
+        assert_ne!(
+            Asset::from_str("http://x.com/a/b").unwrap(),
+            Asset::from_str("http://x.com/c/d").unwrap(),
+        );
+
+        assert_ne!(
+            Asset::from_str("http://x.com/a/b").unwrap(),
+            Asset::from_str("http://x.com/c/d").unwrap(),
+        );
+    }
+
+    #[test]
+    fn asset_ord_2() {
+        use super::*;
+
+        let assets = vec![
+            // Asset::from_str("http://44charlesleasing.manulifecentre.com/feature/printableindex.ch2").unwrap(),
+            // Asset::from_str("http://44charlesleasing.manulifecentre.com/leasing/leasingbrochure.ch2").unwrap(),
+            Asset::from_str("http://44charlesleasing.manulifecentre.com/leasing/leasingbrochurepopup.ch2?selectedCounter=0").unwrap(),
+            // Asset::from_str("http://44charlesleasing.manulifecentre.com/contactus/index.ch2").unwrap(),
+            Asset::from_str("http://44charlesleasing.manulifecentre.com/").unwrap(),
+            Asset::from_str("http://44charlesleasing.manulifecentre.com/").unwrap(),
+            Asset::from_str("http://44charlesleasing.manulifecentre.com/contactus/index.ch2").unwrap(),
+            Asset::from_str("http://44charlesleasing.manulifecentre.com/leasing/leasingbrochurepopup.ch2?selectedCounter=0").unwrap(),
+            Asset::from_str("http://44charlesleasing.manulifecentre.com/upload/buildinglogoimage/161-44logonew.gif").unwrap(),
+            Asset::from_str("http://44charlesleasing.manulifecentre.com/designfiles/design001/image/email.gif").unwrap(),
+            ];
+
+        let p1 = Program {
+            name: "p1".to_string(),
+            assets,
+            ..Default::default()
+        };
+
+        let mut p2 = Program {
+            name: "p2".to_string(),
+            ..Default::default()
+        };
+
+        p2.merge(p1);
+
+        assert_eq!(
+            p2.assets,
+            vec![
+                Asset::from_str("http://44charlesleasing.manulifecentre.com/").unwrap(),
+                Asset::from_str("http://44charlesleasing.manulifecentre.com/contactus/index.ch2").unwrap(),
+                Asset::from_str("http://44charlesleasing.manulifecentre.com/leasing/leasingbrochurepopup.ch2?selectedCounter=0").unwrap(),
+                Asset::from_str("http://44charlesleasing.manulifecentre.com/upload/buildinglogoimage/161-44logonew.gif").unwrap(),
+                Asset::from_str("http://44charlesleasing.manulifecentre.com/designfiles/design001/image/email.gif").unwrap(),
+            ],
+        );
+    }
 
     #[test]
     fn asset_name() {

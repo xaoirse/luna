@@ -43,7 +43,9 @@ impl Luna {
             if let Some(a) = self.asset_by_name(&asset.name) {
                 a.merge(asset);
             } else {
-                program.assets.push(asset);
+                // TODO change all this to match
+                let idx = program.assets.binary_search(&asset).unwrap_or_else(|x| x);
+                program.assets.insert(idx, asset);
             }
         }
 
@@ -68,7 +70,8 @@ impl Luna {
                         if let Some(domain) = asset.name.domain() {
                             self.insert_asset(Asset::from_str(host)?, None)?;
                             if let Some(pr) = self.program_by_asset(&domain) {
-                                pr.assets.push(asset);
+                                let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
+                                pr.assets.insert(idx, asset);
                                 return Ok(());
                             }
                         }
@@ -79,7 +82,8 @@ impl Luna {
                 AssetName::Subdomain(s) => {
                     if let Some(domain) = asset.name.domain() {
                         if let Some(pr) = self.program_by_asset(&domain) {
-                            pr.assets.push(asset);
+                            let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
+                            pr.assets.insert(idx, asset);
                             return Ok(());
                         }
                     }
@@ -90,9 +94,11 @@ impl Luna {
                 AssetName::Domain(d) => {
                     if let Some(mut pr) = program {
                         if let Some(pr) = self.program_by_name(&pr.name) {
-                            pr.assets.push(asset);
+                            let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
+                            pr.assets.insert(idx, asset);
                         } else {
-                            pr.assets.push(asset);
+                            let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
+                            pr.assets.insert(idx, asset);
                             self.insert_program(pr)?;
                         }
                         return Ok(());
@@ -102,10 +108,12 @@ impl Luna {
                 AssetName::Cidr(c) => {
                     if let Some(mut pr) = program {
                         if let Some(pr) = self.program_by_name(&pr.name) {
-                            pr.assets.push(asset);
+                            let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
+                            pr.assets.insert(idx, asset);
                             pr.aggregate();
                         } else {
-                            pr.assets.push(asset);
+                            let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
+                            pr.assets.insert(idx, asset);
                             pr.aggregate();
                             self.insert_program(pr)?;
                         }
@@ -130,7 +138,8 @@ impl Luna {
                     tags: vec![tag],
                     start: Time::default(),
                 };
-                pr.assets.push(asset);
+                let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
+                pr.assets.insert(idx, asset);
                 Ok(())
             } else {
                 Err("OOS".into())
@@ -151,10 +160,18 @@ impl Luna {
             .find(|p| p.assets.iter().any(|a| a.name.domain() == asset.domain()))
     }
     pub fn asset_by_name(&mut self, name: &AssetName) -> Option<&mut Asset> {
-        self.programs
-            .iter_mut()
-            .flat_map(|p| &mut p.assets)
-            .find(|a| &a.name == name)
+        let a = Asset {
+            name: name.clone(),
+            start: time::Time::default(),
+            tags: vec![],
+        };
+
+        for p in &mut self.programs {
+            if let Ok(i) = p.assets.binary_search(&a) {
+                return p.assets.get_mut(i);
+            }
+        }
+        None
     }
 
     pub fn programs(&self, filter: &Filter) -> Vec<&Program> {
@@ -275,6 +292,7 @@ impl Luna {
                     (Field::Sub, AssetName::Subdomain(_)) => !filter.asset(a),
                     (Field::Url, AssetName::Url(_)) => !filter.asset(a),
                     (Field::Cidr, AssetName::Cidr(_)) => !filter.asset(a),
+                    (Field::Asset, _) => !filter.asset(a),
                     _ => true,
                 })
             }),
@@ -435,7 +453,8 @@ mod test {
         let mut luna = Luna::default();
         let mut program = Program::from_str("test").unwrap();
         let asset = Asset::from_str("test.com").unwrap();
-        program.assets.push(asset);
+        let idx = program.assets.binary_search(&asset).unwrap_or_else(|x| x);
+        program.assets.insert(idx, asset);
         luna.programs.push(program);
 
         let i = 0;
@@ -474,7 +493,8 @@ mod test {
 
         asset.tags.push(tag);
 
-        program.assets.push(asset);
+        let idx = program.assets.binary_search(&asset).unwrap_or_else(|x| x);
+        program.assets.insert(idx, asset);
 
         luna.insert_program(program).unwrap();
 

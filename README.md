@@ -1,10 +1,10 @@
 # Luna 
-(Preparing for stable release)
+
 ### **Reconnaissance** tool, Powered by **Rust**, Built with 💖  
 
 ```
    __  __  ___  _____ 
-  / / / / / / |/ / _ |  v0.9.0
+  / / / / / / |/ / _ |  v1.0.0
  / /_/ /_/ /    / __ |        
 /____|____/_/|_/_/ |_|  SA    
 
@@ -164,3 +164,5 @@ I want a standalone binary release of my code.
 - [ ] [High] Concurrent access? Lock luna.json and then import?
 - [ ] Aggregating Cidrs should aggregate tags or separate cidrs from assets
 - [ ] Time-based auto-saving
+- [ ] Bring regexes to luna?
+- [ ] assets from redirect
