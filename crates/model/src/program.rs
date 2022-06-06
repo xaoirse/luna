@@ -47,16 +47,10 @@ impl Program {
 
         self.start = self.start.min(other.start);
 
+        // Adding url should add sub too? or user should explicity add each sub?
         for asset in other.assets {
             match self.assets.binary_search(&asset) {
-                Ok(i) => {
-                    if asset.name.to_string() != self.assets[i].name.to_string() {
-                        println!("{}", asset.name);
-                        println!("{}", self.assets[i].name);
-                        println!("{:?}", self.assets[i].cmp(&asset));
-                    }
-                    self.assets.get_mut(i).unwrap().merge(asset);
-                }
+                Ok(i) => self.assets.get_mut(i).unwrap().merge(asset),
                 Err(i) => self.assets.insert(i, asset),
             }
         }

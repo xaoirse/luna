@@ -43,9 +43,10 @@ impl Luna {
             if let Some(a) = self.asset_by_name(&asset.name) {
                 a.merge(asset);
             } else {
-                // TODO change all this to match
-                let idx = program.assets.binary_search(&asset).unwrap_or_else(|x| x);
-                program.assets.insert(idx, asset);
+                match program.assets.binary_search(&asset) {
+                    Ok(i) => program.assets.get_mut(i).unwrap().merge(asset),
+                    Err(i) => program.assets.insert(i, asset),
+                }
             }
         }
 
