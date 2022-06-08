@@ -43,9 +43,57 @@ impl Luna {
             if let Some(a) = self.asset_by_name(&asset.name) {
                 a.merge(asset);
             } else {
-                match program.assets.binary_search(&asset) {
-                    Ok(i) => program.assets.get_mut(i).unwrap().merge(asset),
-                    Err(i) => program.assets.insert(i, asset),
+                match asset.name {
+                    AssetName::Url(ref req) => {
+                        if let Some(host) = req.url.host_str() {
+                            if let Some(domain) = asset.name.domain() {
+                                let new_domain = Asset {
+                                    name: domain.clone(),
+                                    tags: vec![],
+                                    start: time::Time::default(),
+                                };
+
+                                match program.assets.binary_search(&new_domain) {
+                                    Ok(i) => program.assets.get_mut(i).unwrap().merge(new_domain),
+                                    Err(i) => program.assets.insert(i, new_domain),
+                                }
+
+                                let sub = Asset {
+                                    name: AssetName::Subdomain(url::Host::Domain(host.to_string())),
+                                    tags: vec![],
+                                    start: time::Time::default(),
+                                };
+
+                                match program.assets.binary_search(&sub) {
+                                    Ok(i) => program.assets.get_mut(i).unwrap().merge(sub),
+                                    Err(i) => program.assets.insert(i, sub),
+                                }
+
+                                match program.assets.binary_search(&asset) {
+                                    Ok(i) => program.assets.get_mut(i).unwrap().merge(asset),
+                                    Err(i) => program.assets.insert(i, asset),
+                                }
+                            }
+                        }
+                    }
+                    AssetName::Subdomain(_) => {
+                        if let Some(domain) = asset.name.domain() {
+                            let domain = Asset {
+                                name: domain,
+                                tags: vec![],
+                                start: time::Time::default(),
+                            };
+
+                            match program.assets.binary_search(&domain) {
+                                Ok(i) => program.assets.get_mut(i).unwrap().merge(domain),
+                                Err(i) => program.assets.insert(i, domain),
+                            }
+                        }
+                    }
+                    _ => match program.assets.binary_search(&asset) {
+                        Ok(i) => program.assets.get_mut(i).unwrap().merge(asset),
+                        Err(i) => program.assets.insert(i, asset),
+                    },
                 }
             }
         }
