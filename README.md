@@ -166,3 +166,4 @@ I want a standalone binary release of my code.
 - [ ] Time-based auto-saving
 - [ ] Bring regexes to luna?
 - [ ] assets from redirect
+- [ ] Refactor

@@ -88,6 +88,11 @@ impl Luna {
                                 Ok(i) => program.assets.get_mut(i).unwrap().merge(domain),
                                 Err(i) => program.assets.insert(i, domain),
                             }
+
+                            match program.assets.binary_search(&asset) {
+                                Ok(i) => program.assets.get_mut(i).unwrap().merge(asset),
+                                Err(i) => program.assets.insert(i, asset),
+                            }
                         }
                     }
                     _ => match program.assets.binary_search(&asset) {
@@ -206,6 +211,7 @@ impl Luna {
     pub fn program_by_asset(&mut self, asset: &AssetName) -> Option<&mut Program> {
         self.programs
             .iter_mut()
+            // TODO binary search
             .find(|p| p.assets.iter().any(|a| a.name.domain() == asset.domain()))
     }
     pub fn asset_by_name(&mut self, name: &AssetName) -> Option<&mut Asset> {
