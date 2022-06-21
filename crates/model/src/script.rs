@@ -90,7 +90,7 @@ impl Script {
         let luna = Mutex::new(luna);
 
         elements.par_iter().for_each(|input| {
-            if term.load(Ordering::Relaxed) {
+            if term.load(atomic::Ordering::Relaxed) {
                 warn!("Command aborted! {} => {}", input, self.command);
                 return;
             }
@@ -128,10 +128,9 @@ impl Script {
 
             pb.inc(1);
 
-            let mut luna = luna.lock().unwrap();
             for asset in assets {
                 debug!("Insert: {}", asset.stringify(2));
-                if let Err(err) = luna.insert_asset(asset, None) {
+                if let Err(err) = luna.lock().unwrap().insert_asset(asset, None) {
                     warn!("{err}");
                 };
             }
@@ -147,7 +146,7 @@ pub struct Scripts {
 impl Scripts {
     pub fn run(self, luna: &mut Luna, path: &Path, backup: bool, term: Arc<AtomicBool>) {
         for script in self.scripts {
-            if term.load(Ordering::Relaxed) {
+            if term.load(atomic::Ordering::Relaxed) {
                 return;
             }
             script.execute(luna, &self.filter, term.clone());

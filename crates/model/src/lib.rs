@@ -6,16 +6,17 @@ use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use regex::bytes::Regex;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
+use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use std::{
-    collections::HashSet,
     fmt::{self, Display},
     io::Write,
     path::Path,
     process::{Command, Stdio},
     str::FromStr,
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{self, AtomicBool},
         Arc,
     },
 };

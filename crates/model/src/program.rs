@@ -47,11 +47,99 @@ impl Program {
 
         self.start = self.start.min(other.start);
 
-        // Adding url should add sub too? or user should explicity add each sub?
         for asset in other.assets {
-            match self.assets.binary_search(&asset) {
-                Ok(i) => self.assets.get_mut(i).unwrap().merge(asset),
-                Err(i) => self.assets.insert(i, asset),
+            self.insert_asset(asset);
+        }
+    }
+
+    pub fn assets_search(&self, asset: &Asset) -> Result<usize, usize> {
+        if let AssetName::Url(s_req) = &asset.name {
+            // Path size
+            let s = s_req.url.path_segments().map_or(0, |s| {
+                s.filter(|p| !p.is_empty() && p.parse::<usize>().is_err())
+                    .count()
+            });
+
+            // Index of 's' sized
+            let a = self.assets.partition_point(|a| {
+                if let AssetName::Url(req) = &a.name {
+                    let size = req.url.path_segments().map_or(0, |s| {
+                        s.filter(|p| !p.is_empty() && p.parse::<usize>().is_err())
+                            .count()
+                    });
+                    req.url[..url::Position::BeforePath] < s_req.url[..url::Position::BeforePath]
+                        || (req.url[..url::Position::BeforePath]
+                            == s_req.url[..url::Position::BeforePath]
+                            && size < s)
+                } else {
+                    a < asset
+                }
+            });
+
+            // Index of 's' sized
+            let b = self.assets.partition_point(|a| {
+                if let AssetName::Url(req) = &a.name {
+                    let size = req.url.path_segments().map_or(0, |s| {
+                        s.filter(|p| !p.is_empty() && p.parse::<usize>().is_err())
+                            .count()
+                    });
+                    req.url[..url::Position::BeforePath] < s_req.url[..url::Position::BeforePath]
+                        || (req.url[..url::Position::BeforePath]
+                            == s_req.url[..url::Position::BeforePath]
+                            && size < s + 1)
+                } else {
+                    a < asset
+                }
+            });
+
+            // find x in a..b
+            for x in a..b {
+                if &self.assets[x] == asset {
+                    return Ok(x);
+                }
+            }
+        }
+
+        self.assets.binary_search(asset)
+    }
+
+    pub fn insert_asset(&mut self, asset: Asset) -> u8 {
+        match self.assets_search(&asset) {
+            Ok(i) => {
+                self.assets[i].merge(asset);
+                0
+            }
+            Err(i) => {
+                let ret = match asset.name {
+                    AssetName::Url(ref req) => {
+                        if let Some(host) = req.url.host() {
+                            if let Ok(host) = Asset::from_str(&host.to_string()) {
+                                self.insert_asset(host)
+                            } else {
+                                0
+                            }
+                        } else {
+                            0
+                        }
+                    }
+
+                    AssetName::Subdomain(_) => {
+                        if let Some(domain) = asset.name.domain() {
+                            let domain = Asset {
+                                name: domain,
+                                tags: vec![],
+                                start: time::Time::default(),
+                            };
+
+                            self.insert_asset(domain)
+                        } else {
+                            0
+                        }
+                    }
+                    _ => 0,
+                };
+                self.assets.insert(i + ret as usize, asset);
+                1 + ret
             }
         }
     }
@@ -190,5 +278,268 @@ impl Program {
             ),
             _ => format!("{:#?}", self),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    #[test]
+    fn partition_point_test() {
+        use super::*;
+
+        let r = Request::from_str("http://w.com/f/c").unwrap();
+        let assets = vec![
+            Asset::from_str("http://w.com/a").unwrap(),
+            Asset::from_str("http://w.com/a/b/").unwrap(),
+            Asset::from_str("http://w.com/a/b/c").unwrap(),
+            Asset::from_str("http://w.com/a/b/c/d").unwrap(),
+            Asset::from_str("http://x.com/a/").unwrap(),
+            Asset::from_str("http://x.com/a/b").unwrap(),
+            Asset::from_str("http://x.com/a/b/c").unwrap(),
+            Asset::from_str("http://y.com/a/").unwrap(),
+            Asset::from_str("http://y.com/a/b").unwrap(),
+            Asset::from_str("http://y.com/a/b/c").unwrap(),
+            Asset::from_str("http://y.com/a/b/c/d/e").unwrap(),
+            Asset::from_str("http://y.com/a/b/c/d/e").unwrap(),
+            Asset::from_str("http://y.com/a/b/c/d/e").unwrap(),
+        ];
+
+        let a = assets.partition_point(|a| {
+            if let AssetName::Url(req) = &a.name {
+                let size = req.url.path_segments().map_or(0, |s| {
+                    s.filter(|p| !p.is_empty() && p.parse::<usize>().is_err())
+                        .count()
+                });
+
+                req.url[..url::Position::BeforePath] < r.url[..url::Position::BeforePath]
+                    || (req.url[..url::Position::BeforePath] == r.url[..url::Position::BeforePath]
+                        && size < 2)
+            } else {
+                true
+            }
+        });
+
+        println!("{a}");
+    }
+
+    #[test]
+    fn partition_point_test_1() {
+        use super::*;
+
+        let r = Asset::from_str("d.com").unwrap();
+        let assets = vec![
+            Asset::from_str("a.com").unwrap(),
+            Asset::from_str("b.com").unwrap(),
+            Asset::from_str("c.com").unwrap(),
+            Asset::from_str("e.com").unwrap(),
+            Asset::from_str("http://w.com/a").unwrap(),
+            Asset::from_str("http://w.com/a/b/").unwrap(),
+            Asset::from_str("http://w.com/a/b/c").unwrap(),
+            Asset::from_str("http://w.com/a/b/c/d").unwrap(),
+            Asset::from_str("http://x.com/a/").unwrap(),
+            Asset::from_str("http://x.com/a/b").unwrap(),
+            Asset::from_str("http://x.com/a/b/c").unwrap(),
+            Asset::from_str("http://x.com/a/b/c").unwrap(),
+            Asset::from_str("http://x.com/a/b/c").unwrap(),
+            Asset::from_str("http://x.com/a/b/c/d/e").unwrap(),
+        ];
+
+        let a = assets.partition_point(|a| {
+            if let (AssetName::Url(req), AssetName::Url(r)) = (&a.name, &r.name) {
+                let size = req.url.path_segments().map_or(0, |s| {
+                    s.filter(|p| !p.is_empty() && p.parse::<usize>().is_err())
+                        .count()
+                });
+
+                req.url[..url::Position::BeforePath] < r.url[..url::Position::BeforePath]
+                    || (req.url[..url::Position::BeforePath] == r.url[..url::Position::BeforePath]
+                        && size < 2)
+            } else {
+                a < &r
+            }
+        });
+
+        assert_eq!(a, 3);
+    }
+
+    #[test]
+    fn assets_search_test_1() {
+        use super::*;
+
+        assert!(
+            Asset::from_str("http://x.com/b/a").unwrap()
+                == Asset::from_str("http://x.com/g/a").unwrap()
+        );
+
+        let assets = vec![
+            Asset::from_str("http://x.com/a").unwrap(),
+            Asset::from_str("http://x.com/a/b").unwrap(),
+            Asset::from_str("http://x.com/b/a").unwrap(),
+            Asset::from_str("http://x.com/c/d").unwrap(),
+            Asset::from_str("http://x.com/a/a/c").unwrap(),
+            Asset::from_str("http://x.com/g/a").unwrap(),
+            Asset::from_str("http://x.com/g/a/b").unwrap(),
+            Asset::from_str("http://x.com/g/a/g/c").unwrap(),
+            Asset::from_str("http://x.com/g/a/h/h").unwrap(),
+            Asset::from_str("http://x.com/g/a/h/h/f").unwrap(),
+            Asset::from_str("http://x.com/g/a/h/h/f/k").unwrap(),
+        ];
+
+        let p1 = Program {
+            name: "p1".to_string(),
+            assets,
+            ..Default::default()
+        };
+        let mut p2 = Program {
+            name: "p2".to_string(),
+            ..Default::default()
+        };
+
+        p2.merge(p1);
+
+        for a in &p2.assets {
+            println!("{}", a.name);
+        }
+
+        assert_eq!(
+            p2.assets_search(&Asset::from_str("http://x.com/a/").unwrap()),
+            Ok(1)
+        );
+        assert_eq!(
+            p2.assets_search(&Asset::from_str("http://x.com/g/a/").unwrap()),
+            Ok(3)
+        );
+        assert_eq!(
+            p2.assets_search(&Asset::from_str("http://x.com/g/a/b").unwrap()),
+            Ok(6)
+        );
+    }
+
+    #[test]
+    fn assets_search_test_2() {
+        use super::*;
+
+        let assets = vec![
+            Asset::from_str("http://x.com/a").unwrap(),
+            Asset::from_str("http://x.com/a/b/").unwrap(),
+            Asset::from_str("http://x.com/a/b").unwrap(),
+            Asset::from_str("http://x.com/a/b/c").unwrap(),
+            Asset::from_str("http://x.com/a/b/c").unwrap(),
+            Asset::from_str("http://x.com/a/b/c").unwrap(),
+            Asset::from_str("http://x.com/a/b/c/d/e").unwrap(),
+        ];
+
+        let p1 = Program {
+            name: "p1".to_string(),
+            assets,
+            ..Default::default()
+        };
+
+        assert_eq!(
+            p1.assets_search(&Asset::from_str("http://x.com/a/b/").unwrap()),
+            Ok(1)
+        );
+        assert_eq!(
+            p1.assets_search(&Asset::from_str("http://x.com/a/b/c/d/e").unwrap()),
+            Ok(6)
+        );
+
+        assert_eq!(
+            p1.assets_search(&Asset::from_str("http://x.com/a/b/c/d/").unwrap()),
+            Err(6)
+        );
+    }
+
+    #[test]
+    fn asset_ord_0() {
+        use super::*;
+
+        let assets = vec![
+            Asset::from_str("http://sub.x.com/ae/ar").unwrap(),
+            Asset::from_str("http://sub.x.com/api/history-media/").unwrap(),
+            Asset::from_str("http://sub.x.com/api/search/?q=ambasador").unwrap(),
+            Asset::from_str("http://sub.x.com/api/loc/?loc=16&co=de&pi=6&lang=de").unwrap(),
+            Asset::from_str("http://sub.x.com/api/Wayin/?feed=t&format=json&limit=8").unwrap(),
+            Asset::from_str("http://sub.x.com/at/en").unwrap(),
+            Asset::from_str("http://sub.x.com/be/nl").unwrap(),
+        ];
+
+        let p1 = Program {
+            name: "p1".to_string(),
+            assets,
+            ..Default::default()
+        };
+
+        let mut p2 = Program {
+            name: "p2".to_string(),
+            ..Default::default()
+        };
+
+        p2.merge(p1);
+
+        for a in &p2.assets {
+            println!("{}", a.name);
+        }
+
+        assert_eq!(
+            Asset::from_str("http://sub.x.com/api/history-media/?format=json&loc=16&lang=de&pi=6&q=ambasador&feed=t&co=de").unwrap(),
+            Asset::from_str("http://sub.x.com/api/history-media/?loc=16&pi=6&feed=t&lang=de&format=json&q=ambasador&co=de").unwrap(),
+        );
+
+        assert_eq!(
+            p2.assets,
+            vec![
+                Asset::from_str("x.com").unwrap(),
+                Asset::from_str("sub.x.com").unwrap(),
+                Asset::from_str("http://sub.x.com/ae/ar").unwrap(),
+                Asset::from_str("http://sub.x.com/api/Wayin/?feed=t&format=json&limit=8").unwrap(),
+                Asset::from_str("http://sub.x.com/api/history-media/").unwrap(),
+                Asset::from_str("http://sub.x.com/api/loc/?loc=16&co=de&pi=6&lang=de").unwrap(),
+                Asset::from_str("http://sub.x.com/api/search/?q=ambasador").unwrap(),
+                Asset::from_str("http://sub.x.com/at/en").unwrap(),
+                Asset::from_str("http://sub.x.com/be/nl").unwrap(),
+            ],
+        );
+    }
+
+    #[test]
+    fn asset_ord_1() {
+        use super::*;
+
+        let assets = vec![
+            Asset::from_str("https://flo.health/pregnancy/pregnancy-health/%20/lgbtq?").unwrap(),
+            Asset::from_str("https://flo.health/pregnancy/pregnancy-health/complications/6-ectopic-pregnancy-symptoms?").unwrap(),
+            Asset::from_str("https://flo.health/pregnancy/pregnancy-lifestyle/%20/being-a-mom").unwrap(),
+            Asset::from_str("https://flo.health/pregnancy/week-by-week/%20/being-a-mom?").unwrap(),
+        ];
+
+        let p1 = Program {
+            name: "p1".to_string(),
+            assets,
+            ..Default::default()
+        };
+
+        let mut p2 = Program {
+            name: "p2".to_string(),
+            ..Default::default()
+        };
+
+        p2.merge(p1);
+
+        for a in &p2.assets {
+            println!("{}", a.name);
+        }
+
+        assert_eq!(
+            p2.assets,
+            vec![
+                Asset::from_str("flo.health").unwrap(),
+                Asset::from_str("https://flo.health/pregnancy/pregnancy-health/%20/lgbtq?").unwrap(),
+                Asset::from_str("https://flo.health/pregnancy/pregnancy-health/complications/6-ectopic-pregnancy-symptoms?").unwrap(),
+                // Asset::from_str("https://flo.health/pregnancy/pregnancy-lifestyle/%20/being-a-mom").unwrap(),
+                Asset::from_str("https://flo.health/pregnancy/week-by-week/%20/being-a-mom?").unwrap(),
+            ],
+        );
     }
 }

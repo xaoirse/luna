@@ -40,67 +40,7 @@ impl Luna {
 
     pub fn insert_program(&mut self, mut program: Program) -> Result<(), Errors> {
         for asset in std::mem::take(&mut program.assets) {
-            if let Some(a) = self.asset_by_name(&asset.name) {
-                a.merge(asset);
-            } else {
-                match asset.name {
-                    AssetName::Url(ref req) => {
-                        if let Some(host) = req.url.host_str() {
-                            if let Some(domain) = asset.name.domain() {
-                                let new_domain = Asset {
-                                    name: domain.clone(),
-                                    tags: vec![],
-                                    start: time::Time::default(),
-                                };
-
-                                match program.assets.binary_search(&new_domain) {
-                                    Ok(i) => program.assets.get_mut(i).unwrap().merge(new_domain),
-                                    Err(i) => program.assets.insert(i, new_domain),
-                                }
-
-                                let sub = Asset {
-                                    name: AssetName::Subdomain(url::Host::Domain(host.to_string())),
-                                    tags: vec![],
-                                    start: time::Time::default(),
-                                };
-
-                                match program.assets.binary_search(&sub) {
-                                    Ok(i) => program.assets.get_mut(i).unwrap().merge(sub),
-                                    Err(i) => program.assets.insert(i, sub),
-                                }
-
-                                match program.assets.binary_search(&asset) {
-                                    Ok(i) => program.assets.get_mut(i).unwrap().merge(asset),
-                                    Err(i) => program.assets.insert(i, asset),
-                                }
-                            }
-                        }
-                    }
-                    AssetName::Subdomain(_) => {
-                        if let Some(domain) = asset.name.domain() {
-                            let domain = Asset {
-                                name: domain,
-                                tags: vec![],
-                                start: time::Time::default(),
-                            };
-
-                            match program.assets.binary_search(&domain) {
-                                Ok(i) => program.assets.get_mut(i).unwrap().merge(domain),
-                                Err(i) => program.assets.insert(i, domain),
-                            }
-
-                            match program.assets.binary_search(&asset) {
-                                Ok(i) => program.assets.get_mut(i).unwrap().merge(asset),
-                                Err(i) => program.assets.insert(i, asset),
-                            }
-                        }
-                    }
-                    _ => match program.assets.binary_search(&asset) {
-                        Ok(i) => program.assets.get_mut(i).unwrap().merge(asset),
-                        Err(i) => program.assets.insert(i, asset),
-                    },
-                }
-            }
+            program.insert_asset(asset);
         }
 
         if let Some(p) = self.program_by_name(&program.name) {
@@ -118,14 +58,17 @@ impl Luna {
         if let Some(a) = self.asset_by_name(&asset.name) {
             a.merge(asset);
         } else {
+            // TODO rewrite this
+
             match &asset.name {
                 AssetName::Url(request) => {
                     if let Some(host) = request.url.host_str() {
                         if let Some(domain) = asset.name.domain() {
                             self.insert_asset(Asset::from_str(host)?, None)?;
                             if let Some(pr) = self.program_by_asset(&domain) {
-                                let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
-                                pr.assets.insert(idx, asset);
+                                let i = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
+                                pr.assets.insert(i, asset);
+
                                 return Ok(());
                             }
                         }
@@ -183,7 +126,7 @@ impl Luna {
 
     pub fn insert_tag(&mut self, tag: Tag, asset: &AssetName) -> Result<(), Errors> {
         if let Some(asset) = self.asset_by_name(asset) {
-            asset.insert_tag(dbg!(tag));
+            asset.insert_tag(tag);
             Ok(())
         } else if let Some(domain) = asset.domain() {
             if let Some(pr) = self.program_by_asset(&domain) {
@@ -209,20 +152,36 @@ impl Luna {
             .find(|p| p.name.to_lowercase() == name.to_lowercase())
     }
     pub fn program_by_asset(&mut self, asset: &AssetName) -> Option<&mut Program> {
-        self.programs
-            .iter_mut()
-            // TODO binary search
-            .find(|p| p.assets.iter().any(|a| a.name.domain() == asset.domain()))
+        self.programs.iter_mut().find(|p| {
+            if let Some(domain) = asset.domain() {
+                p.assets
+                    .binary_search(&Asset {
+                        name: domain,
+                        tags: vec![],
+                        start: time::Time::default(),
+                    })
+                    .is_ok()
+            } else {
+                p.assets
+                    .binary_search(&Asset {
+                        name: asset.to_owned(),
+                        tags: vec![],
+                        start: time::Time::default(),
+                    })
+                    .is_ok()
+            }
+        })
     }
+
     pub fn asset_by_name(&mut self, name: &AssetName) -> Option<&mut Asset> {
         let a = Asset {
             name: name.clone(),
-            start: time::Time::default(),
             tags: vec![],
+            start: time::Time::default(),
         };
 
         for p in &mut self.programs {
-            if let Ok(i) = p.assets.binary_search(&a) {
+            if let Ok(i) = p.assets_search(&a) {
                 return p.assets.get_mut(i);
             }
         }
