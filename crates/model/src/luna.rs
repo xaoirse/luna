@@ -57,70 +57,18 @@ impl Luna {
     pub fn insert_asset(&mut self, asset: Asset, program: Option<Program>) -> Result<(), Errors> {
         if let Some(a) = self.asset_by_name(&asset.name) {
             a.merge(asset);
-        } else {
-            // TODO rewrite this
-
-            match &asset.name {
-                AssetName::Url(request) => {
-                    if let Some(host) = request.url.host_str() {
-                        if let Some(domain) = asset.name.domain() {
-                            self.insert_asset(Asset::from_str(host)?, None)?;
-                            if let Some(pr) = self.program_by_asset(&domain) {
-                                let i = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
-                                pr.assets.insert(i, asset);
-
-                                return Ok(());
-                            }
-                        }
-                    }
-                    return Err(format!("OOS: {}", request.url).into());
-                }
-
-                AssetName::Subdomain(s) => {
-                    if let Some(domain) = asset.name.domain() {
-                        if let Some(pr) = self.program_by_asset(&domain) {
-                            let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
-                            pr.assets.insert(idx, asset);
-                            return Ok(());
-                        }
-                    }
-
-                    return Err(format!("OOS: {}", s).into());
-                }
-
-                AssetName::Domain(d) => {
-                    if let Some(mut pr) = program {
-                        if let Some(pr) = self.program_by_name(&pr.name) {
-                            let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
-                            pr.assets.insert(idx, asset);
-                        } else {
-                            let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
-                            pr.assets.insert(idx, asset);
-                            self.insert_program(pr)?;
-                        }
-                        return Ok(());
-                    }
-                    return Err(format!("OOP: {}", d).into());
-                }
-                AssetName::Cidr(c) => {
-                    if let Some(mut pr) = program {
-                        if let Some(pr) = self.program_by_name(&pr.name) {
-                            let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
-                            pr.assets.insert(idx, asset);
-                            pr.aggregate();
-                        } else {
-                            let idx = pr.assets.binary_search(&asset).unwrap_or_else(|x| x);
-                            pr.assets.insert(idx, asset);
-                            pr.aggregate();
-                            self.insert_program(pr)?;
-                        }
-                        return Ok(());
-                    }
-                    return Err(format!("OOP: {}", c).into());
-                }
+        } else if let Some(domain) = asset.name.domain() {
+            if let Some(p) = self.program_by_asset(&domain) {
+                p.insert_asset(asset);
+            } else if let Some(mut p) = program {
+                p.insert_asset(asset);
+                self.insert_program(p)?;
+            } else {
+                return Err(format!("OOP: {}", asset.name).into());
             }
+        } else {
+            return Err(format!("OOS: {}", asset.name).into());
         }
-
         Ok(())
     }
 
