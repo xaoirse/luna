@@ -1,13 +1,10 @@
 use super::*;
 
-fn parse(text: &[u8], regex: &Regex) -> Vec<Asset> {
+fn parse(text: &str, regex: &Regex) -> Vec<Asset> {
     regex
         .captures_iter(text)
         .filter_map(|caps| {
-            let get = |key| {
-                caps.name(key)
-                    .map(|v| String::from_utf8_lossy(v.as_bytes()).to_string())
-            };
+            let get = |key| caps.name(key).map(|v| v.as_str().to_string());
 
             let tags = if let Some(name) = get("tag") {
                 let values = if let Some(value) = get("value") {
@@ -100,7 +97,7 @@ impl Script {
 
             pb.set_message(cmd.clone());
 
-            let child = match Command::new("sh")
+            let mut child = match Command::new("sh")
                 .current_dir(&self.cd)
                 .arg("-c")
                 .arg(&cmd)
@@ -114,25 +111,45 @@ impl Script {
                 }
             };
 
-            let output = match child.wait_with_output() {
-                Ok(output) => output,
-                Err(err) => {
-                    debug!("An error occurred while waiting for output: {err} {cmd}");
-                    return;
+            match child.stdout.as_mut() {
+                Some(stdout) => {
+                    let stdout_reader = BufReader::new(stdout);
+                    let stdout_lines = stdout_reader.lines();
+
+                    for line in stdout_lines {
+                        if term.load(atomic::Ordering::Relaxed) {
+                            warn!("Command aborted while reading stdout!");
+                            return;
+                        }
+                        match line {
+                            Ok(line) => {
+                                let assets = parse(&line, &self.regex);
+
+                                debug!("Stdout assets len: {} {}", &assets.len(), cmd);
+
+                                for asset in assets {
+                                    debug!("Insert: {}", asset.stringify(2));
+                                    if let Err(err) = luna.lock().unwrap().insert_asset(asset, None)
+                                    {
+                                        warn!("{err}");
+                                    };
+                                }
+                            }
+                            Err(err) => {
+                                warn!("Error while reading lines from stdout: {err} {cmd}")
+                            }
+                        }
+                    }
                 }
-            };
+                None => debug!("There is no stdout: {cmd}"),
+            }
 
-            let assets = parse(&output.stdout, &self.regex);
-
-            debug!("Stdout assets len: {} {}", &assets.len(), cmd);
-
-            pb.inc(1);
-
-            for asset in assets {
-                debug!("Insert: {}", asset.stringify(2));
-                if let Err(err) = luna.lock().unwrap().insert_asset(asset, None) {
-                    warn!("{err}");
-                };
+            match child.wait() {
+                Ok(ok) => {
+                    debug!("Success Command with StatusCode {ok}: {cmd}");
+                    pb.inc(1);
+                }
+                Err(err) => debug!("Error in Waiting for command: {cmd} {err}"),
             }
         });
     }
@@ -177,7 +194,7 @@ impl ScriptCli {
             .lines()
             .enumerate()
         {
-            if regex_pat.is_match(line.as_bytes()) {
+            if regex_pat.is_match(line) {
                 regex = line
                     .split_once('=')
                     .map_or("".to_string(), |p| p.1.trim().to_string())

@@ -4,14 +4,14 @@ use indicatif::{ProgressBar, ProgressFinish, ProgressStyle};
 use ipnet::IpNet;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
-use regex::bytes::Regex;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use std::{
     fmt::{self, Display},
-    io::Write,
+    io::{BufRead, BufReader, Write},
     path::Path,
     process::{Command, Stdio},
     str::FromStr,

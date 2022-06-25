@@ -1,18 +1,18 @@
 [package]
 name = "model"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 
 [dependencies]
 log = "0.4"
 env_logger = "0.9"
 chrono = { version = "0.4", features = ["serde"] }
-clap = { version = "3.1", features = ["derive", "suggestions", "color", "wrap_help" ] }
+clap = { version = "3.2", features = ["derive", "suggestions", "color", "wrap_help" ] }
 regex = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rayon = "1.5"
-indicatif = { version = "0.17.0-rc.10" }
+indicatif = { version = "0.17.0-rc.11" }
 url = { version = "2.2", features = ["serde"] }
 addr = "*"
 ipnet = { version = "2.5", features = ["serde"] }
