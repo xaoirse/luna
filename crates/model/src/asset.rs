@@ -112,7 +112,7 @@ impl Asset {
                 },
                 self.tags
                     .iter()
-                    .map(|s| format!("\n        {}", s.stringify(1)))
+                    .map(|t| format!("\n        {}", t.stringify(1)))
                     .collect::<Vec<String>>()
                     .join(""),
                 if self.tags.is_empty() { "]" } else { "\n    ]" },
@@ -124,7 +124,7 @@ impl Asset {
                 self.name,
                 self.tags
                     .iter()
-                    .map(|s| format!("\n        {}", s.stringify(2)))
+                    .map(|t| format!("\n        {}", t.stringify(2)))
                     .collect::<Vec<String>>()
                     .join(""),
                 if self.tags.is_empty() { "]" } else { "\n    ]" },
@@ -137,7 +137,7 @@ impl Asset {
                 self.name,
                 self.tags
                     .iter()
-                    .map(|s| format!("\n        {}", s.stringify(2)))
+                    .map(|t| format!("\n        {}", t.stringify(2)))
                     .collect::<Vec<String>>()
                     .join(""),
                 if self.tags.is_empty() { "]" } else { "\n    ]" },

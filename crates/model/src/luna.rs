@@ -222,15 +222,32 @@ impl Luna {
             Field::Program => self
                 .programs(filter)
                 .iter()
-                .map(|f| f.stringify(v))
+                .map(|p| p.stringify(v))
                 .collect(),
             Field::None => vec!["".to_string()],
-            Field::Tag => self.tags(filter).iter().map(|f| f.stringify(v)).collect(),
-            Field::Value => self.tags(filter).iter().map(|f| f.stringify(v)).collect(),
+            Field::Tag => self.tags(filter).iter().map(|t| t.stringify(v)).collect(),
+            Field::Value => self.tags(filter).iter().map(|t| t.stringify(v)).collect(),
+            Field::Cidr if v == 2 => self
+                .assets(field, filter)
+                .iter()
+                .filter_map(|a| {
+                    if let AssetName::Cidr(cidr) = a.name {
+                        Some(cidr)
+                    } else {
+                        None
+                    }
+                })
+                .map(|c| {
+                    c.hosts()
+                        .map(|c| c.to_string())
+                        .collect::<Vec<String>>()
+                        .join("\n")
+                })
+                .collect(),
             _ => self
                 .assets(field, filter)
                 .iter()
-                .map(|f| f.stringify(v))
+                .map(|a| a.stringify(v))
                 .collect(),
         }
     }
