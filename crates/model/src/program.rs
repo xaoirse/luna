@@ -508,10 +508,10 @@ mod test {
         use super::*;
 
         let assets = vec![
-            Asset::from_str("https://flo.health/pregnancy/pregnancy-health/%20/lgbtq?").unwrap(),
-            Asset::from_str("https://flo.health/pregnancy/pregnancy-health/complications/6-ectopic-pregnancy-symptoms?").unwrap(),
-            Asset::from_str("https://flo.health/pregnancy/pregnancy-lifestyle/%20/being-a-mom").unwrap(),
-            Asset::from_str("https://flo.health/pregnancy/week-by-week/%20/being-a-mom?").unwrap(),
+            Asset::from_str("https://x.com/pregnancy/pregnancy-health/%20/lgbtq?").unwrap(),
+            Asset::from_str("https://x.com/pregnancy/pregnancy-health/complications/6-ectopic-pregnancy-symptoms?").unwrap(),
+            Asset::from_str("https://x.com/pregnancy/pregnancy-lifestyle/%20/being-a-mom").unwrap(),
+            Asset::from_str("https://x.com/pregnancy/week-by-week/%20/being-a-mom?").unwrap(),
         ];
 
         let p1 = Program {
@@ -534,11 +534,11 @@ mod test {
         assert_eq!(
             p2.assets,
             vec![
-                Asset::from_str("flo.health").unwrap(),
-                Asset::from_str("https://flo.health/pregnancy/pregnancy-health/%20/lgbtq?").unwrap(),
-                Asset::from_str("https://flo.health/pregnancy/pregnancy-health/complications/6-ectopic-pregnancy-symptoms?").unwrap(),
-                // Asset::from_str("https://flo.health/pregnancy/pregnancy-lifestyle/%20/being-a-mom").unwrap(),
-                Asset::from_str("https://flo.health/pregnancy/week-by-week/%20/being-a-mom?").unwrap(),
+                Asset::from_str("x.com").unwrap(),
+                Asset::from_str("https://x.com/pregnancy/pregnancy-health/%20/lgbtq?").unwrap(),
+                Asset::from_str("https://x.com/pregnancy/pregnancy-health/complications/6-ectopic-pregnancy-symptoms?").unwrap(),
+                // Asset::from_str("https://x.com/pregnancy/pregnancy-lifestyle/%20/being-a-mom").unwrap(),
+                Asset::from_str("https://x.com/pregnancy/week-by-week/%20/being-a-mom?").unwrap(),
             ],
         );
     }

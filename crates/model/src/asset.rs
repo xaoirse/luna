@@ -1,4 +1,5 @@
 use super::*;
+use std::fmt::Write;
 
 #[derive(Debug, Clone, Parser, Deserialize, Serialize)]
 pub struct Asset {
@@ -53,10 +54,10 @@ impl Asset {
                     query.push('&');
                 }
 
-                query.push_str(&format!("{}", m.0));
+                write!(&mut query, "{}", m.0).unwrap();
 
                 if !m.1.is_empty() {
-                    query.push_str(&format!("={}", m.1));
+                    write!(&mut query, "={}", m.1).unwrap();
                 }
             }
 
